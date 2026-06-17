@@ -29,36 +29,4 @@ export const router =
       {path:"faqs",element:<FaqPage/>},
       {path:"leads",element:<LeadPage/>},
     ]},
-    
-
-
-    // {
-    // path:"activities",
-    // element:<ActivitiesPage/>
-    // },
-
-    // {
-    // path:"articles",
-    // element:<ArticlePage/>
-    // },
-
-    // {
-    // path:"categories",
-    // element:<CategoryPage/>
-    // },
-
-    // {
-    // path:"faqs",
-    // element:<FaqPage/>
-    // },
-
-    // {
-    // path:"testimonials",
-    // element:<TestimonialPage/>
-    // },
-
-    // {
-    // path:"leads",
-    // element:<LeadPage/>
-    // }
   ]);

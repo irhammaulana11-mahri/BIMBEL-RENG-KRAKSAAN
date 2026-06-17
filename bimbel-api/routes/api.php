@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Website\PackageController;
 use App\Http\Controllers\Api\Website\TestimonialController;
 use App\Http\Controllers\Api\Website\ArticleController;
 use App\Http\Controllers\Api\Common\UploadController;
+use App\Http\Controllers\Api\Admin\DashboardController;
 
 
 
@@ -37,9 +38,9 @@ Route::get('/test-api', function () {
 Route::middleware('auth:sanctum','role:admin')
     ->group(function () {
 
-        Route::get('/admin/dashboard', function () {
-            return response()->json(['message' => 'Dashboard Admin']);
-        });
+        // Route::get('/admin/dashboard', function () {
+        //     return response()->json(['message' => 'Dashboard Admin']);
+        // });
         Route::get('/profile',[AuthController::class, 'profile']);
         Route::post('/logout',[AuthController::class, 'logout']);
 
@@ -123,3 +124,14 @@ Route::prefix('website')->group(function () {
 Route::prefix('uploads')->group(function () {
     Route::post('image', [UploadController::class, 'image']);
 });
+
+Route::prefix('dashboard')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [DashboardController::class,'index']
+        );
+
+    });
