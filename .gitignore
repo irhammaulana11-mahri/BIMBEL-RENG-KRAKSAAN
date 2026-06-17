@@ -1,0 +1,41 @@
+# ======================
+# React / Vite
+# ======================
+bimbel-web/node_modules
+bimbel-web/dist
+bimbel-web/.env
+
+# ======================
+# Laravel
+# ======================
+bimbel-api/vendor
+bimbel-api/node_modules
+bimbel-api/storage/logs/*
+bimbel-api/storage/framework/cache/*
+bimbel-api/storage/framework/sessions/*
+bimbel-api/storage/framework/views/*
+bimbel-api/bootstrap/cache/*
+bimbel-api/public/storage
+bimbel-api/.env
+
+# ======================
+# Flutter
+# ======================
+bimbel-android/.dart_tool
+bimbel-android/.flutter-plugins
+bimbel-android/.flutter-plugins-dependencies
+bimbel-android/build
+bimbel-android/.packages
+bimbel-android/.pub-cache
+bimbel-android/.metadata
+
+# Android
+bimbel-android/android/.gradle
+bimbel-android/android/local.properties
+
+# VSCode
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
