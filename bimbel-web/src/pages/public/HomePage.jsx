@@ -4,19 +4,22 @@ import PackageSection from "../../components/public/PackageSection";
 import ActivitySection from "../../components/public/ActivitySection";
 import ArticleSection from "../../components/public/ArticleSection";
 import TestimonialSection from "../../components/public/TestimonialSection";
-import BannerSection from "../../components/public/BannerSection";
+// import BannerSection from "../../components/public/BannerSection";
 import FaqSection from "../../components/public/FaqSection";
+import CallToActionSection from "../../components/public/CallToActionSection";
 
 export default function HomePage() {
   return (
     <>
-      <HeroSection />
-        <BannerSection />
-          <PackageSection />
-            <ActivitySection />
-          <ArticleSection />
-        <TestimonialSection />
-      <FaqSection />
+    <HeroSection />
+    <FeatureSection />
+    <PackageSection />
+    {/* <BannerSection /> */}
+    <ActivitySection />
+    <ArticleSection />
+    <TestimonialSection />
+    <FaqSection />
+    <CallToActionSection />
     </>
   );
 }

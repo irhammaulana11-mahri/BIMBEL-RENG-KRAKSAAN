@@ -13,12 +13,14 @@ class Lead extends Model {
     public $timestamps = false;
     
     protected $fillable = [
-        'full_name',
+        'parent_name',
         'phone',
+        'student_name',
         'education_level',
         'package_id',
         'notes',
-        'status'
+        'status',
+        'user_id'
     ];
 
     public function package() {

@@ -14,3 +14,8 @@ export const updateArticle = (id, data) =>
 
 export const deleteArticle = (id) =>
   api.delete(`/website/articles/${id}`);
+
+export const getArticleBySlug = (slug) =>
+  api.get(
+    `/website/articles/slug/${slug}`
+  );

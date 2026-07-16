@@ -72,4 +72,18 @@ class ArticleController extends Controller {
 
         return response()->json(['message' => 'Deleted successfully']);
     }
+
+    public function showBySlug($slug)
+    {
+        $article = Article::with([
+            'author',
+            'categories'
+        ])
+        ->where('slug',$slug)
+        ->firstOrFail();
+
+        $article->increment('view_count');
+
+        return new ArticleResource($article);
+    }
 }

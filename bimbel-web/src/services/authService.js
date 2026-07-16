@@ -1,8 +1,8 @@
 import api from "../api/axios";
 
-export const login = (data) => {
-  return api.post("/login", data);
-};
+export const login = (data) => {return api.post("/login", data);};
+
+export const getDashboard = () => api.get("/dashboard");
 
 export const profile = () => {
   return api.get("/profile", {

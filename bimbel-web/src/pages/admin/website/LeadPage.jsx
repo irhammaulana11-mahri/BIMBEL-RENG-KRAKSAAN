@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Eye,Trash2,} from "lucide-react";
-import { getLeads,deleteLead,} from "../../../services/leadService";
+import { Eye,Trash2,MessageCircle } from "lucide-react";
+import { getLeads,deleteLead, convertLead } from "../../../services/leadService";
 import LeadDetailModal from "../../../components/admin/lead/LeadDetailModal";
 import LeadStatusBadge from "../../../components/admin/lead/LeadStatusBadge";
 
@@ -55,8 +55,28 @@ export default function LeadPage() {
 
   const totalLead = leads.length;
   const newLead = leads.filter((x) => x.status === "NEW").length;
-  const followUp = leads.filter((x) => x.status === "FOLLOW_UP").length;
-  const registered = leads.filter((x) => x.status === "REGISTERED").length;
+  const contactedLead = leads.filter((x) => x.status === "CONTACTED").length;
+  const registeredLead = leads.filter((x) => x.status === "REGISTERED").length;
+  const rejectedLead = leads.filter((x) => x.status === "REJECTED").length;
+  const formatDate = (date) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleDateString("id-ID");
+    };
+  
+  const handleConvert = async (id) => {
+    const confirmConvert = window.confirm("Konversi lead menjadi parent?");
+
+    if (!confirmConvert) return;
+
+    try {
+      const response = await convertLead(id);
+      alert(`User berhasil dibuat\nPassword: ${response.data.temporary_password}`);
+      loadData();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Gagal convert lead");
+    }
+  };
+
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
@@ -82,13 +102,13 @@ export default function LeadPage() {
           </div>
 
           <div className="bg-white p-5 rounded-2xl shadow">
-            <p className="text-gray-500">Follow Up</p>
-            <h2 className="text-3xl font-bold text-orange-600">{followUp}</h2>
+            <p className="text-gray-500">Contacted</p>
+            <h2 className="text-3xl font-bold text-orange-600">{contactedLead}</h2>
           </div>
 
           <div className="bg-white p-5 rounded-2xl shadow">
             <p className="text-gray-500">Registered</p>
-            <h2 className="text-3xl font-bold text-green-600">{registered}</h2>
+            <h2 className="text-3xl font-bold text-green-600">{registeredLead}</h2>
           </div>
         </div>
 
@@ -97,12 +117,13 @@ export default function LeadPage() {
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
-                <th className="p-4 text-left">Nama</th>
+                <th className="p-4 text-left">Orang Tua / Wali</th>
+                <th className="p-4 text-left">Nama Siswa</th>
                 <th className="p-4 text-left">Jenjang</th>
                 <th className="p-4 text-left">Paket</th>
                 <th className="p-4 text-left">Telepon</th>
                 <th className="p-4 text-center">Status</th>
-                <th className="p-4 text-center">Tanggal</th>
+                <th className="p-4 text-center">Tanggal Register</th>
                 <th className="p-4 text-center">Aksi</th>
               </tr>
             </thead>
@@ -116,22 +137,30 @@ export default function LeadPage() {
 
               {!loading && leads.map((item) => (
                     <tr key={item.id} className="border-t">
-                      <td className="p-4 font-medium">{item.full_name}</td>
+                      <td className="p-4 font-medium">{item.parent_name}</td>
+                      <td className="p-4 font-medium">{item.student_name}</td>
                       <td className="p-4">{item.education_level}</td>
                       <td className="p-4">{item.package?.package_name || "-"}</td>
                       <td className="p-4">{item.phone}</td>
                       <td className="text-center">
                         <LeadStatusBadge status={item.status}/>
                       </td>
-                      <td className="text-center">{new Date(item.created_at).toLocaleDateString("id-ID")}</td>
+                      <td className="text-center">{formatDate(item.created_at)}</td>
                       <td>
                         <div className="flex justify-center gap-2">
-                          <button onClick={() => handleView(item)} className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                          <button onClick={() => handleView(item)} className="p-2 rounded-lg bg-blue-100 
+                                text-blue-600">
                             <Eye size={18}/>
                           </button>
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg bg-red-100 text-red-600">
+                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg bg-red-100 
+                                text-red-600">
                             <Trash2 size={18}/>
                           </button>
+                          <a href={`https://wa.me/${item.phone.replace(/^0/, "62")}`} target="_blank" rel="noreferrer"
+                            className="p-2 rounded-lg bg-green-100 text-green-600"
+                          >
+                            <MessageCircle size={18}/>
+                          </a>
                         </div>
                       </td>
                     </tr>

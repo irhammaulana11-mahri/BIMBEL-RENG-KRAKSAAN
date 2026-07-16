@@ -42,6 +42,8 @@ export default function ArticlePage() {
   const publishedCount = articles.filter((item) => item.is_published).length;
 
   return (
+    <div className="bg-white p-6 rounded-xl shadow">
+
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -138,5 +140,6 @@ export default function ArticlePage() {
 
       <ArticleModal open={openModal} onClose={() => setOpenModal(false)} data={selected} onSuccess={loadData}/>
     </>
+    </div>
   );
 }

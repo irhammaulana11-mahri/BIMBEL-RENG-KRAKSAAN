@@ -7,3 +7,5 @@ export const createActivities = (data) => api.post("/website/activities",data);
 export const updateActivities = (id,data) => api.put(`/website/activities/${id}`,data);
 
 export const deleteActivities = (id) => api.delete(`/website/activities/${id}`);
+
+export const getActivityById = (id) => api.get(`/website/activities/${id}`);

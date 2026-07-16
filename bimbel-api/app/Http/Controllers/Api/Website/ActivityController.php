@@ -37,4 +37,11 @@ class ActivityController extends Controller {
 
         return response()->json(['message' => 'Deleted successfully']);
     }
+
+    public function showPublic(Activity $activity)
+    {
+        return new ActivityResource(
+            $activity->load('images')
+        );
+    }
 }
