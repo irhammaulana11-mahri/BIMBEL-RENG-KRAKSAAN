@@ -26,19 +26,21 @@ class ParentResource extends JsonResource
                 'is_active' => $this->user?->is_active,
             ],
 
-            'students' => $this->students->map(function ($student) {
-                return [
-                    'id' => $student->id,
-                    'name' => $student->user?->name,
-                    'nis' => $student->nis,
-                    'grade' => $student->grade,
-                    'school_name' => $student->school_name,
-                ];
-            }),
+            // 'students' => $this->students->map(function ($student) {
+            //     return [
+            //         'id' => $student->id,
+            //         'name' => $student->user?->name,
+            //         'nis' => $student->nis,
+            //         'grade' => $student->grade,
+            //         'school_name' => $student->school_name,
+            //     ];
+            // }),
 
-
-            'students_count' => $this->students_count ?? $this->students->count(),
+            // 'students_count' => $this->students_count ?? $this->students->count(),
+            'students_count' => $this->whenCounted('students'),
+            'students' => StudentResource::collection($this->whenLoaded('students')),
             'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

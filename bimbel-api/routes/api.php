@@ -5,13 +5,13 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\StudentController;
 use App\Http\Controllers\Api\Admin\ParentController;
-use App\Http\Controllers\Api\Admin\TutorController;
+use App\Http\Controllers\Api\Admin\TentorController;
 use App\Http\Controllers\Api\Admin\SubjectController;
-use App\Http\Controllers\Api\Admin\TutorSubjectController;
-use App\Http\Controllers\Api\Admin\ClassController;
-use App\Http\Controllers\Api\Admin\LearningLocationController;
-use App\Http\Controllers\Api\Admin\ScheduleController;
-use App\Http\Controllers\Api\Admin\ClassStudentController;
+use App\Http\Controllers\Api\Admin\TentorSubjectController;
+use App\Http\Controllers\Api\Academic\ClassController;
+use App\Http\Controllers\Api\Academic\LearningLocationController;
+use App\Http\Controllers\Api\Academic\ScheduleController;
+use App\Http\Controllers\Api\Academic\ClassStudentController;
 use App\Http\Controllers\Api\Website\CompanyProfileController;
 use App\Http\Controllers\Api\Website\BannerController;
 use App\Http\Controllers\Api\Website\ActivityController;
@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile',[AuthController::class,'profile']);
     Route::post('/logout',[AuthController::class,'logout']);
     Route::get('/dashboard',[DashboardController::class,'index']);
+
 });
 
 Route::prefix('admin')->middleware(['auth:sanctum','role:admin,super_admin'])
@@ -61,27 +62,42 @@ Route::prefix('admin')->middleware(['auth:sanctum','role:admin,super_admin'])
         Route::apiResource('users',UserController::class);
         Route::apiResource('parents',ParentController::class);
         Route::apiResource('students',StudentController::class);
-        Route::apiResource('tutors',TutorController::class);
+
+        Route::apiResource('tentors',TentorController::class);
+        // Tentor -> Subject
+        Route::prefix('tentors/{tentor}/subjects')->group(function () {
+            Route::get('/', [TentorSubjectController::class, 'index']);
+            Route::put('/', [TentorSubjectController::class, 'assign']);
+            Route::delete('/{subject}', [TentorSubjectController::class, 'remove']);
+        });
+
         Route::apiResource('subjects',SubjectController::class);
         Route::apiResource('classes',ClassController::class);
+        // Class -> Student
+        Route::prefix('classes/{class}/students')->group(function () {
+            Route::get('/', [ClassStudentController::class, 'index']);
+            Route::put('/', [ClassStudentController::class, 'assign']);
+            Route::delete('/{student}', [ClassStudentController::class, 'remove']);
+        });
+        
         Route::apiResource('locations',LearningLocationController::class);
+        Route::get('schedules/statistics',[ScheduleController::class, 'statistics']);
         Route::apiResource('schedules',ScheduleController::class);
-
     });
 
 Route::prefix('parent')->middleware(['auth:sanctum','role:orang_tua'])
     ->group(function () {
         // Route::get('/profile',[ProfileController::class,'show']);
         // Route::put('/profile',[ProfileController::class,'update']);
-        Route::get('/students',[ParentStudentController::class,'index']);
-        Route::post('/students',[ParentStudentController::class,'store']);
-        Route::get('/students/{student}',[ParentStudentController::class,'show']);
+        // Route::get('/students',[ParentStudentController::class,'index']);
+        // Route::post('/students',[ParentStudentController::class,'store']);
+        // Route::get('/students/{student}',[ParentStudentController::class,'show']);
     });
 
-Route::prefix('tutor')->middleware(['auth:sanctum','role:tentor'])
+Route::prefix('tentor')->middleware(['auth:sanctum','role:tentor'])
     ->group(function () {
-        Route::get('/dashboard',[TutorDashboardController::class,'index']);
-        Route::get('/schedules',[TutorScheduleController::class,'index']);
+        // Route::get('/dashboard',[TutorDashboardController::class,'index']);
+        // Route::get('/schedules',[TutorScheduleController::class,'index']);
     });
 
 Route::prefix('uploads')->group(function () {
@@ -123,13 +139,13 @@ Route::prefix('uploads')->group(function () {
 //         Route::post('/parents/{id}/students',[ParentController::class,'attachStudent']);
 
 //         // Route Tutor
-//         Route::apiResource('tutors',TutorController::class);
-//         Route::post('/tutors/{id}/subjects',[TutorSubjectController::class, 'assign']);
-//         Route::get('/tutor-subjects', [TutorSubjectController::class, 'index']);
-//         Route::post('/tutor-subjects', [TutorSubjectController::class, 'store']);
-//         Route::get('/tutor-subjects/{id}', [TutorSubjectController::class, 'show']);
-//         Route::put('/tutor-subjects/{id}', [TutorSubjectController::class, 'update']);
-//         Route::delete('/tutor-subjects/{id}', [TutorSubjectController::class, 'destroy']);
+//         Route::apiResource('tentors',TutorController::class);
+//         Route::post('/tentors/{id}/subjects',[TutorSubjectController::class, 'assign']);
+//         Route::get('/tentor-subjects', [TutorSubjectController::class, 'index']);
+//         Route::post('/tentor-subjects', [TutorSubjectController::class, 'store']);
+//         Route::get('/tentor-subjects/{id}', [TutorSubjectController::class, 'show']);
+//         Route::put('/tentor-subjects/{id}', [TutorSubjectController::class, 'update']);
+//         Route::delete('/tentor-subjects/{id}', [TutorSubjectController::class, 'destroy']);
 
 //         // Subject
 //         Route::apiResource('subjects',SubjectController::class);

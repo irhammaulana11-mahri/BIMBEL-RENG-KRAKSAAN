@@ -10,11 +10,11 @@ class Lead extends Model {
     protected $table = 'website.leads';
     protected $keyType = 'string';
     public $incrementing = false;
-    public $timestamps = false;
     
     protected $fillable = [
         'parent_name',
         'phone',
+        'email',
         'student_name',
         'education_level',
         'package_id',

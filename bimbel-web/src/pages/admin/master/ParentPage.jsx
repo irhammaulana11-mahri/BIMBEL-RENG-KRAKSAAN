@@ -201,7 +201,6 @@ export default function ParentPage() {
           
           <ParentPreview parent={previewParent} onClose={() => setPreviewParent(null)}/>
       </div>
-
       </>
     </div>
   );

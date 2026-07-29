@@ -4,6 +4,8 @@ namespace App\Http\Resources\Website;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\Website\Lead;
+
 
 class LeadResource extends JsonResource
 {
@@ -14,6 +16,7 @@ class LeadResource extends JsonResource
 
             'parent_name' => $this->parent_name,
             'phone' => $this->phone,
+            'email' => $this->email,
             'student_name' => $this->student_name,
             'education_level' => $this->education_level,
 

@@ -13,12 +13,20 @@ class ParentModel extends Model {
     public $incrementing = false;
     protected $fillable = ['user_id','full_name','occupation','relationship','address'];
 
+     /**
+     * Default eager loading
+     */
+    protected $with = [
+        'user'
+    ];
 
+    
     public function user() {
         return $this->belongsTo(User::class,'user_id');
     }
 
     public function students() {
-        return $this->belongsToMany(Student::class,'master.parent_students','parent_id','student_id');
+        // return $this->hasMany(Student::class);    
+    return $this->belongsToMany(Student::class,'master.parent_students','parent_id','student_id');
     }
 }

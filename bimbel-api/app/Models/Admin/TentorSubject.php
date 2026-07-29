@@ -4,17 +4,17 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use App\Models\Admin\Tutor;
+use App\Models\Admin\Tentor;
 
-class TutorSubject extends Model {
+class TentorSubject extends Model {
     use HasUuids;
-    protected $table = 'master.tutor_subjects';
+    protected $table = 'master.tentor_subjects';
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['tutor_id','subject_id'];
+    protected $fillable = ['tentor_id','subject_id'];
 
-    public function tutor() {
-        return $this->belongsTo(Tutor::class);
+    public function tentor() {
+        return $this->belongsTo(Tentor::class);
     }
 
     public function subject() {

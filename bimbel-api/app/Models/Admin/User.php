@@ -6,7 +6,7 @@ use Database\Factories\UserFactory;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Admin\Student;
 use App\Models\Admin\ParentModel;
-use App\Models\Admin\Tutor;
+use App\Models\Admin\Tentor;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -41,7 +41,7 @@ class User extends Authenticatable {
         return $this->hasOne(ParentModel::class,'user_id');
     }
 
-    public function tutorProfile() {
-        return $this->hasOne(Tutor::class,'user_id');
+    public function tentorProfile() {
+        return $this->hasOne(Tentor::class,'user_id');
     }
 }
