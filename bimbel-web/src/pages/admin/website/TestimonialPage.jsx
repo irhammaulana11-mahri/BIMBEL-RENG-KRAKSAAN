@@ -1,7 +1,21 @@
-import { useEffect, useState } from "react";
-import { Plus,Pencil,Trash2,Star,} from "lucide-react";
-import TestimonialModal from "../../../components/admin/testimonial/TestimonialModal";
-import { getTestimonials,deleteTestimonial,} from "../../../services/testimonialService";
+import React, { useEffect, useState } from "react";
+import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
+import { getTestimonials, deleteTestimonial } from "../../../services/testimonialService";
+import TestimonialTable from "../../../components/admin/website/testimonial/TestimonialTable";
+import TestimonialModal from "../../../components/admin/website/testimonial/TestimonialModal";
+
+const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
+  <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
+    <div className="space-y-1.5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
+      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
+      <p className="text-xs text-gray-500 font-medium">{desc}</p>
+    </div>
+    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
+      <Icon className="w-6 h-6" />
+    </div>
+  </div>
+);
 
 export default function TestimonialPage() {
   const [testimonials, setTestimonials] = useState([]);
@@ -36,8 +50,7 @@ export default function TestimonialPage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Yakin ingin menghapus testimoni ini?");
-
+    const confirmDelete = window.confirm("Hapus ulasan testimoni siswa ini dari halaman utama website?");
     if (!confirmDelete) return;
     try {
       await deleteTestimonial(id);
@@ -52,129 +65,60 @@ export default function TestimonialPage() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-    <>
-      <div className="space-y-6">
+      <div className="p-6">
+      
+      {/* Header Halaman */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Testimonials Management</h1>
+          <p className="text-base text-gray-500 mt-1">
+            Kelola ulasan tingkat kepuasan, kisah sukses alumni, dan apresiasi wali murid untuk kredibilitas brand publik.
+          </p>
+        </div>
+        <button 
+          onClick={handleCreate} 
+          className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-xs self-start md:self-auto shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Tambah Testimoni
+        </button>
+      </div>
 
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Testimonials Management</h1>
-            <p className="text-gray-500">Kelola Testimoni Siswa</p>
+      {/* Baris Statistik */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <PremiumStatCard title="Total Ulasan" value={testimonials.length} desc="Kumulatif kepuasan siswa" icon={Layers} colorClass="bg-slate-50 text-slate-600" />
+        <PremiumStatCard title="Testimoni Tayang" value={activeCount} desc="Aktif di landing page" icon={CheckCircle} colorClass="bg-green-50 text-green-700" />
+        <PremiumStatCard title="Ditangguhkan" value={testimonials.length - activeCount} desc="Disimpan sebagai arsip" icon={XCircle} colorClass="bg-red-50 text-red-700" />
+      </div>
+
+      {/* Wadah Utama Tunggal Pembungkus Konten Tabel Terpisah */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        
+        {/* Render Komponen Tabel Terpisah */}
+        <TestimonialTable 
+          data={testimonials}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+
+        {/* Footer Pagination Terpadu */}
+        <div className="border-t border-gray-100 p-5 bg-gray-50/20 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p className="text-gray-600 font-medium">
+              Menampilkan <span className="text-gray-900 font-bold">1</span> - <span className="text-gray-900 font-bold">{testimonials.length}</span> dari <span className="text-gray-900 font-bold">{testimonials.length}</span> rekam data apresiasi publik
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Prev</button>
+              <button className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white">1</button>
+              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Next</button>
+            </div>
           </div>
-          <button onClick={handleCreate} className="flex items-center gap-2 px-5 py-3 bg-blue-600
-              text-white rounded-xl hover:bg-blue-700"
-          >
-            <Plus size={18} />Tambah Testimoni
-          </button>
         </div>
 
-        {/* Statistics */}
-
-        <div className="grid md:grid-cols-3 gap-4">
-
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">Total Testimoni</p>
-            <h2 className="text-3xl font-bold">{testimonials.length}</h2>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">Testimoni Aktif</p>
-            <h2 className="text-3xl font-bold text-green-600">{activeCount}
-            </h2>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">Testimoni Nonaktif</p>
-            <h2 className="text-3xl font-bold text-red-600">{testimonials.length - activeCount}
-            </h2>
-          </div>
-        </div>
-
-        {/* Table */}
-
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 text-left">Foto</th>
-                <th className="p-4 text-left">Informasi</th>
-                <th className="p-4 text-center">Rating</th>
-                <th className="p-4 text-center">Status</th>
-                <th className="p-4 text-center">Aksi</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={5} className="text-center p-8">Loading...</td>
-                </tr>
-              )}
-
-              {!loading && testimonials.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center p-8 text-gray-500">Belum ada data</td>
-                  </tr>
-                )}
-
-              {!loading && testimonials.map((item) => (
-                  <tr key={item.id} className="border-t">
-
-                    {/* Foto */}
-                    <td className="p-4">
-                      <img src={item.photo_url ? `http://127.0.0.1:8001${item.photo_url}` : "https://ui-avatars.com/api/?name=Student"}
-                        alt="" className="w-16 h-16 rounded-full object-cover"
-                      />
-                    </td>
-
-                    {/* Informasi */}
-                    <td className="p-4">
-                      <h3 className="font-semibold">{item.student_name}</h3>
-                      <p className="text-sm text-gray-500">{item.school_name}</p>
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.testimonial}</p>
-                    </td>
-
-                    {/* Rating */}
-                    <td className="text-center">
-                      <div className="flex justify-center gap-1">
-                        {Array.from({length:Number(item.rating),}).map((_, index) => (
-                            <Star key={index} size={16} className="fill-yellow-400 text-yellow-400"/>
-                          )
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td className="text-center">
-                      <span className={`px-3 py-1 rounded-full text-sm
-                          ${item.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}
-                        `}
-                      >
-                        {item.is_active ? "Aktif" : "Nonaktif"}
-                      </span>
-                    </td>
-
-                    {/* Action */}
-                    <td>
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => handleEdit(item)} className="p-2 rounded-lg bg-amber-100 text-amber-600">
-                          <Pencil size={18}/>
-                        </button>
-
-                        <button onClick={() => handleDelete(item.id)}className="p-2 rounded-lg bg-red-100 text-red-600">
-                          <Trash2 size={18}/>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       <TestimonialModal open={openModal} onClose={() => setOpenModal(false)} data={selected} onSuccess={loadData}/>
-    </>
     </div>
+  </div>
   );
 }

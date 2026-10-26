@@ -4,6 +4,9 @@ namespace App\Models\Academic;
 
 use App\Models\Admin\Subject;
 use App\Models\Admin\Tentor;
+use App\Models\Academic\ClassRoom;
+use App\Models\Academic\LearningLocation;
+use App\Models\Admin\Student;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
@@ -23,9 +26,10 @@ class Schedule extends Model {
         'start_time',
         'end_time',
         'is_active',
+        'status'
     ];
     protected $casts = ['is_active'=>'boolean','day_of_week'=>'integer',];
-    
+
 
     public function tentor() {
         return $this->belongsTo(Tentor::class);
@@ -35,12 +39,12 @@ class Schedule extends Model {
         return $this->belongsTo(Subject::class);
     }
 
-    public function classRoom() {
+    public function classroom() {
         return $this->belongsTo(ClassRoom::class, 'class_id');
     }
 
     public function location() {
-        return $this->belongsTo(LearningLocation::class,'location_id');
+        return $this->belongsTo(LearningLocation::class,'learning_location_id');
     }
 
     public function students() {
@@ -49,5 +53,9 @@ class Schedule extends Model {
 
     public function scheduleStudents() {
         return $this->hasMany(ScheduleStudent::class,'schedule_id');
+    }
+
+    public function sessions() { 
+        return $this->hasMany(ScheduleSession::class, 'schedule_id')->orderBy('session_date'); 
     }
 }

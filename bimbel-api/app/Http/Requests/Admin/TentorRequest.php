@@ -7,10 +7,8 @@ use App\Models\Admin\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class TentorRequest extends FormRequest
-{
-    public function authorize(): bool
-    {
+class TentorRequest extends FormRequest {
+    public function authorize(): bool {
         return true;
     }
 

@@ -32,6 +32,6 @@ class LearningLocation extends Model {
 
     // | RELATIONSHIPS
     public function schedules() {
-        return $this->hasMany(Schedule::class,'location_id');
+        return $this->hasMany(Schedule::class,'learning_location_id');
     }
 }

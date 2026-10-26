@@ -3,6 +3,7 @@
 namespace App\Models\Academic;
 
 use App\Models\Admin\Student;
+use App\Models\Academic\ClassRoom;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
@@ -20,4 +21,7 @@ class ClassStudent extends Model {
     public function student() {
         return $this->belongsTo(Student::class);
     }
+
+
+
 }

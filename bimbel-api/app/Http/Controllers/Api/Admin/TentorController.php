@@ -8,25 +8,33 @@ use App\Models\Admin\Tentor;
 use App\Models\Admin\User;
 use App\Models\Admin\Subject;
 use App\Http\Requests\Admin\TentorRequest;
-use App\Http\Requests\Admin\UserRequest;
 use App\Http\Resources\Admin\TentorResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
-
+use Illuminate\Validation\Rule;
 
 class TentorController extends Controller {
+
     public function index(Request $request) {
         $query = Tentor::with([
             'user',
+            'subjects.educationLevel',
+        ])
+        ->withCount([
             'subjects',
+            // Gunakan conditional check jika method relation schedules ada pada model Tentor
+            'schedules as active_schedules_count' => function ($q) {
+                if (method_exists($q->getModel(), 'schedules')) {
+                    $q->where('is_active', true);
+                }
+            },
         ]);
 
-        // | Search
+        // Search Keyword (Pencarian Nama, Email, Phone, NIK, Spesialisasi)
         if ($request->filled('keyword')) {
-            $search = $request->keyword;
+            $keyword = $request->keyword;
             $query->where(function (Builder $q) use ($keyword) {
                 $q->whereHas('user', function ($user) use ($keyword) {
                     $user->where('name', 'ILIKE', "%{$keyword}%")
@@ -39,63 +47,63 @@ class TentorController extends Controller {
             });
         }
 
-        // | Status
+        // Status Filter
         if ($request->filled('status')) {
             $status = filter_var($request->status, FILTER_VALIDATE_BOOLEAN);
             $query->where('is_active', $status);
         }
 
-        // | Specialization
+        // Specialization Filter
         if ($request->filled('specialization')) {
-            $query->where(
-                'specialization',
-                $request->specialization
-            );
+            $query->where('specialization', $request->specialization);
         }
-       
-        // | Statistics
-        $stats = [
-            'total' => Tentor::count(),
-            'active' => Tentor::where('is_active', true)->count(),
-            'without_subject' => Tentor::doesntHave('subjects')->count(),
-        ];
 
-         // | Pagination
         $perPage = $request->integer('per_page', 10);
+        $tentors = $query->latest()->paginate($perPage)->withQueryString();
 
-        $tentors = $query
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
-
-        // return response()->json([
-        //     'stats' => $stats,
-        //     'data' => TentorResource::collection($tentors),
-        //     'meta' => [
-        //         'current_page' => $tentors->currentPage(),
-        //         'last_page' => $tentors->lastPage(),
-        //         'total' => $tentors->total(),
-        //     ]
-
-        // ]);
         return TentorResource::collection($tentors);
+    }
 
+    public function summary() {
+        $total = Tentor::count();
+        $active = Tentor::where('is_active', true)->count();
+        $inactive = Tentor::where('is_active', false)->count();
+        $unplotted = Tentor::doesntHave('subjects')->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total'     => $total,
+                'active'    => $active,
+                'inactive'  => $inactive,
+                'unplotted' => $unplotted,
+            ]
+        ]);
     }
 
     public function show($id) {
-        return Tentor::with(['user','subjects'])->findOrFail($id);
+        $tentor = Tentor::with([
+            'user',
+            'subjects.educationLevel',
+        ]);
+
+        // Cek secara kondisional apakah relasi schedules terdaftar di model
+        if (method_exists(Tentor::class, 'schedules')) {
+            $tentor->with(['schedules.classroom', 'schedules.subject']);
+        }
+
+        $result = $tentor->withCount(['subjects'])->findOrFail($id);
+
+        return new TentorResource($result);
     }
 
     public function store(TentorRequest $request) {
         $data = $request->validated();
-
         DB::beginTransaction();
 
         try {
-
             $role = Role::where('role_name', 'tentor')->firstOrFail();
 
-            // Buat User Login
             $user = User::create([
                 'role_id'   => $role->id,
                 'name'      => $data['name'],
@@ -105,35 +113,25 @@ class TentorController extends Controller {
                 'is_active' => $data['is_active'] ?? true,
             ]);
 
-            // Buat Profil Tentor
             $tentor = Tentor::create([
                 'user_id'        => $user->id,
                 'specialization' => $data['specialization'],
                 'education'      => $data['education'],
-                'joining_date'   => now(),
+                'joining_date'   => $data['joining_date'] ?? now(),
                 'nik'            => $data['nik'],
                 'gender'         => $data['gender'],
                 'birth_date'     => $data['birth_date'],
                 'address'        => $data['address'] ?? null,
-                'latitude'       => $data['latitude'] ?? null,
-                'longitude'      => $data['longitude'] ?? null,
+                'photo'          => $data['photo'] ?? null,
                 'is_active'      => $data['is_active'] ?? true,
             ]);
 
-            // Plot Mata Pelajaran
             if (!empty($data['subject_ids'])) {
                 $tentor->subjects()->sync($data['subject_ids']);
             }
 
             DB::commit();
-
-            return new TentorResource(
-                $tentor->load([
-                    'user',
-                    'subjects',
-                ])
-            );
-
+            return new TentorResource($tentor->load(['user', 'subjects']));
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
@@ -141,29 +139,58 @@ class TentorController extends Controller {
     }
 
     public function update(TentorRequest $request, Tentor $tentor) {
-        $tentor->update($request->validated());
-        $tentor->user->update($request->validated());
+        $data = $request->validated();
 
-        return new TentorResource(
-                $tentor->fresh()->load(['user','subjects',]));
+        $tentor->update($data);
+        if ($tentor->user) {
+            $tentor->user->update([
+                'name'      => $data['name'] ?? $tentor->user->name,
+                'phone'     => $data['phone'] ?? $tentor->user->phone,
+                'is_active' => $data['is_active'] ?? $tentor->user->is_active,
+            ]);
+        }
+
+        return new TentorResource($tentor->fresh()->load(['user', 'subjects']));
+    }
+
+    public function toggleStatus(Tentor $tentor) {
+        $newStatus = !$tentor->is_active;
+
+        DB::transaction(function () use ($tentor, $newStatus) {
+            $tentor->update(['is_active' => $newStatus]);
+            if ($tentor->user) {
+                $tentor->user->update(['is_active' => $newStatus]);
+            }
+        });
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Status tentor berhasil diperbarui.',
+            'is_active' => $newStatus,
+        ]);
     }
 
     public function destroy($id) {
-        Tentor::findOrFail($id)->delete();
+        $tentor = Tentor::findOrFail($id);
+        if ($tentor->user) {
+            $tentor->user->delete();
+        }
+        $tentor->delete();
 
-        return ['success' => true];
+        return response()->json(['success' => true, 'message' => 'Data tentor berhasil dihapus.']);
     }
 
     public function assign(Request $request, Tentor $tentor) {
         $request->validate([
-            'subject_ids' => ['required', 'array'],
+            'subject_ids'   => ['nullable', 'array'],
+            'subject_ids.*' => ['nullable', Rule::exists(Subject::class, 'id')],
         ]);
 
-        $tentor->subjects()->sync($request->subject_ids);
+        $tentor->subjects()->sync($request->subject_ids ?? []);
 
         return response()->json([
             'success' => true,
-            'message' => 'Subject berhasil diperbarui.'
+            'message' => 'Plotting mata pelajaran berhasil diperbarui.'
         ]);
     }
 }

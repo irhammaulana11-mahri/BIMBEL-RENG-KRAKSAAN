@@ -41,7 +41,7 @@ class User extends Authenticatable {
         return $this->hasOne(ParentModel::class,'user_id');
     }
 
-    public function tentorProfile() {
+    public function tentor() {
         return $this->hasOne(Tentor::class,'user_id');
     }
 }

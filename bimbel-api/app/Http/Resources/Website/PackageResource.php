@@ -12,13 +12,13 @@ class PackageResource extends JsonResource {
             'package_name' => $this->package_name,
             'education_level' => $this->education_level,
             'description' => $this->description,
-            'price' => $this->price,
+            'default_price' => $this->default_price,
             'meeting_per_month' => $this->meeting_per_month,
             'duration_minutes' => $this->duration_minutes,
-            'is_home_visit' => $this->is_home_visit,
-            'is_building_class' => $this->is_building_class,
             'is_active' => $this->is_active,
-            'card_color' => $this->card_color,
+            'class_type' => $this->class_type,
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];
     }
 }

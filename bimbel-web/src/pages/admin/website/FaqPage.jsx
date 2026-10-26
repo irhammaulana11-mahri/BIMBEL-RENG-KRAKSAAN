@@ -1,7 +1,21 @@
-import { useEffect, useState } from "react";
-import { Plus,Pencil,Trash2, } from "lucide-react";
-import { getFaqs,deleteFaq, } from "../../../services/faqService";
-import FaqModal from "../../../components/admin/faq/FaqModal";
+import React, { useEffect, useState } from "react";
+import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
+import { getFaqs, deleteFaq } from "../../../services/faqService";
+import FaqTable from "../../../components/admin/website/faq/FaqTable";
+import FaqModal from "../../../components/admin/website/faq/FaqModal";
+
+const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
+  <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
+    <div className="space-y-1.5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
+      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
+      <p className="text-xs text-gray-500 font-medium">{desc}</p>
+    </div>
+    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
+      <Icon className="w-6 h-6" />
+    </div>
+  </div>
+);
 
 export default function FaqPage() {
   const [faqs, setFaqs] = useState([]);
@@ -17,7 +31,7 @@ export default function FaqPage() {
     try {
       setLoading(true);
       const response = await getFaqs();
-      setFaqs(response.data?.data || response.data || []);
+      setFaqs(response.data.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -36,145 +50,75 @@ export default function FaqPage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete =
-      window.confirm(
-        "Yakin ingin menghapus FAQ ini?"
-      );
-
+    const confirmDelete = window.confirm("Hapus daftar tanya jawab (FAQ) ini dari website?");
     if (!confirmDelete) return;
-
     try {
       await deleteFaq(id);
-
       loadData();
     } catch (error) {
       console.error(error);
-
-      alert(
-        "Gagal menghapus FAQ"
-      );
+      alert("Gagal menghapus data");
     }
   };
 
-  const activeCount = Array.isArray(faqs) ? faqs.filter((item) => item.is_active ).length : 0;
+  const activeCount = faqs.filter((item) => item.is_active).length;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-    <>
-      <div className="space-y-6">
+      <div className="p-6">
+      
+      {/* Header Halaman (text-3xl) + Tombol Sejajar */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">FAQ Management</h1>
+          <p className="text-base text-gray-500 mt-1">
+            Kelola daftar pertanyaan umum (Frequently Asked Questions) untuk mempermudah calon wali murid mendapatkan informasi.
+          </p>
+        </div>
+        <button 
+          onClick={handleCreate} 
+          className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-xs self-start md:self-auto shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Tambah FAQ Baru
+        </button>
+      </div>
 
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div> 
-            <h1 className="text-3xl font-bold">FAQ Management</h1>
-            <p className="text-gray-500"> Kelola pertanyaan yang sering ditanyakan</p>
+      {/* Baris Statistik */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <PremiumStatCard title="Total FAQ" value={faqs.length} desc="Pertanyaan terdaftar" icon={Layers} colorClass="bg-slate-50 text-slate-600" />
+        <PremiumStatCard title="FAQ Aktif" value={activeCount} desc="Tayang di landing page" icon={CheckCircle} colorClass="bg-green-50 text-green-700" />
+        <PremiumStatCard title="Nonaktif" value={faqs.length - activeCount} desc="Draft / Arsip internal" icon={XCircle} colorClass="bg-red-50 text-red-700" />
+      </div>
+
+      {/* Kontainer Utama Tabel */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        
+        {/* Render Komponen Tabel Pecahan */}
+        <FaqTable 
+          data={faqs}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+
+        {/* Footer Pagination Terpadu */}
+        <div className="border-t border-gray-100 p-5 bg-gray-50/20 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p className="text-gray-600 font-medium">
+              Menampilkan <span className="text-gray-900 font-bold">1</span> - <span className="text-gray-900 font-bold">{faqs.length}</span> dari <span className="text-gray-900 font-bold">{faqs.length}</span> data records FAQ
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Prev</button>
+              <button className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white">1</button>
+              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Next</button>
+            </div>
           </div>
-
-          <button onClick={handleCreate} className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700
-              text-white rounded-xl "
-          >
-            <Plus size={18} />Tambah FAQ
-          </button>
         </div>
 
-        {/* Statistics */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">Total FAQ</p>
-            <h2 className="text-3xl font-bold">{faqs.length}
-            </h2>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">FAQ Aktif</p>
-            <h2 className="text-3xl font-bold text-green-600">{activeCount}</h2>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-5">
-            <p className="text-gray-500">FAQ Nonaktif</p>
-            <h2 className="text-3xl font-bold text-red-600">{faqs.length - activeCount}</h2>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 text-left">Pertanyaan</th>
-                <th className="p-4 text-left">Jawaban</th>
-                <th className="p-4 text-center">Urutan</th>
-                <th className="p-4 text-center">Status</th>
-                <th className="p-4 text-center">Aksi</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={5} className="text-center p-8">Loading...</td>
-                </tr>
-              )}
-
-              {!loading && faqs.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center p-8 text-gray-500">Belum ada data FAQ
-                    </td>
-                  </tr>
-                )}
-
-              {!loading && faqs.map((item) => (
-                    <tr key={item.id} className="border-t">
-
-                      {/* Question */}
-                      <td className="p-4">
-                        <div className="font-semibold">{item.question}</div>
-                      </td>
-
-                      {/* Answer */}
-                      <td className="p-4">
-                        <div className="text-sm text-gray-600 line-clamp-2 max-w-xl">
-                          {item.answer}
-                        </div>
-                      </td>
-
-                      {/* Sort Order */}
-                      <td className="text-center">
-                        {item.sort_order}
-                      </td>
-
-                      {/* Status */}
-                      <td className="text-center">
-                        <span className={`px-3 py-1 rounded-full text-sm
-                            ${item.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}
-                          `}
-                        >
-                          {item.is_active ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td>
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => handleEdit(item)} className="p-2 rounded-lg bg-amber-100 text-amber-600">
-                            <Pencil size={18}/>
-                          </button>
-
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg bg-red-100 text-red-600">
-                            <Trash2 size={18}/>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                )}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       <FaqModal open={openModal} onClose={() => setOpenModal(false)} data={selected} onSuccess={loadData}/>
-    </>
     </div>
+  </div>
   );
 }

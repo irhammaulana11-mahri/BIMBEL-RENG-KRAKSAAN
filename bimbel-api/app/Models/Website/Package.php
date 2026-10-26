@@ -2,6 +2,8 @@
 
 namespace App\Models\Website;
 
+use App\Models\Academic\ClassSubject;
+use App\Models\Website\Lead;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
@@ -32,5 +34,9 @@ class Package extends Model {
 
     public function leads() {
         return $this->hasMany(Lead::class,'package_id');
+    }
+
+    public function classes_subject() {
+        return $this->hasMany(ClassSubject::class,'package_subject_id');
     }
 }

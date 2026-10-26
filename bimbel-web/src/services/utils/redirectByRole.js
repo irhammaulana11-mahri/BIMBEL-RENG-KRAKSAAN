@@ -1,21 +1,27 @@
-export const redirectByRole = (role,navigate) => {
-
-  switch (role) {
-
-    case "super_admin":navigate("/admin/dashboard");
+export const redirectByRole = (user, navigate) => {
+  switch (user.role.role_name) {
+    case "admin":
+    case "superadmin":
+      navigate("/admin/dashboard");
       break;
-
-    case "admin":navigate("/admin/dashboard");
+      
+    case "orang_tua":
+    case "parent":
+      navigate("/parent/dashboard");
       break;
-
-    case "orang_tua":navigate("/parent/dashboard");
+      
+    case "tutor":
+    case "tentor":
+      navigate("/tentor/dashboard"); // Arahkan ke dashboard tutor kelak
       break;
-
-    case "tentor":navigate("/tutor/dashboard");
+      
+    case "student":
+    case "siswa":
+      navigate("/student/dashboard"); // Arahkan ke dashboard siswa kelak
       break;
-
+      
     default:
-      navigate("/");
+      navigate("/"); // Fallback ke beranda jika role tidak dikenali
+      break;
   }
-
 };

@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
-
 import "swiper/css";
 import "swiper/css/pagination";
-
 import { getBanners } from "../../services/bannerService";
 
-export default function HeroBannerSection() {
-  const [banners, setBanners] = useState([]);
+export default function HeroBannerSection() {const [banners, setBanners] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -64,7 +61,7 @@ export default function HeroBannerSection() {
 
             {/* STATS */}
 
-            <div className="grid grid-cols-3 border-t pt-8">
+            {/* <div className="grid grid-cols-3 border-t pt-8">
               <div>
                 <h3 className="text-3xl font-bold text-blue-600">500+</h3>
                 <p className="text-gray-600 mt-2">Siswa</p>
@@ -79,7 +76,7 @@ export default function HeroBannerSection() {
                 <h3 className="text-3xl font-bold text-blue-600">95%</h3>
                 <p className="text-gray-600 mt-2">Kelulusan</p>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* RIGHT IMAGE SWIPER */}

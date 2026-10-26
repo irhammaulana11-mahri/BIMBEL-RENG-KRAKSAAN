@@ -25,9 +25,7 @@ class StudentController extends Controller
 
     public function index(Request $request) {
         $query = Student::query()
-            ->with([
-                'parents.user',
-            ]);
+            ->with(['user','parents.user',]);
         
          // | Keyword Search
         if ($request->filled('keyword')) {
@@ -67,7 +65,7 @@ class StudentController extends Controller
 
     public function show(Student $student) {
         return new StudentResource(
-            Student::with(['user','parents.user'])
+            Student::with(['user','parents.user','educationLevel'])
             ->findOrFail($id)
         );
     }
@@ -95,6 +93,21 @@ class StudentController extends Controller
             $student->fresh()->load(['user','parents.user',])
         );
     }
+
+
+    public function toggleStatus(Student $student) {
+        $student->update([
+            'is_active' => !$student->is_active
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Status keaktifan siswa berhasil diubah.',
+            'is_active' => $student->is_active,
+            'data'      => new StudentResource($student->load(['user', 'parents.user', 'educationLevel']))
+        ]);
+    }
+    
 
     public function destroy(Student $student) {
         Student::findOrFail($id)->delete();

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Admin\Subject;
 use App\Models\Admin\User;
+use App\Models\Academic\Schedule;
+use App\Models\Academic\ScheduleSession;
 
 
 class Tentor extends Model {
@@ -42,6 +44,10 @@ class Tentor extends Model {
     }
 
     public function schedules() {
-    return $this->hasMany(Schedule::class,'tentor_id');
-}
+        return $this->hasMany(Schedule::class,'tentor_id');
+    }
+
+    public function sessions() {
+        return $this->hasMany(ScheduleSession::class,'tentor_id');
+    }
 }

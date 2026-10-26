@@ -7,6 +7,7 @@ use App\Models\Admin\User;
 use App\Models\Academic\ClassRoom;
 use App\Models\Academic\Schedule;
 use App\Models\Academic\ScheduleStudent;
+use App\Models\Admin\EducationLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
@@ -42,4 +43,9 @@ class Student extends Model {
     public function scheduleStudents() {
         return $this->hasMany(ScheduleStudent::class,'student_id');
     }
+
+    public function educationLevel() {
+        return $this->belongsTo(EducationLevel::class,'education_level_id');
+    }
+    
 }

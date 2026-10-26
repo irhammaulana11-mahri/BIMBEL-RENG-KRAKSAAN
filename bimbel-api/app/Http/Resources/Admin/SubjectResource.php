@@ -3,31 +3,34 @@
 namespace App\Http\Resources\Admin;
 
 use Illuminate\Http\Request;
-use App\Models\Admin\User;
-use App\Models\Admin\Tentor;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class SubjectResource extends JsonResource
-{
-    public function toArray(Request $request): array
-    {
+
+
+class SubjectResource extends JsonResource {
+    public function toArray(Request $request): array {
         return [
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'education_level' => $this->education_level,
+            'education_level_id' => $this->education_level_id,
+            'education_level' => $this->whenLoaded('educationLevel', fn() => $this->educationLevel),
+            // Ambil display_name dari relasi educationLevel
+            'education_level_name' => $this->whenLoaded('educationLevel', fn() => $this->educationLevel->display_name),
             'description' => $this->description,
             'is_active' => (bool)$this->is_active,
-            'total_tentors' => $this->whenLoaded(
-                'tentors',
-                fn() => $this->tentors->count()
-            ),
+            
+            // Statistik Agregat (Count)
+            'curriculums_count' => $this->curriculums_count ?? 0,
+            'materials_count'   => $this->materials_count ?? 0,
+            'schedules_count'   => $this->schedules_count ?? 0,
+            'exams_count'       => $this->exams_count ?? 0,
+            'tentors_count'     => $this->tentors_count ?? 0,
 
-            'tentors' => TentorResource::collection(
-                $this->whenLoaded('tentors')
-            ),
-            // 'materials_count'=>$this->materials()->count(),
-            // 'curriculum_count'=>$this->curriculum()->count(),
+            // Relasi Detail
+            'curriculums' => $this->whenLoaded('curriculums'),
+            'tentors' => TentorResource::collection($this->whenLoaded('tentors')),
+            
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

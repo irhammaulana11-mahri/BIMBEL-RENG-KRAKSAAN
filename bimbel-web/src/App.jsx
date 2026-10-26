@@ -29,17 +29,9 @@ function App() {
         </div>
         <div>
           <h1>{company?.company_name}d</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <p>Edit <code>src/App.jsx</code> and save to test <code>HMR</code></p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+        <button type="button" className="counter" onClick={() => setCount((count) => count + 1)}>Count is {count}</button>
       </section>
 
       <div className="ticks"></div>
@@ -54,15 +46,11 @@ function App() {
           <ul>
             <li>
               <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
+                <img className="logo" src={viteLogo} alt="" />Explore Vite</a>
             </li>
             <li>
               <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
+                <img className="button-icon" src={reactLogo} alt="" />Learn more</a>
             </li>
           </ul>
         </div>

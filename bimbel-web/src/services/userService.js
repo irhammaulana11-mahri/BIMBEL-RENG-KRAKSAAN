@@ -1,5 +1,5 @@
 import api from "../api/axios";
 
-export const getCompanyProfile = () => api.get("/website/company-profiles");
-export const createCompanyProfile = (payload) => api.post("/website/company-profiles", payload);
-export const updateCompanyProfile = (id,payload) =>api.put(`/website/company-profiles/${id}`,payload);
+export const getCurrentUser = () => {return api.get("/profile");};
+export const getUsers = (params = {}) => {return api.get("/admin/users", { params });};
+export const getUserById = (id) => {return api.get(`/admin/users/${id}`);};
