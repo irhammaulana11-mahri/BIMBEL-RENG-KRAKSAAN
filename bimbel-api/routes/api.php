@@ -29,6 +29,16 @@ use App\Http\Controllers\Api\Academic\SessionActivityController;
 
 // Exam
 use App\Http\Controllers\Api\Exam\ExamController;
+use App\Http\Controllers\Api\Exam\QuestionController;
+use App\Http\Controllers\Api\Exam\ExamResultController;
+
+// Finance
+use App\Http\Controllers\Api\Finance\InvoiceController;
+use App\Http\Controllers\Api\Finance\PaymentController;
+use App\Http\Controllers\Api\Finance\PayrollController;
+use App\Http\Controllers\Api\Finance\OperationalExpenseController;
+use App\Http\Controllers\Api\ParentPortal\ParentBillingController;
+use App\Http\Controllers\Api\TentorPortal\TentorHonorController;
 
 // Website Public / CMS
 use App\Http\Controllers\Api\Website\CompanyProfileController;
@@ -45,6 +55,10 @@ use App\Http\Controllers\Api\Website\ArticleController;
 // TentorPortal
 use App\Http\Controllers\Api\TentorPortal\TentorDashboardController;
 use App\Http\Controllers\Api\TentorPortal\TentorScheduleController;
+use App\Http\Controllers\Api\TentorPortal\TentorExamResultController;
+
+// StudentPortal
+use App\Http\Controllers\Api\StudentPortal\StudentExamController;
 
 
 
@@ -205,7 +219,50 @@ Route::prefix('admin')
             Route::delete('/{sessionActivity}',[SessionActivityController::class, 'destroy']);
         });
 
+        Route::prefix('exams/{exam}')->group(function () {
+            Route::patch('/status', [ExamController::class, 'changeStatus']);
+            Route::get('/questions', [QuestionController::class, 'index']);
+            Route::post('/questions', [QuestionController::class, 'store']);
+            Route::put('/questions/reorder', [QuestionController::class, 'reorder']);
+            Route::put('/questions/{question}', [QuestionController::class, 'update']);
+            Route::delete('/questions/{question}', [QuestionController::class, 'destroy']);
+            Route::get('/results', [ExamResultController::class, 'index']);
+        });
         Route::apiResource('exams', ExamController::class);
+        Route::get('exam-results/{result}', [ExamResultController::class, 'show']);
+        Route::put('exam-results/{result}/grade', [ExamResultController::class, 'grade']);
+
+        // --- KEUANGAN: TAGIHAN, PEMBAYARAN, HONOR, PENGELUARAN ---
+        Route::prefix('finance')->group(function () {
+            Route::get('/invoices', [InvoiceController::class, 'index']);
+            Route::post('/invoices', [InvoiceController::class, 'store']);
+            Route::post('/invoices/generate', [InvoiceController::class, 'generate']);
+            Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+            Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel']);
+
+            Route::get('/payments', [PaymentController::class, 'index']);
+            Route::post('/payments', [PaymentController::class, 'store']);
+            Route::get('/payments/{payment}', [PaymentController::class, 'show']);
+            Route::get('/payments/{payment}/proof', [PaymentController::class, 'proof']);
+            Route::patch('/payments/{payment}/approve', [PaymentController::class, 'approve']);
+            Route::patch('/payments/{payment}/reject', [PaymentController::class, 'reject']);
+
+            Route::get('/payrolls', [PayrollController::class, 'index']);
+            Route::get('/payrolls/preview', [PayrollController::class, 'preview']);
+            Route::post('/payrolls/generate', [PayrollController::class, 'generate']);
+            Route::get('/payrolls/{payroll}', [PayrollController::class, 'show']);
+            Route::patch('/payrolls/{payroll}/approve', [PayrollController::class, 'approve']);
+            Route::post('/payrolls/{payroll}/transfers', [PayrollController::class, 'transfer']);
+            Route::delete('/payrolls/{payroll}', [PayrollController::class, 'destroy']);
+            Route::get('/tentor-rates', [PayrollController::class, 'rates']);
+            Route::patch('/tentor-rates/{tentor}', [PayrollController::class, 'updateRate']);
+
+            Route::get('/cashflow', [OperationalExpenseController::class, 'cashflow']);
+            Route::get('/expenses', [OperationalExpenseController::class, 'index']);
+            Route::post('/expenses', [OperationalExpenseController::class, 'store']);
+            Route::put('/expenses/{expense}', [OperationalExpenseController::class, 'update']);
+            Route::delete('/expenses/{expense}', [OperationalExpenseController::class, 'destroy']);
+        });
 
         Route::prefix('attendances')->group(function () {
             Route::get('/sessions/{session}/students', [AttendanceController::class, 'getStudentForm']);
@@ -227,6 +284,13 @@ Route::prefix('admin')
 Route::prefix('parent')
     ->middleware(['auth:sanctum', 'role:orang_tua'])
     ->group(function () {
+        // Tagihan & pembayaran anak
+        Route::get('/invoices', [ParentBillingController::class, 'invoices']);
+        Route::get('/invoices/{id}', [ParentBillingController::class, 'showInvoice']);
+        Route::post('/invoices/{id}/payments', [ParentBillingController::class, 'submitPayment']);
+        Route::get('/payments', [ParentBillingController::class, 'payments']);
+        Route::get('/payments/{id}/proof', [ParentBillingController::class, 'proof']);
+
         // Route::get('/profile', [ParentProfileController::class, 'show']);
         // Route::get('/students', [ParentStudentController::class, 'index']);
     });
@@ -256,4 +320,30 @@ Route::prefix('tentor')
         Route::patch('/sessions/{id}/activities/{activity}/complete', [TentorScheduleController::class, 'completeActivity']);
         Route::patch('/sessions/{id}/activities/{activity}/cancel', [TentorScheduleController::class, 'cancelActivity']);
         Route::delete('/sessions/{id}/activities/{activity}', [TentorScheduleController::class, 'deleteActivity']);
+
+        // Riwayat honor
+        Route::get('/honor', [TentorHonorController::class, 'index']);
+
+        // Hasil ujian & penilaian essay
+        Route::get('/exam-results', [TentorExamResultController::class, 'index']);
+        Route::get('/exam-results/{id}', [TentorExamResultController::class, 'show']);
+        Route::put('/exam-results/{id}/grade', [TentorExamResultController::class, 'grade']);
+    });
+
+
+/*
+|--------------------------------------------------------------------------
+| 6. STUDENT PORTAL ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('student')
+    ->middleware(['auth:sanctum', 'role:siswa'])
+    ->group(function () {
+        // Ujian online
+        Route::get('/exams', [StudentExamController::class, 'index']);
+        Route::post('/exams/{exam}/start', [StudentExamController::class, 'start']);
+        Route::get('/exam-results/{id}', [StudentExamController::class, 'show']);
+        Route::put('/exam-results/{id}/answers', [StudentExamController::class, 'saveAnswer']);
+        Route::post('/exam-results/{id}/submit', [StudentExamController::class, 'submit']);
     });

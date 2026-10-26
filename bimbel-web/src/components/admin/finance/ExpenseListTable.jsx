@@ -1,53 +1,36 @@
 import React from "react";
-import { Trash2, Landmark, Tag } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { formatRupiah } from "@/utils/format";
 
-export default function ExpenseListTable({ data, onDelete }) {
-  const formatIDR = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
-
+export default function ExpenseListTable({ data, loading, onEdit, onDelete }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/30 text-xs font-semibold uppercase tracking-wider text-gray-600">
-            <th className="p-4">Tanggal / Kategori</th>
-            <th className="p-4">Detail Keterangan Biaya</th>
-            <th className="p-4 text-right">Nominal Biaya</th>
-            <th className="p-4 text-center">Aksi</th>
-          </tr>
+      <table className="w-full text-left text-sm min-w-[680px]">
+        <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
+          <tr><th className="p-4">Tanggal</th><th className="p-4">Kategori</th><th className="p-4">Keterangan</th><th className="p-4 text-right">Nominal</th><th className="p-4 text-center">Aksi</th></tr>
         </thead>
-        <tbody className="divide-y divide-gray-50 text-xs text-gray-700">
-          {data.length === 0 ? (
-            <tr>
-              <td colSpan="4" className="p-6 text-center text-gray-400">Tidak ada pengeluaran operasional terdaftar bulan ini.</td>
+        <tbody className="divide-y divide-gray-50">
+          {loading ? (
+            <tr><td colSpan={5} className="p-6 text-center text-gray-400">Memuat pengeluaran...</td></tr>
+          ) : data.length === 0 ? (
+            <tr><td colSpan={5} className="p-6 text-center text-gray-400">Belum ada pengeluaran operasional pada periode ini.</td></tr>
+          ) : data.map(item => (
+            <tr key={item.id} className="hover:bg-gray-50/50">
+              <td className="p-4 text-gray-600">{item.expense_date}</td>
+              <td className="p-4"><span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">{item.category_label}</span></td>
+              <td className="p-4">
+                <p className="font-semibold text-gray-800">{item.title}</p>
+                <p className="text-xs text-gray-400">{item.payment_method === "CASH" ? "Tunai" : "Transfer"}{item.note ? ` • ${item.note}` : ""}</p>
+              </td>
+              <td className="p-4 text-right font-bold text-rose-700">{formatRupiah(item.amount)}</td>
+              <td className="p-4">
+                <div className="flex justify-center gap-1">
+                  <button onClick={() => onEdit(item)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Edit"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => onDelete(item)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Hapus"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </td>
             </tr>
-          ) : (
-            data.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="p-4">
-                  <p className="font-bold text-gray-900">{row.date}</p>
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium mt-1">
-                    <Tag className="w-2.5 h-2.5" /> {row.category}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <p className="font-semibold text-gray-800 text-sm">{row.title}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Catatan: {row.note || "-"}</p>
-                </td>
-                <td className="p-4 text-right font-mono font-bold text-red-600 text-sm">
-                  -{formatIDR(row.amount)}
-                </td>
-                <td className="p-4 text-center">
-                  <button
-                    onClick={() => onDelete(row.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Hapus Log Kas Keluar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
     </div>

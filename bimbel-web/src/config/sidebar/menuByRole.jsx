@@ -1,8 +1,7 @@
 import { adminMenu } from "./adminMenu";
 import { parentMenu } from "./parentMenu";
 import { tentorMenu } from "./tentorMenu";
-
-// Import tutorMenu dan studentMenu saat filenya sudah dibuat
+import { studentMenu } from "./studentMenu";
 
 export const getMenuByRole = (role) => {
   const normalizedRole = role?.toLowerCase();
@@ -22,7 +21,7 @@ export const getMenuByRole = (role) => {
 
     case "student":
     case "siswa":
-      return []; 
+      return studentMenu;
 
     default:
       return [];

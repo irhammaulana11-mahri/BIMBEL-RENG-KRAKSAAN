@@ -27,10 +27,12 @@ class Tentor extends Model {
         'latitude',
         'longitude',
         'is_active',
+        'rate_per_session',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'rate_per_session' => 'decimal:2',
         'birth_date' => 'date',
         'joining_date' => 'date',
     ];

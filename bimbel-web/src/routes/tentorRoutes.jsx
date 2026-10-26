@@ -6,6 +6,7 @@ import TentorAttendancePage from "../pages/tentor/TentorAttendancePage";
 import TentorEvaluationPage from "../pages/tentor/TentorEvaluationPage";
 import TentorProfilePage from "../pages/tentor/TentorProfilePage";
 import TentorSessionWorkspacePage from "../components/tentor/TentorSessionWorkspacePage";
+import TentorHonorPage from "../pages/tentor/TentorHonorPage";
 
 export const tentorRoutes = [
     {path:"dashboard",element:<TentorDashboard/>},
@@ -15,6 +16,7 @@ export const tentorRoutes = [
     {path:"students", element:<TentorStudentPage/>},
     {path:"attendances", element:<TentorAttendancePage/>},
     {path:"evaluations", element:<TentorEvaluationPage/>},
+    {path:"honor", element:<TentorHonorPage/>},
     {path:"profile", element:<TentorProfilePage/>},
     
 ];

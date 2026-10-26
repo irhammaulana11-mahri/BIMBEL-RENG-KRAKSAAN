@@ -289,6 +289,11 @@ export default function TentorSessionWorkspacePage() {
                       <h3 className={`text-base font-bold leading-tight ${isCompleted || isCancelled ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{act.title}</h3>
                       {act.reference_title && <p className="text-xs font-semibold text-indigo-600 mt-0.5">{act.type === 'EXAM' ? '📝' : '📚'} {act.reference_title}</p>}
                       {act.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{act.description}</p>}
+                      {act.type === 'EXAM' && act.status !== 'READY' && (
+                        <button onClick={() => navigate(`/tentor/evaluations?activity=${act.id}`)} className="text-xs font-bold text-rose-600 hover:underline mt-1">
+                          {act.exam_submitted}/{totalStudents} siswa mengumpulkan{act.exam_pending > 0 ? ` • ${act.exam_pending} perlu dinilai` : ''} →
+                        </button>
+                      )}
                       <p className="text-xs font-bold text-gray-400 mt-1">{act.start_time || '--:--'} - {act.end_time || '--:--'} WIB</p>
                     </div>
 

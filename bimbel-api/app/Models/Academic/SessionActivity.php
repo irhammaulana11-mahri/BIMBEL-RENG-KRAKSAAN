@@ -39,6 +39,11 @@ class SessionActivity extends Model {
         return $this->morphTo();
     }
 
+    // Hasil ujian siswa untuk aktivitas EXAM
+    public function examResults() {
+        return $this->hasMany(\App\Models\Exam\ExamResult::class, 'session_activity_id');
+    }
+
     public function creator() {
         return $this->belongsTo(User::class, 'created_by');
     }

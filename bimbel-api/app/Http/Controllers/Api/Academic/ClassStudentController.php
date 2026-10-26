@@ -13,10 +13,11 @@ use Illuminate\Http\Request;
 
 class ClassStudentController extends Controller {
     public function index(ClassRoom $class) {
+        // Resource membaca relasi ->student, jadi kirim baris ClassStudent (bukan Student)
         return ClassStudentResource::collection(
             $class
-                ->students()
-                ->with('user')
+                ->classStudents()
+                ->with('student.user')
                 ->get()
         );
     }

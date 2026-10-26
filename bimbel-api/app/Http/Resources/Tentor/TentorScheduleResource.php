@@ -55,6 +55,8 @@ class TentorScheduleResource extends JsonResource {
                         'end_time'        => $act->end_time ? substr($act->end_time, 0, 5) : null,
                         'activityable_id' => $act->activityable_id,
                         'reference_title' => $reference->title ?? null,
+                        'exam_submitted'  => $act->activity_type === 'EXAM' ? (int) ($act->exam_submitted_count ?? 0) : null,
+                        'exam_pending'    => $act->activity_type === 'EXAM' ? (int) ($act->exam_pending_count ?? 0) : null,
                         'started_at'      => $act->started_at,
                         'completed_at'    => $act->completed_at,
                     ];

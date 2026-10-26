@@ -16,6 +16,7 @@ class ClassResource extends JsonResource {
             'education_level_id'   => $this->education_level_id,
             'package_id'           => $this->package_id,
             'package_name'         => $this->whenLoaded('package', fn() => $this->package->package_name),
+            'package_price'        => $this->whenLoaded('package', fn() => (float) $this->package->default_price),
             'meeting_per_month'    => $this->meeting_per_month,
             'duration_minutes'     => $this->duration_minutes,
             'learning_location_id' => $this->learning_location_id,

@@ -92,3 +92,5 @@ export const getStudentsForClass = async (params = {}) => {
 export const getUnscheduledClasses = (params) => {
   return api.get("/admin/classes/unscheduled", { params });
 };
+// Peserta kelas: [{ id, student: { id, nis, name, ... } }]
+export const getClassStudents = (classId) => api.get(`/admin/classes/${classId}/students`);

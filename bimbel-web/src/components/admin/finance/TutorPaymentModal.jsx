@@ -1,93 +1,64 @@
 import React, { useEffect, useState } from "react";
-import { X, Landmark } from "lucide-react";
+import { X, Send } from "lucide-react";
+import { transferPayroll } from "@/services/finance/financeService";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { formatRupiah, todayDate } from "@/utils/format";
 
-export default function TutorPaymentModal({ open, onClose, data, onSubmit, loading }) {
-  const [formData, setFormData] = useState({
-    source_bank: "",
-    transfer_reference: "",
-    transfer_date: new Date().toISOString().split('T')[0], // Default tanggal hari ini
-  });
+/**
+ * Catat transfer honor satu tentor pada payroll yang sudah disetujui.
+ */
+export default function TutorPaymentModal({ open, payrollId, tentor, onClose, onDone }) {
+  const [form, setForm] = useState({ transfer_date: todayDate(), source_account: "", reference_no: "", note: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open) {
-      setFormData({ source_bank: "", transfer_reference: "", transfer_date: new Date().toISOString().split('T')[0] });
-    }
-  }, [open]);
+    if (!open) return;
+    setForm({ transfer_date: todayDate(), source_account: "", reference_no: "", note: "" });
+    setError("");
+  }, [open, tentor]);
 
-  if (!open || !data) return null;
+  if (!open || !tentor) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(data.id, formData);
+    setSaving(true);
+    setError("");
+    try {
+      await transferPayroll(payrollId, { ...form, tentor_id: tentor.tentor_id });
+      onDone(`Transfer honor ${tentor.tentor_name} dicatat.`);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal mencatat transfer."));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const formatIDR = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl relative">
         <button onClick={onClose} className="absolute right-6 top-6 text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+        <h2 className="text-xl font-bold text-gray-900">Transfer Honor</h2>
+        <p className="text-sm text-gray-500 mb-5">{tentor.tentor_name} • {tentor.total_sessions} sesi</p>
 
-        <div className="mb-5">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-1.5">
-            <Landmark className="w-5 h-5 text-blue-600" /> Catat Transfer Payroll
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Gaji Mengajar: <span className="font-bold text-gray-700">{data.tutor_name}</span></p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex justify-between items-center">
-            <span className="font-medium">Total Nominal Transfer:</span>
-            <strong className="text-sm font-mono">{formatIDR(data.calculated_salary)}</strong>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="bg-emerald-50 rounded-2xl p-4 flex justify-between items-center">
+            <span className="text-sm font-medium text-emerald-800">Total Honor</span>
+            <span className="text-2xl font-black text-emerald-900">{formatRupiah(tentor.total_amount)}</span>
           </div>
-
-          {/* Bank Sumber */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Bank Sumber Dana Transfer</label>
-            <select
-              required
-              value={formData.source_bank}
-              onChange={(e) => setFormData({...formData, source_bank: e.target.value})}
-              className="w-full rounded-xl border px-3 py-2 bg-white text-sm"
-            >
-              <option value="">Pilih Rekening Kas Bimbel</option>
-              <option value="BCA - Rek Utama Bimbel">BCA (Rekening Utama Bimbel)</option>
-              <option value="Mandiri - Operasional">Mandiri (Kas Operasional)</option>
-              <option value="BRI - Yayasan">BRI (Kas Yayasan)</option>
-            </select>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Transfer</label>
+            <input type="date" required max={todayDate()} value={form.transfer_date} onChange={e => setForm({ ...form, transfer_date: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm" />
           </div>
+          <input placeholder="Rekening sumber (mis. BCA - Rek Utama Bimbel)" value={form.source_account} onChange={e => setForm({ ...form, source_account: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm" />
+          <input placeholder="No. referensi transfer" value={form.reference_no} onChange={e => setForm({ ...form, reference_no: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm" />
+          <input placeholder="Catatan (opsional)" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm" />
 
-          {/* No. Referensi */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Nomor Referensi / Resi Transfer</label>
-            <input
-              type="text"
-              required
-              value={formData.transfer_reference}
-              onChange={(e) => setFormData({...formData, transfer_reference: e.target.value})}
-              className="w-full rounded-xl border px-3 py-2 text-sm font-mono"
-              placeholder="Contoh: REF819238129"
-            />
-          </div>
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
-          {/* Tanggal Transfer */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Tanggal Eksekusi Transfer</label>
-            <input
-              type="date"
-              required
-              value={formData.transfer_date}
-              onChange={(e) => setFormData({...formData, transfer_date: e.target.value})}
-              className="w-full rounded-xl border px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div className="pt-2 flex gap-3">
-            <button type="button" onClick={onClose} className="w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">Batal</button>
-            <button type="submit" disabled={loading} className="w-full py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-xs hover:bg-blue-700">
-              {loading ? "Menyimpan..." : "Konfirmasi Selesai Bayar"}
-            </button>
-          </div>
+          <button type="submit" disabled={saving} className="w-full px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+            <Send className="w-4 h-4" /> {saving ? "Menyimpan..." : "Tandai Sudah Ditransfer"}
+          </button>
         </form>
       </div>
     </div>

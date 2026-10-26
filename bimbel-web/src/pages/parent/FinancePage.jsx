@@ -1,114 +1,90 @@
 import React, { useEffect, useState } from "react";
-import { CreditCard, Wallet, Calendar, ArrowUpRight, CheckCircle2 } from "lucide-react";
-import api from "../../api/axios";
-
+import { Wallet, CheckCircle2, Paperclip, Hourglass } from "lucide-react";
+import { getParentInvoices, getParentPayments, getParentPaymentProof, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { formatRupiah } from "@/utils/format";
 
 export default function FinancePage() {
-  const [summary, setSummary] = useState({ unpaid_amount: 0, total_paid: 0 });
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState({ outstanding: 0 });
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadFinanceSummary = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get("/parent/finance-summary"); // Mengambil ikhtisar neraca pembayaran SPP orang tua
-        setSummary(res.data?.summary || { unpaid_amount: 0, total_paid: 0 });
-        setHistory(res.data?.history || []);
-      } catch (err) {
-        console.error("Gagal memuat rangkuman keuangan:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadFinanceSummary();
+    Promise.all([getParentInvoices(), getParentPayments()])
+      .then(([inv, pay]) => {
+        setSummary(inv.data.summary || {});
+        setPayments(pay.data.data || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  const confirmed = payments.filter(p => p.status === "CONFIRMED");
+  const totalPaid = confirmed.reduce((sum, p) => sum + p.total_amount, 0);
+  const pending = payments.filter(p => p.status === "PENDING").length;
+
+  // Buka bukti transfer milik sendiri (lewat API ber-otorisasi)
+  const openProof = async (paymentId) => {
+    const tab = window.open("", "_blank");
+    try {
+      const res = await getParentPaymentProof(paymentId);
+      tab.location.href = URL.createObjectURL(res.data);
+    } catch {
+      tab?.close();
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
       <div>
         <h1 className="text-3xl font-black text-gray-950 tracking-tight">Ikhtisar Transaksi & Keuangan</h1>
-        <p className="text-base text-gray-500 mt-1">Pantau rangkuman akumulasi biaya bimbingan belajar dan seluruh status kelayakan kas SPP anak didik.</p>
+        <p className="text-gray-500 mt-1">Riwayat pembayaran bimbel anak Anda.</p>
       </div>
 
-      {/* Row Kartu Statistik Ringkasan Dana */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tagihan Tertunda (Unpaid)</p>
-            <h3 className="text-2xl font-black text-amber-600 font-mono">
-              Rp {Number(summary.unpaid_amount).toLocaleString("id-ID")}
-            </h3>
-          </div>
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600">
-            <Wallet size={24} className="stroke-[1.5]" />
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Belum Dibayar</p>
+          <p className="text-2xl font-black text-rose-700 mt-1">{formatRupiah(summary.outstanding)}</p>
         </div>
-
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Dana Terbayar (Paid)</p>
-            <h3 className="text-2xl font-black text-emerald-600 font-mono">
-              Rp {Number(summary.total_paid).toLocaleString("id-ID")}
-            </h3>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <CheckCircle2 size={24} className="stroke-[1.5]" />
-          </div>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Total Dibayar</p>
+          <p className="text-2xl font-black text-emerald-700 mt-1">{formatRupiah(totalPaid)}</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Hourglass className="w-3.5 h-3.5" /> Menunggu Verifikasi</p>
+          <p className="text-2xl font-black text-amber-700 mt-1">{pending}</p>
         </div>
       </div>
 
-      {/* Tabel Log Transaksi Terkini */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4.5 border-b border-gray-100">
-          <h2 className="text-base font-black text-gray-950 uppercase tracking-wider">Log Riwayat Pembayaran Pembukuan</h2>
-        </div>
-        
-        <div className="max-w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/70 text-xs font-bold uppercase tracking-wider text-gray-600 whitespace-nowrap">
-                <th className="px-6 py-4">Metode Transfer</th>
-                <th className="px-6 py-4">Nominal Bayar</th>
-                <th className="px-6 py-4 text-center">Tanggal Transaksi</th>
-                <th className="px-6 py-4 text-center w-36">Status Kas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 text-sm font-semibold text-gray-700">
-              {loading && (
-                <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-400">Memuat log kas pembayaran...</td>
-                </tr>
-              )}
-              
-              {!loading && history.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-400 italic">Belum ada rekapan setoran dana terkonfirmasi.</td>
-                </tr>
-              )}
-
-              {history.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50/40 transition-colors">
-                  <td className="px-6 py-3.5 font-bold text-gray-900 flex items-center gap-2">
-                    <CreditCard size={16} className="text-gray-400" />
-                    {log.payment_method || "Transfer Bank / Manual"}
-                  </td>
-                  <td className="px-6 py-3.5 font-mono font-bold text-emerald-600">
-                    + Rp {Number(log.amount_paid).toLocaleString("id-ID")}
-                  </td>
-                  <td className="px-6 py-3.5 text-center font-mono font-bold text-gray-400">
-                    {new Date(log.payment_date).toLocaleDateString("id-ID")}
-                  </td>
-                  <td className="px-6 py-3.5 text-center">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100">
-                      <ArrowUpRight size={12} /> Terarsip
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 font-bold text-gray-900">Riwayat Pembayaran</div>
+        {loading ? (
+          <p className="p-8 text-center text-sm text-gray-400">Memuat riwayat...</p>
+        ) : payments.length === 0 ? (
+          <p className="p-8 text-center text-sm text-gray-400">Belum ada pembayaran.</p>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {payments.map(p => (
+              <div key={p.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-gray-800">{p.payment_no} • {p.student_name}</p>
+                  <p className="text-xs text-gray-400">
+                    {p.payment_date} • {p.payment_method === "CASH" ? "Tunai di bimbel" : `Transfer ${p.payment_channel || ""}`} • {p.invoices?.map(i => i.invoice_no).join(", ")}
+                  </p>
+                  {p.status === "REJECTED" && p.reject_reason && <p className="text-xs text-rose-600 mt-0.5">Ditolak: {p.reject_reason}</p>}
+                </div>
+                <div className="flex items-center gap-3">
+                  {p.has_proof && (
+                    <button onClick={() => openProof(p.id)} className="text-xs font-bold text-blue-600 flex items-center gap-1"><Paperclip className="w-3.5 h-3.5" /> Bukti</button>
+                  )}
+                  <div className="text-right">
+                    <p className="font-black text-gray-900">{formatRupiah(p.total_amount)}</p>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${PAYMENT_STATUS[p.status]?.className}`}>{PAYMENT_STATUS[p.status]?.label}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

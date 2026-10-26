@@ -202,9 +202,12 @@ class SessionActivityService {
         }
 
         if ($type === 'EXAM') {
-            $exists = Exam::whereKey($referenceId)->where('subject_id', $session->subject_id)->exists();
-            if (!$exists) {
+            $exam = Exam::whereKey($referenceId)->where('subject_id', $session->subject_id)->first();
+            if (!$exam) {
                 throw ValidationException::withMessages(['activityable_id' => ['Exam tidak ditemukan untuk mata pelajaran sesi ini.']]);
+            }
+            if ($exam->status !== 'PUBLISHED') {
+                throw ValidationException::withMessages(['activityable_id' => ['Exam belum diterbitkan oleh Admin.']]);
             }
             return ['type' => 'exam', 'id' => $referenceId];
         }

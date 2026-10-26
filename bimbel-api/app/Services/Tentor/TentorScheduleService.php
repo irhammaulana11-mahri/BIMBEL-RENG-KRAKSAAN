@@ -69,6 +69,10 @@ class TentorScheduleService {
         $session->load([
             'subject', 
             'schedule.classroom.students.user', 
+            'activities' => fn($q) => $q->withCount([
+                'examResults as exam_submitted_count' => fn($rq) => $rq->where('status', '!=', 'IN_PROGRESS'),
+                'examResults as exam_pending_count'   => fn($rq) => $rq->where('status', 'SUBMITTED'),
+            ]),
             'activities.activityable', 
             'studentAttendances',
             'tentorAttendance',
@@ -196,6 +200,8 @@ class TentorScheduleService {
             $q->where('is_active', true);
         }])
         ->where('subject_id', $subjectId)
+        ->where('status', 'PUBLISHED')
+        ->whereHas('activeQuestions')
         ->orderBy('created_at', 'desc')
         ->get();
 

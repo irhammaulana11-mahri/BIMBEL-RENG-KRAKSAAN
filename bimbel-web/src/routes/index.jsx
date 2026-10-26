@@ -4,11 +4,13 @@ import { publicRoutes } from "./publicRoutes";
 import { adminRoutes } from "./adminRoutes";
 import { parentRoutes } from "./parentRoutes";
 import { tentorRoutes } from "./tentorRoutes";
+import { studentRoutes } from "./studentRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicLayout from "../layouts/PublicLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import ParentLayout from "../layouts/ParentsLayout";
 import TentorLayout from "../layouts/TentorsLayout";
+import StudentLayout from "../layouts/StudentsLayout";
 import DocumentPreviewPage from "../components/ui/SecureDocumentViewer";
 
 
@@ -35,6 +37,13 @@ export const router = createBrowserRouter([
             <TentorLayout />
         </ProtectedRoute>),
         children: tentorRoutes,
+    },
+    {path: "/student",element: 
+        (<ProtectedRoute 
+            allowedRoles={["siswa",]}>
+            <StudentLayout />
+        </ProtectedRoute>),
+        children: studentRoutes,
     },
     { path: "/preview/document", element: <DocumentPreviewPage /> },
 

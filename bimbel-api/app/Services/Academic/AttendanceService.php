@@ -6,6 +6,7 @@ use App\Models\Academic\StudentAttendance;
 use App\Models\Academic\TentorAttendance;
 use App\Http\Resources\Academic\TentorAttendanceResource;
 use App\Http\Resources\Academic\StudentAttendanceSessionResource;
+use App\Support\LocalTime;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 class AttendanceService {
 
     // Jam sesi (session_date + start_time) ditulis dalam waktu lokal bimbel
-    public const TIMEZONE = 'Asia/Jakarta';
+    public const TIMEZONE = LocalTime::TIMEZONE;
 
     /**
      * Mengambil daftar siswa kelas beserta status absennya di sesi ini
