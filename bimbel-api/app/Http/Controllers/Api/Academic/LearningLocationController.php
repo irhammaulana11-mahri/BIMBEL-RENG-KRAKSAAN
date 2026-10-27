@@ -18,14 +18,11 @@ class LearninglocationController extends Controller {
         $active = LearningLocation::where('is_active', true)->count();
         $inactive = LearningLocation::where('is_active', false)->count();
 
-        // Hitung total kelas terikat di lokasi aktif
-        $totalClasses = DB::table('classes')
-            ->whereNull('deleted_at')
-            ->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('schedules')
-                    ->whereColumn('schedules.class_id', 'classes.id');
-            })->count();
+        // Total kelas yang terikat di lokasi aktif
+        $totalClasses = DB::table('academic.classes')
+            ->join('academic.learning_locations', 'academic.learning_locations.id', '=', 'academic.classes.learning_location_id')
+            ->where('academic.learning_locations.is_active', true)
+            ->count();
 
         return response()->json([
             'success' => true,

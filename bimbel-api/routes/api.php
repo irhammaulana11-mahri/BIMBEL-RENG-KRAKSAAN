@@ -217,6 +217,7 @@ Route::prefix('admin')
         Route::apiResource('classes', ClassController::class);
 
         // --- AKADEMIK: LOKASI, JADWAL & EXAM ---
+        Route::get('locations/summary', [LearningLocationController::class, 'summary']);
         Route::patch('locations/{location}/toggle', [LearningLocationController::class, 'toggleStatus']);
         Route::apiResource('locations', LearningLocationController::class);
         

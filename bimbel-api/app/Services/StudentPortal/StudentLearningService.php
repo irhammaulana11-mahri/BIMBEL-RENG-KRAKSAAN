@@ -152,7 +152,7 @@ class StudentLearningService {
      */
     public function materials(Student $student, array $filters = []): array {
         $classIds = $this->classIds($student);
-        if (empty($classIds)) return ['subjects' => [], 'total' => 0];
+        if (empty($classIds)) return ['subjects' => [], 'total' => 0, 'subject_options' => []];
 
         $classes = ClassRoom::whereIn('id', $classIds)->with('classSubjects')->get();
         $subjectIds = $classes->flatMap(fn($c) => $c->classSubjects->pluck('subject_id'))->unique()->values();

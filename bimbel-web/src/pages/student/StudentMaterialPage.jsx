@@ -16,7 +16,7 @@ export default function StudentMaterialPage() {
     const timer = setTimeout(() => {
       getStudentMaterials(filters)
         .then((res) => {
-          setData(res.data.data);
+          setData({ subjects: [], total: 0, subject_options: [], ...res.data.data });
           setError("");
         })
         .catch((err) => setError(getApiErrorMessage(err, "Gagal memuat materi.")))
