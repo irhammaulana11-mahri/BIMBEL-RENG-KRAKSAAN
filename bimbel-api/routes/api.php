@@ -153,6 +153,9 @@ Route::prefix('admin')
     ->group(function () {
 
         // --- MASTER DATA USERS, PARENTS, STUDENTS ---
+        Route::get('users/options', [UserController::class, 'options']);
+        Route::patch('users/{user}/toggle', [UserController::class, 'toggleStatus']);
+        Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword']);
         Route::apiResource('users', UserController::class);
         Route::apiResource('parents', ParentController::class);
 
