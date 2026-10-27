@@ -23,6 +23,8 @@ import SchedulePage from "../pages/admin/academic/SchedulePage";
 import AttendancePage from "../pages/admin/academic/AttendancePage";
 import ExamPage from "../pages/admin/academic/ExamPage";
 import ProgressReportPage from "../pages/admin/academic/ProgressReportPage";
+import RescheduleRequestPage from "../pages/admin/academic/RescheduleRequestPage";
+import StudentRegistrationPage from "../pages/admin/academic/StudentRegistrationPage";
 import LearningMaterialPage from "../pages/admin/academic/LearningMaterialPage";
 
 import FinancePage from "../pages/admin/finance/FinancePage";
@@ -50,6 +52,8 @@ export const adminRoutes = [
     {path:"exam", element:<ExamPage/>},
     {path:"finance", element:<FinancePage/>},
     {path:"rapor", element:<ProgressReportPage/>},
+    {path:"reschedule-requests", element:<RescheduleRequestPage/>},
+    {path:"enrollments", element:<StudentRegistrationPage/>},
     {path:"modul", element:<LearningMaterialPage/>},
     {path:"cashflow", element:<OperationalExpensePage/>},
     {path: "students",children: [{path: "new",element: <StudentCreatePage />}]},

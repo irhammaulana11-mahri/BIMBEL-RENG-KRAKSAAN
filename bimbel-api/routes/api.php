@@ -63,6 +63,8 @@ use App\Http\Controllers\Api\StudentPortal\StudentProgressReportController;
 use App\Http\Controllers\Api\TentorPortal\TentorProgressNoteController;
 use App\Http\Controllers\Api\ParentPortal\ParentProgressReportController;
 use App\Http\Controllers\Api\Academic\ProgressReportController;
+use App\Http\Controllers\Api\Academic\ParentRequestController;
+use App\Http\Controllers\Api\ParentPortal\ParentPortalController;
 
 
 
@@ -236,6 +238,15 @@ Route::prefix('admin')
         Route::get('exam-results/{result}', [ExamResultController::class, 'show']);
         Route::put('exam-results/{result}/grade', [ExamResultController::class, 'grade']);
 
+        // --- PENGAJUAN ORANG TUA / TENTOR ---
+        Route::get('/requests/summary', [ParentRequestController::class, 'summary']);
+        Route::get('/reschedule-requests', [ParentRequestController::class, 'index'])->defaults('type', 'reschedule');
+        Route::patch('/reschedule-requests/{rescheduleRequest}/approve', [ParentRequestController::class, 'approveReschedule']);
+        Route::patch('/reschedule-requests/{rescheduleRequest}/reject', [ParentRequestController::class, 'rejectReschedule']);
+        Route::get('/student-registrations', [ParentRequestController::class, 'index'])->defaults('type', 'registration');
+        Route::patch('/student-registrations/{registration}/approve', [ParentRequestController::class, 'approveRegistration']);
+        Route::patch('/student-registrations/{registration}/reject', [ParentRequestController::class, 'rejectRegistration']);
+
         // --- RAPOR PERKEMBANGAN SISWA ---
         Route::prefix('progress-reports')->group(function () {
             Route::get('/', [ProgressReportController::class, 'index']);
@@ -305,6 +316,23 @@ Route::prefix('parent')
         Route::post('/invoices/{id}/payments', [ParentBillingController::class, 'submitPayment']);
         Route::get('/payments', [ParentBillingController::class, 'payments']);
         Route::get('/payments/{id}/proof', [ParentBillingController::class, 'proof']);
+
+        // Dashboard, jadwal & pindah jadwal, hasil ujian
+        Route::get('/dashboard', [ParentPortalController::class, 'dashboard']);
+        Route::get('/schedules', [ParentPortalController::class, 'schedules']);
+        Route::post('/sessions/{session}/reschedule-requests', [ParentPortalController::class, 'requestReschedule']);
+        Route::get('/reschedule-requests', [ParentPortalController::class, 'rescheduleRequests']);
+        Route::patch('/reschedule-requests/{id}/cancel', [ParentPortalController::class, 'cancelReschedule']);
+        Route::get('/exam-results', [ParentPortalController::class, 'examResults']);
+
+        // Profil & pendaftaran anak
+        Route::get('/profile', [ParentPortalController::class, 'profile']);
+        Route::put('/profile', [ParentPortalController::class, 'updateProfile']);
+        Route::put('/password', [ParentPortalController::class, 'updatePassword']);
+        Route::get('/registration-options', [ParentPortalController::class, 'registrationOptions']);
+        Route::get('/student-registrations', [ParentPortalController::class, 'registrations']);
+        Route::post('/student-registrations', [ParentPortalController::class, 'storeRegistration']);
+        Route::patch('/student-registrations/{id}/cancel', [ParentPortalController::class, 'cancelRegistration']);
 
         // Rapor anak (yang sudah diterbitkan)
         Route::get('/progress-reports', [ParentProgressReportController::class, 'reports']);

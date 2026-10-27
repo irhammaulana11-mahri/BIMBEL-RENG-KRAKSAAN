@@ -10,6 +10,7 @@ use App\Http\Resources\Tentor\TentorScheduleResource;
 use App\Http\Resources\Academic\TentorAttendanceResource;
 use App\Services\Academic\AttendanceService;
 use App\Services\Academic\SessionActivityService;
+use App\Services\Academic\RescheduleRequestService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -19,6 +20,7 @@ class TentorScheduleService {
     public function __construct(
         protected AttendanceService $attendanceService,
         protected SessionActivityService $activityService,
+        protected RescheduleRequestService $rescheduleService,
     ) {}
     
     // 1. Ambil Data Jadwal (Tanpa detail aktivitas & murid)
@@ -170,16 +172,13 @@ class TentorScheduleService {
     // 4. Request Reschedule
     public function requestReschedule(string $sessionId, array $data) {
         $session = $this->findOwnedSession($sessionId);
-        
-        $rescheduleNote = sprintf(
-            "[PENGAJUAN RESCHEDULE] Tanggal: %s, Jam: %s. Alasan: %s",
-            $data['proposed_date'],
-            $data['proposed_time'] ?? '-',
-            $data['reason']
-        );
 
-        $session->update(['reason' => $rescheduleNote]);
-        return $session;
+        // Masuk kotak pengajuan Admin (sama dengan pengajuan orang tua)
+        return $this->rescheduleService->submit($session, 'TENTOR', [
+            'proposed_date'       => $data['proposed_date'],
+            'proposed_start_time' => $data['proposed_time'] ?? null,
+            'reason'              => $data['reason'],
+        ]);
     }
 
     public function getReferenceData($sessionId) {

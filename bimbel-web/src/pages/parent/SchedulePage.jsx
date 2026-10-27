@@ -1,197 +1,276 @@
-import React, { useEffect, useState } from "react";
-import { Calendar, Clock, User, ArrowRightLeft, AlertCircle } from "lucide-react";
-import api from "../../api/axios";
+import React, { useEffect, useMemo, useState } from "react";
+import { Calendar, Clock, User, ArrowRightLeft, AlertCircle, Video, MapPin, X } from "lucide-react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
+import ConfirmationModal from "../../components/ui/confirmation/ConfirmationModal";
+import {
+  getParentSchedules, requestParentReschedule, getParentRescheduleRequests, cancelParentRescheduleRequest,
+  SESSION_STATUS, ATTENDANCE_LABEL, REQUEST_STATUS, formatSessionDate, dateOffset,
+} from "@/services/parent/parentService";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { currentPeriod } from "@/utils/format";
 
-// ================= DATA DUMMY SIMULASI JADWAL =================
-const DUMMY_SCHEDULES = [
-  {
-    id: "SCH-001",
-    date: "2026-07-21",
-    start_time: "15:30",
-    end_time: "17:00",
-    subject: { name: "Matematika IPA" },
-    tentor: { name: "Kak Dimas Prasetyo, S.Si." },
-    student: { student_name: "Agus Santoso" },
-    room: "Ruang A-02"
-  },
-  {
-    id: "SCH-002",
-    date: "2026-07-22",
-    start_time: "18:30",
-    end_time: "20:00",
-    subject: { name: "Bahasa Inggris" },
-    tentor: { name: "Miss Sarah Amalia, M.Pd." },
-    student: { student_name: "Siti Rahma" },
-    room: "Ruang B-01"
-  },
-  {
-    id: "SCH-003",
-    date: "2026-07-24",
-    start_time: "16:00",
-    end_time: "17:30",
-    subject: { name: "Fisika Dasar" },
-    tentor: { name: "Pak Hendra K., M.T." },
-    student: { student_name: "Agus Santoso" },
-    room: "Lab Sains 1"
-  }
+const RANGES = [
+  { value: "week", label: "7 Hari" },
+  { value: "two_weeks", label: "14 Hari" },
+  { value: "month", label: "Per Bulan" },
 ];
 
-export default function ParentSchedulePage() {
-  const [schedules, setSchedules] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
-  
-  const { toast, showSuccess, showError, hideToast } = useToast();
-  const [formData, setFormData] = useState({ request_date: "", request_time: "", reason: "" });
+const rangeDates = (range, month) => {
+  if (range === "week") return { from: dateOffset(0), to: dateOffset(6) };
+  if (range === "two_weeks") return { from: dateOffset(0), to: dateOffset(13) };
+  const [year, m] = month.split("-").map(Number);
+  const last = new Date(year, m, 0).getDate();
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, "0")}` };
+};
 
-  const loadSchedules = async () => {
+export default function ParentSchedulePage() {
+  const [range, setRange] = useState("week");
+  const [month, setMonth] = useState(currentPeriod());
+  const [childFilter, setChildFilter] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [children, setChildren] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState(null);
+  const [confirm, setConfirm] = useState({ open: false });
+  const { toast, showSuccess, showError, hideToast } = useToast();
+
+  const load = async () => {
     try {
-      setLoading(true);
-      const res = await api.get("/parent/schedules");
-      const data = res.data?.data || res.data;
-      // Gunakan data dari API jika ada dan tidak kosong, jika kosong gunakan data dummy
-      if (Array.isArray(data) && data.length > 0) {
-        setSchedules(data);
-      } else {
-        setSchedules(DUMMY_SCHEDULES);
-      }
+      const [sched, reqs] = await Promise.all([
+        getParentSchedules({ ...rangeDates(range, month), student_id: childFilter || undefined }),
+        getParentRescheduleRequests(),
+      ]);
+      setSessions(sched.data.data || []);
+      setChildren(sched.data.children || []);
+      setRequests(reqs.data.data || []);
     } catch (err) {
-      console.warn("API /parent/schedules tidak terhubung. Menggunakan data dummy lokal.");
-      // Fallback ke data dummy ketika terjadi error API
-      setSchedules(DUMMY_SCHEDULES);
+      showError(getApiErrorMessage(err, "Gagal memuat jadwal."));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadSchedules(); }, []);
+  useEffect(() => { setLoading(true); load(); }, [range, month, childFilter]);
 
-  const handleOpenReschedule = (schedule) => {
-    setSelectedSchedule(schedule);
-    setOpenModal(true);
-  };
+  const grouped = useMemo(() => {
+    const map = {};
+    sessions.forEach((s) => { (map[s.session_date] ||= []).push(s); });
+    return Object.entries(map);
+  }, [sessions]);
 
-  const handleRequestSubmit = async (e) => {
+  const handleCancel = (req) => setConfirm({
+    open: true,
+    title: "Batalkan Pengajuan?",
+    message: `Pengajuan pindah jadwal ${req.session?.subject_name} (${formatSessionDate(req.original_date)}) akan dibatalkan.`,
+    variant: "warning",
+    onConfirm: async () => {
+      setConfirm({ open: false });
+      try {
+        const res = await cancelParentRescheduleRequest(req.id);
+        showSuccess(res.data.message);
+        load();
+      } catch (err) {
+        showError(getApiErrorMessage(err, "Gagal membatalkan pengajuan."));
+      }
+    },
+  });
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Jadwal Belajar</h1>
+            <p className="text-base text-gray-500 mt-1">Agenda sesi kelas anak, kehadiran, dan pengajuan pindah jadwal.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex bg-gray-100 p-1 rounded-xl">
+              {RANGES.map((r) => (
+                <button key={r.value} onClick={() => setRange(r.value)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${range === r.value ? "bg-white text-blue-600 shadow-xs" : "text-gray-500"}`}>{r.label}</button>
+              ))}
+            </div>
+            {range === "month" && <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="rounded-xl border px-3 py-2 text-sm bg-white" />}
+            {children.length > 1 && (
+              <select value={childFilter} onChange={(e) => setChildFilter(e.target.value)} className="rounded-xl border px-3 py-2 text-sm bg-white">
+                <option value="">Semua anak</option>
+                {children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-center py-8 text-gray-400 font-medium">Memuat jadwal...</p>
+        ) : grouped.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400 italic">Tidak ada sesi pada rentang ini.</div>
+        ) : (
+          <div className="space-y-5">
+            {grouped.map(([date, items]) => (
+              <div key={date}>
+                <p className="text-sm font-black text-gray-700 mb-2 flex items-center gap-2"><Calendar size={16} className="text-gray-400" /> {formatSessionDate(date)}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {items.map((s) => <SessionCard key={s.id} session={s} onRequest={() => setRequesting(s)} />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 font-black text-gray-900">Riwayat Pengajuan Pindah Jadwal</div>
+          {requests.length === 0 ? (
+            <p className="p-6 text-center text-sm text-gray-400">Belum ada pengajuan.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {requests.map((r) => (
+                <div key={r.id} className="p-4 flex flex-wrap items-start justify-between gap-3">
+                  <div className="text-sm">
+                    <p className="font-bold text-gray-900">{r.session?.subject_name} • {r.session?.class_name}{r.student_name && ` • ${r.student_name}`}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {formatSessionDate(r.original_date, { day: "numeric", month: "short" })} {r.original_start_time} → <b className="text-gray-800">{formatSessionDate(r.proposed_date, { weekday: "short", day: "numeric", month: "short" })} {r.proposed_start_time}-{r.proposed_end_time}</b>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">Alasan: {r.reason}</p>
+                    {r.review_note && <p className={`text-xs mt-0.5 ${r.status === "REJECTED" ? "text-rose-600" : "text-emerald-700"}`}>Catatan Admin: {r.review_note}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${REQUEST_STATUS[r.status]?.className}`}>{REQUEST_STATUS[r.status]?.label}</span>
+                    {r.status === "PENDING" && <button onClick={() => handleCancel(r)} className="text-xs font-bold text-gray-500 hover:text-rose-600">Batalkan</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <RescheduleModal
+        session={requesting}
+        onClose={() => setRequesting(null)}
+        onDone={(message) => { setRequesting(null); showSuccess(message); load(); }}
+      />
+      <ConfirmationModal open={confirm.open} title={confirm.title} message={confirm.message} variant={confirm.variant} onConfirm={confirm.onConfirm} onClose={() => setConfirm({ open: false })} />
+    </div>
+  );
+}
+
+function SessionCard({ session, onRequest }) {
+  const pending = session.my_request?.status === "PENDING";
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex flex-col justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold uppercase">{session.subject_name}</span>
+          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${SESSION_STATUS[session.status]?.className}`}>{SESSION_STATUS[session.status]?.label}</span>
+        </div>
+        <div className="text-sm font-semibold text-gray-600 space-y-1.5">
+          <p className="flex items-center gap-2"><Clock size={16} className="text-gray-400" /> <span className="font-mono">{session.start_time} - {session.end_time} WIB</span></p>
+          <p className="flex items-center gap-2"><User size={16} className="text-gray-400" /> {session.tentor_name || "-"} • {session.class_name}</p>
+          {session.class_type === "ONLINE" ? (
+            <p className="flex items-center gap-2"><Video size={16} className="text-gray-400" /> {session.meeting_url ? <a href={session.meeting_url} target="_blank" rel="noreferrer" className="text-blue-600 underline truncate">Link kelas online</a> : "Online (link menyusul)"}</p>
+          ) : (session.location_name || session.room_name) && (
+            <p className="flex items-center gap-2"><MapPin size={16} className="text-gray-400" /> {[session.location_name, session.room_name].filter(Boolean).join(" • ")}</p>
+          )}
+          {session.note && <p className="text-xs text-indigo-600">Dipindah: {session.note}</p>}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {session.children.map((c) => (
+            <span key={c.id} className="px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-gray-700">
+              {c.name}
+              {c.attendance_status && <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] ${ATTENDANCE_LABEL[c.attendance_status]?.className}`}>{ATTENDANCE_LABEL[c.attendance_status]?.label}</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {pending ? (
+        <p className="mt-4 text-xs font-bold text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
+          Pengajuan pindah ke {formatSessionDate(session.my_request.proposed_date, { weekday: "short", day: "numeric", month: "short" })} {session.my_request.proposed_start_time} menunggu Admin.
+        </p>
+      ) : session.can_request && (
+        <button onClick={onRequest} className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-gray-700 font-bold text-xs rounded-xl">
+          <ArrowRightLeft size={14} /> Ajukan Pindah Jadwal
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RescheduleModal({ session, onClose, onDone }) {
+  const [form, setForm] = useState({ proposed_date: "", proposed_start_time: "", reason: "", student_id: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!session) return;
+    setForm({ proposed_date: "", proposed_start_time: session.start_time, reason: "", student_id: session.children.length === 1 ? session.children[0].id : "" });
+    setError("");
+  }, [session]);
+
+  if (!session) return null;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setError("");
     try {
-      setLoading(true);
-      hideToast();
-      
-      // Kirim permohonan ke API jika terhubung
-      await api.post(`/parent/schedules/${selectedSchedule.id}/reschedule`, formData);
-      showSuccess("Permohonan reschedule berhasil dikirim! Menunggu konfirmasi admin.");
+      const res = await requestParentReschedule(session.id, { ...form, student_id: form.student_id || undefined });
+      onDone(res.data.message);
     } catch (err) {
-      // Jika API belum tersedia, tetap berikan respons sukses sebagai simulasi UI
-      showSuccess("Simulasi Reschedule: Permohonan berhasil diajukan!");
+      setError(getApiErrorMessage(err, "Gagal mengirim pengajuan."));
     } finally {
-      setOpenModal(false);
-      setFormData({ request_date: "", request_time: "", reason: "" });
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow">
-      <div className="p-6">
-      <Toast {...toast} onClose={hideToast} />
-        
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b pb-3 mb-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Jadwal Belajar</h1>
-            <p className="text-base text-gray-500 mt-1">Pantau agenda kelas bimbingan aktif beserta riwayat pengajuan pemindahan jadwal kelas.</p>
+            <h3 className="text-lg font-black text-gray-950 tracking-tight">Ajukan Pindah Jadwal</h3>
+            <p className="text-xs text-gray-500">{session.subject_name} • {formatSessionDate(session.session_date, { weekday: "short", day: "numeric", month: "short" })} {session.start_time}-{session.end_time}</p>
           </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={20} /></button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {loading && schedules.length === 0 && (
-            <div className="col-span-2 text-center py-8 text-gray-400 font-medium">
-              Memuat jadwal belajar...
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="p-3 bg-amber-50 text-amber-800 border border-amber-100 rounded-xl flex items-start gap-2 text-xs font-medium">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>Sesi ini diikuti seluruh siswa kelas {session.class_name}. Admin akan menyesuaikan dengan jadwal tentor & siswa lain, dan dapat mengusulkan jam berbeda.</span>
+          </div>
+          {session.children.length > 1 && (
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase">Untuk Anak</label>
+              <select value={form.student_id} onChange={(e) => setForm({ ...form, student_id: e.target.value })} className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm bg-white">
+                <option value="">Semua anak di kelas ini</option>
+                {session.children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
             </div>
           )}
-
-          {!loading && schedules.length === 0 && (
-            <div className="col-span-2 bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400 italic font-medium">
-              Tidak ada jadwal kelas aktif minggu ini.
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase">Tanggal Pengganti</label>
+              <input type="date" min={dateOffset(0)} required value={form.proposed_date} onChange={(e) => setForm({ ...form, proposed_date: e.target.value })} className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm" />
             </div>
-          )}
-
-          {schedules.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex flex-col justify-between group hover:border-blue-500/30 transition-all duration-300">
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold uppercase tracking-wide">
-                    {item.subject?.name || item.subject_name}
-                  </span>
-                  <span className="text-xs text-gray-400 font-mono font-bold">
-                    Tentor: {item.tentor?.name || "-"}
-                  </span>
-                </div>
-                
-                <h3 className="text-lg font-black text-gray-950 tracking-tight flex items-center gap-2">
-                  <User size={18} className="text-slate-400" /> {item.student?.student_name}
-                </h3>
-
-                <div className="space-y-2 text-sm font-semibold text-gray-600">
-                  <div className="flex items-center gap-2.5">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span>{new Date(item.date).toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Clock size={16} className="text-gray-400" />
-                    <span className="font-mono">{item.start_time} - {item.end_time} WIB</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleOpenReschedule(item)}
-                className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200/50 text-gray-700 font-bold text-xs rounded-xl transition-all"
-              >
-                <ArrowRightLeft size={14} /> Ajukan Reschedule Sementara
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Modal Reschedule */}
-        {openModal && (
-          <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between border-b pb-3 mb-4">
-                <h3 className="text-lg font-black text-gray-950 tracking-tight">Form Perubahan Jadwal</h3>
-                <button onClick={() => setOpenModal(false)} className="text-gray-400 hover:text-gray-700 font-bold">✕</button>
-              </div>
-
-              <form onSubmit={handleRequestSubmit} className="space-y-4">
-                <div className="p-3 bg-amber-50 text-amber-800 border border-amber-100 rounded-xl flex items-start gap-2 text-xs font-medium">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <span>Pengajuan bersifat ajuan sementara untuk sesi ini saja dan memerlukan persetujuan admin operasional.</span>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase">Tanggal Pengganti Baru</label>
-                  <input type="date" className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm font-semibold focus:outline-none focus:border-blue-500" value={formData.request_date} onChange={(e) => setFormData({...formData, request_date: e.target.value})} required />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase">Jam Pengganti</label>
-                  <input type="time" className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm font-mono font-bold focus:outline-none focus:border-blue-500" value={formData.request_time} onChange={(e) => setFormData({...formData, request_time: e.target.value})} required />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase">Alasan Pemindahan</label>
-                  <textarea className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm font-medium min-h-[70px] focus:outline-none focus:border-blue-500" placeholder="Contoh: Anak ada ujian mendadak di sekolah..." value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} required />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setOpenModal(false)} className="flex-1 py-2.5 border border-gray-200 font-bold text-sm rounded-xl hover:bg-gray-50 transition-colors">Batal</button>
-                  <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-sm rounded-xl shadow-xs transition-all">
-                    {loading ? "Mengirim..." : "Kirim Ajuan"}
-                  </button>
-                </div>
-              </form>
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase">Jam Mulai</label>
+              <input type="time" required value={form.proposed_start_time} onChange={(e) => setForm({ ...form, proposed_start_time: e.target.value })} className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm font-mono" />
             </div>
           </div>
-        )}
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase">Alasan</label>
+            <textarea required minLength={5} maxLength={500} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Contoh: Anak ada ujian sekolah di jam yang sama." className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm min-h-[70px]" />
+          </div>
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 font-bold text-sm rounded-xl hover:bg-gray-50">Batal</button>
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl">{saving ? "Mengirim..." : "Kirim Pengajuan"}</button>
+          </div>
+        </form>
       </div>
     </div>
   );

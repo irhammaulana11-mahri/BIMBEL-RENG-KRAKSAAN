@@ -5,7 +5,8 @@ import {
   Building2, Image, Package, Calendar, FileText, MessageSquare, HelpCircle, Shield, 
   LocateFixed,
   CircleSlash2Icon,
-  Building
+  Building,
+  ArrowRightLeft
 } from "lucide-react";
 import { FaAward, FaChartLine, FaMoneyCheck, FaRegMoneyBillAlt } from "react-icons/fa";
 
@@ -31,6 +32,7 @@ export const adminMenu = [
       { to: "/admin/classes", label: "Kelas", icon: <School size={20} /> },
       { to: "/admin/modul", label: "Modul", icon: <NotebookPen size={20} /> }, // Sesuaikan icon jika ada BookOpenText
       { to: "/admin/schedules", label: "Jadwal", icon: <CalendarDays size={20} /> },
+      { to: "/admin/reschedule-requests", label: "Pengajuan Jadwal", icon: <ArrowRightLeft size={20} /> },
       { to: "/admin/attandances", label: "Absensi", icon: <BookCheck size={20} /> },
       { to: "/admin/exam", label: "Ujian", icon: <FaAward size={20} /> },
       { to: "/admin/rapor", label: "Rapor", icon: <FaChartLine size={20} /> }
@@ -47,7 +49,7 @@ export const adminMenu = [
     category: "Pendaftaran",
     menus: [
       { to: "/admin/leads", label: "Lead", icon: <UserPlus size={20} /> },
-      { to: "/admin/enrollments", label: "Enrollment", icon: <ClipboardList size={20} /> }
+      { to: "/admin/enrollments", label: "Pendaftaran Anak", icon: <ClipboardList size={20} /> }
     ]
   },
   {

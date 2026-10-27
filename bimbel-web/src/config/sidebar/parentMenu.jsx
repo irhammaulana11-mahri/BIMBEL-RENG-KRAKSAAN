@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, Calendar, FileText, User, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, User, GraduationCap, ClipboardCheck } from "lucide-react";
 import { FaMoneyBill } from "react-icons/fa";
 
 export const parentMenu = [
@@ -11,6 +11,7 @@ export const parentMenu = [
     category: "Monitoring Anak",
     menus: [
       { to: "/parent/schedule", label: "Jadwal Belajar", icon: <Calendar size={20} /> },
+      { to: "/parent/exam", label: "Hasil Ujian", icon: <ClipboardCheck size={20} /> },
       { to: "/parent/grades", label: "Perkembangan Nilai", icon: <GraduationCap size={20} /> }
     ]
   },
