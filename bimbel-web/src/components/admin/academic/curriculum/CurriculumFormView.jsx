@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 export default function CurriculumFormView({ subject, initialData, onBack, onSubmit, loading }) {
+  const [titleError, setTitleError] = useState("");
   const [form, setForm] = useState({
     subject_id: subject?.id || "",
     education_level_id: subject?.education_level_id || "",
@@ -42,9 +43,10 @@ export default function CurriculumFormView({ subject, initialData, onBack, onSub
     e.preventDefault();
     
     if (!form.title.trim()) {
-      alert("Judul topik harus diisi!");
+      setTitleError("Judul topik harus diisi.");
       return;
     }
+    setTitleError("");
 
     // 🟢 Eksekusi Callback Submit dengan Data Terbaru
     onSubmit(form);
@@ -109,6 +111,7 @@ export default function CurriculumFormView({ subject, initialData, onBack, onSub
           className="w-full mt-1 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
           placeholder="Contoh: Bilangan Bulat & Pecahan"
         />
+        {titleError && <p className="text-xs font-medium text-red-600 mt-1">{titleError}</p>}
       </div>
 
       <div>

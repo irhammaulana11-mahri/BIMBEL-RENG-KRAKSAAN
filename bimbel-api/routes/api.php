@@ -83,28 +83,44 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('files/view/{folder}/{filename}', [FileViewerController::class, 'streamFile'])
     ->name('api.files.view');
 
-// Debuging (Opsional untuk Development)
-Route::get('/debug-provider', function () {
-    return config('auth.providers.users');
-});
-
-// Website Public Content (CMS)
+// Website Public Content (CMS): hanya baca + kirim formulir pendaftaran (lead)
 Route::prefix('website')->group(function () {
-    Route::post('/leads/{lead}/convert', [LeadController::class, 'convert']);
     Route::get('articles/slug/{slug}', [ArticleController::class, 'showBySlug']);
     Route::get('activities/{activity}', [ActivityController::class, 'showPublic']);
 
-    Route::apiResource('company-profiles', CompanyProfileController::class);
-    Route::apiResource('banners', BannerController::class);
-    Route::apiResource('packages', PackageController::class);
-    Route::apiResource('testimonials', TestimonialController::class);
-    Route::apiResource('activities', ActivityController::class);
-    Route::apiResource('activity-images', ActivityImageController::class);
-    Route::apiResource('articles', ArticleController::class);
-    Route::apiResource('article-categories', ArticleCategoryController::class);
-    Route::apiResource('faqs', FaqController::class);
-    Route::apiResource('leads', LeadController::class);
+    Route::apiResource('company-profiles', CompanyProfileController::class)->only(['index', 'show']);
+    Route::apiResource('banners', BannerController::class)->only(['index', 'show']);
+    Route::apiResource('packages', PackageController::class)->only(['index', 'show']);
+    Route::apiResource('testimonials', TestimonialController::class)->only(['index', 'show']);
+    Route::apiResource('activities', ActivityController::class)->only(['index']);
+    Route::apiResource('articles', ArticleController::class)->only(['index', 'show']);
+    Route::apiResource('article-categories', ArticleCategoryController::class)->only(['index', 'show']);
+    Route::apiResource('faqs', FaqController::class)->only(['index', 'show']);
+
+    // Formulir pendaftaran calon siswa dari website (dibatasi agar tidak di-spam)
+    Route::post('leads', [LeadController::class, 'store'])->middleware('throttle:10,1');
 });
+
+// Website CMS (kelola konten & data lead): khusus Admin
+Route::prefix('website')
+    ->middleware(['auth:sanctum', 'role:admin,super_admin'])
+    ->group(function () {
+        Route::apiResource('company-profiles', CompanyProfileController::class)->except(['index', 'show']);
+        Route::apiResource('banners', BannerController::class)->except(['index', 'show']);
+        Route::apiResource('packages', PackageController::class)->except(['index', 'show']);
+        Route::apiResource('testimonials', TestimonialController::class)->except(['index', 'show']);
+        Route::apiResource('activities', ActivityController::class)->except(['index', 'show']);
+        Route::apiResource('activity-images', ActivityImageController::class)->only(['store', 'destroy']);
+        Route::apiResource('articles', ArticleController::class)->except(['index', 'show']);
+        Route::apiResource('article-categories', ArticleCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('faqs', FaqController::class)->except(['index', 'show']);
+
+        Route::get('leads', [LeadController::class, 'index']);
+        Route::get('leads/{lead}', [LeadController::class, 'show']);
+        Route::match(['put', 'patch'], 'leads/{lead}', [LeadController::class, 'update']);
+        Route::delete('leads/{lead}', [LeadController::class, 'destroy']);
+        Route::post('leads/{lead}/convert', [LeadController::class, 'convert']);
+    });
 
 
 /*
@@ -118,8 +134,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // Upload Media (Foto Profil, Dokumen Modul Pembelajaran)
-    Route::prefix('uploads')->group(function () {
+    // Upload Media (gambar website, dokumen modul): khusus Admin
+    Route::prefix('uploads')->middleware('role:admin,super_admin')->group(function () {
         Route::post('/image', [UploadController::class, 'image']);
         Route::post('/document', [UploadController::class, 'document']);
     });
@@ -203,14 +219,13 @@ Route::prefix('admin')
         Route::apiResource('locations', LearningLocationController::class);
         
         Route::prefix('schedules')->group(function () {
-            Route::get('/statistics', [ScheduleController::class, 'statistics']);
             Route::get('/sessions', [ScheduleController::class, 'sessions']);
             Route::post('/wizard', [ScheduleController::class, 'storeWizard']);
             Route::put('/sessions/{session}/reschedule', [ScheduleController::class, 'rescheduleSession']);
             Route::post('/wizard/validate', [ScheduleController::class, 'validateWizard']);
             Route::post('/sessions/validate-reschedule', [ScheduleController::class, 'validateReschedule']);
             Route::put('/sessions/{session}/cancel', [ScheduleController::class, 'cancelSession']);
-            Route::put('/sessions=/{session}/details', [ScheduleController::class, 'updateSessionDetails']);
+            Route::put('/sessions/{session}/details', [ScheduleController::class, 'updateSessionDetails']);
             Route::put('/{schedule}/pattern', [ScheduleController::class, 'updatePattern']);
             Route::put('/{schedule}/toggle-status', [ScheduleController::class, 'toggleStatus']);
         });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Role;
 use App\Models\Admin\Tentor;
@@ -172,10 +173,11 @@ class TentorController extends Controller {
 
     public function destroy($id) {
         $tentor = Tentor::findOrFail($id);
-        if ($tentor->user) {
-            $tentor->user->delete();
-        }
-        $tentor->delete();
+        SafeDelete::run(function () use ($tentor) {
+            $user = $tentor->user;
+            $tentor->delete();
+            $user?->delete();
+        }, 'Tentor sudah memiliki jadwal, sesi mengajar, atau riwayat honor sehingga tidak dapat dihapus. Nonaktifkan tentor sebagai gantinya.');
 
         return response()->json(['success' => true, 'message' => 'Data tentor berhasil dihapus.']);
     }

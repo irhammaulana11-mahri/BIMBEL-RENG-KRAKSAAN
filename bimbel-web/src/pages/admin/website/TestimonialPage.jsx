@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getTestimonials, deleteTestimonial } from "../../../services/testimonialService";
 import TestimonialTable from "../../../components/admin/website/testimonial/TestimonialTable";
@@ -18,6 +22,8 @@ const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
 );
 
 export default function TestimonialPage() {
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -50,14 +56,14 @@ export default function TestimonialPage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Hapus ulasan testimoni siswa ini dari halaman utama website?");
-    if (!confirmDelete) return;
+    const ok = await confirm.delete({ title: "Hapus Testimoni?", message: "Testimoni ini akan dihapus dari halaman utama website." });
+    if (!ok) return;
     try {
       await deleteTestimonial(id);
+      showSuccess("Testimoni dihapus.");
       loadData();
     } catch (error) {
-      console.error(error);
-      alert("Gagal menghapus data");
+      showError(getApiErrorMessage(error, "Gagal menghapus data."));
     }
   };
 
@@ -65,6 +71,7 @@ export default function TestimonialPage() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Halaman */}

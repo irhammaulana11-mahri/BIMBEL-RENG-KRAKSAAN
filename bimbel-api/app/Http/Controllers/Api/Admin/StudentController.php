@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Student;
 use App\Models\Admin\User;
@@ -64,10 +65,7 @@ class StudentController extends Controller
 
 
     public function show(Student $student) {
-        return new StudentResource(
-            Student::with(['user','parents.user','educationLevel'])
-            ->findOrFail($id)
-        );
+        return new StudentResource($student->load(['user','parents.user','educationLevel']));
     }
 
 
@@ -109,10 +107,14 @@ class StudentController extends Controller
     }
     
 
+    // Akun login siswa ikut dihapus; siswa dengan riwayat belajar/keuangan cukup dinonaktifkan
     public function destroy(Student $student) {
-        Student::findOrFail($id)->delete();
-        return response()->json([
-            'message' => 'Student deleted'
-        ]);
+        SafeDelete::run(function () use ($student) {
+            $user = $student->user;
+            $student->delete();
+            $user?->delete();
+        }, 'Siswa sudah memiliki riwayat absensi, ujian, rapor, atau tagihan sehingga tidak dapat dihapus. Nonaktifkan siswa sebagai gantinya.');
+
+        return response()->json(['message' => 'Data siswa berhasil dihapus.']);
     }
 }

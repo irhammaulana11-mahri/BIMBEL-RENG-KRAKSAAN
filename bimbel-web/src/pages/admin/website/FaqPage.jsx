@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getFaqs, deleteFaq } from "../../../services/faqService";
 import FaqTable from "../../../components/admin/website/faq/FaqTable";
@@ -18,6 +22,8 @@ const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
 );
 
 export default function FaqPage() {
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -50,14 +56,14 @@ export default function FaqPage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Hapus daftar tanya jawab (FAQ) ini dari website?");
-    if (!confirmDelete) return;
+    const ok = await confirm.delete({ title: "Hapus FAQ?", message: "Tanya jawab ini akan dihapus dari website." });
+    if (!ok) return;
     try {
       await deleteFaq(id);
+      showSuccess("FAQ dihapus.");
       loadData();
     } catch (error) {
-      console.error(error);
-      alert("Gagal menghapus data");
+      showError(getApiErrorMessage(error, "Gagal menghapus data."));
     }
   };
 
@@ -65,6 +71,7 @@ export default function FaqPage() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Halaman (text-3xl) + Tombol Sejajar */}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SubjectRequest;
 use App\Http\Resources\Admin\SubjectResource;
@@ -80,8 +81,9 @@ class SubjectController extends Controller {
     }
     
     public function destroy(Subject $subject) {
-        $subject->delete();
-        return response()->json(['message' => 'Subject deleted successfully.']);
+        SafeDelete::run(fn() => $subject->delete(),
+            'Mata pelajaran masih dipakai di kelas, jadwal, kurikulum, atau ujian sehingga tidak dapat dihapus. Nonaktifkan mapel sebagai gantinya.');
+        return response()->json(['message' => 'Mata pelajaran berhasil dihapus.']);
     }
 
     public function toggleStatus(Subject $subject) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { useNavigate } from "react-router-dom";
 import { Search, Eye, Pencil, Trash2, GraduationCap, UserCheck, UserX, Users, Plus,RotateCcw,RefreshCw, } from "lucide-react";
 import StudentModal from "../../../components/admin/master/student/StudentModal";
@@ -165,7 +166,7 @@ export default function StudentPage() {
         showSuccess("Data Murid berhasil dihapus.");
         await loadData();
       } catch (err) {
-        showError("Gagal Menghapus Data Murid.");
+        showError(getApiErrorMessage(err, "Gagal menghapus data murid."));
       } finally {
         confirm.setLoading(false);
       }

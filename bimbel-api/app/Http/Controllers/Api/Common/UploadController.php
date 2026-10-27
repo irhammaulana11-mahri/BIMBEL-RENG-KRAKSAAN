@@ -10,7 +10,7 @@ class UploadController extends Controller {
     public function image(Request $request) {
         $request->validate([
             'file' => ['required','image','mimes:jpg,jpeg,png,webp','max:5120'],
-            'folder' => ['nullable','string']
+            'folder' => ['nullable','string','max:50','regex:/^[a-z0-9_-]+$/i']
         ]);
 
         $folder = $request->folder ?? 'general';
@@ -28,7 +28,7 @@ class UploadController extends Controller {
     public function document(Request $request) {
         $request->validate([
             'file'   => ['required', 'file', 'mimes:pdf,doc,docx,ppt,pptx,png,jpg,jpeg,mp4,zip', 'max:20480'], // Maksimal 20MB
-            'folder' => ['nullable', 'string']
+            'folder' => ['nullable', 'string', 'max:50', 'regex:/^[a-z0-9_-]+$/i']
         ]);
 
         $folder = $request->folder ?? 'modules';

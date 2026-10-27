@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getPackages, deletePackage } from "../../../services/packageService";
 import PackageTable from "../../../components/admin/website/package/PackageTable";
@@ -18,6 +22,8 @@ const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
 );
 
 export default function PackagePage() {
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -48,16 +54,22 @@ export default function PackagePage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = confirm("Hapus paket bimbingan ini dari database?");
-    if (!confirmDelete) return;
-    await deletePackage(id);
-    loadData();
+    const ok = await confirm.delete({ title: "Hapus Paket?", message: "Paket bimbingan ini akan dihapus." });
+    if (!ok) return;
+    try {
+      await deletePackage(id);
+      showSuccess("Paket dihapus.");
+      loadData();
+    } catch (error) {
+      showError(getApiErrorMessage(error, "Gagal menghapus data."));
+    }
   };
 
   const activeCount = packages.filter((x) => x.is_active).length;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Standar (text-3xl) + Tombol Kanan Atas */}

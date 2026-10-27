@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getArticles, deleteArticle } from "../../../services/articleService";
 import ArticleTable from "../../../components/admin/website/article/ArticleTable";
@@ -18,6 +22,8 @@ const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
 );
 
 export default function ArticlePage() {
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -48,15 +54,22 @@ export default function ArticlePage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Hapus artikel ini dari publikasi website?")) return;
-    await deleteArticle(id);
-    loadData();
+    const ok = await confirm.delete({ title: "Hapus Artikel?", message: "Artikel ini akan dihapus dari publikasi website." });
+    if (!ok) return;
+    try {
+      await deleteArticle(id);
+      showSuccess("Artikel dihapus.");
+      loadData();
+    } catch (error) {
+      showError(getApiErrorMessage(error, "Gagal menghapus data."));
+    }
   };
 
   const publishedCount = articles.filter((item) => item.is_published).length;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Halaman (text-3xl) + Tombol Sejajar */}

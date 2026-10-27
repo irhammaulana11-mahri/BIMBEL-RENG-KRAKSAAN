@@ -16,8 +16,16 @@ class TentorSubjectController extends Controller {
 
         return ['success' => true];
     }
-    public function index() {
-        return response()->json(TentorSubject::with(['tentor.user','subject'])->get());
+    // Mapel milik satu tentor (route: tentors/{tentor}/subjects)
+    public function index($tentorId) {
+        return response()->json(TentorSubject::with(['tentor.user','subject'])->where('tentor_id', $tentorId)->get());
+    }
+
+    public function remove($tentorId, $subjectId) {
+        $tentor = Tentor::findOrFail($tentorId);
+        $tentor->subjects()->detach($subjectId);
+
+        return response()->json(['success' => true, 'message' => 'Mapel dilepas dari tentor.']);
     }
 
     public function show($id) {

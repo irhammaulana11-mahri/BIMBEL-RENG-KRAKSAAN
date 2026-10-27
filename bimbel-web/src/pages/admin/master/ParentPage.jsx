@@ -1,4 +1,5 @@
 import { useEffect, useState,useMemo, useCallback } from "react";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Search, Users, UserCheck, UserMinus, GraduationCap, ShieldAlert,RotateCcw,RefreshCw, } from "lucide-react";
 import { getParents, updateParent, deleteParent } from "../../../services/admin/parentService";
 import ParentModal from "../../../components/admin/master/parent/ParentModal";
@@ -158,7 +159,7 @@ export default function ParentPage() {
         showSuccess("Data Orang Tua / Wali berhasil dihapus.");
         await loadData();
       } catch (err) {
-        showError("Gagal Menghapus Data Orang Tua / Wali.");
+        showError(getApiErrorMessage(err, "Gagal menghapus data orang tua / wali."));
       } finally {
         confirm.setLoading(false);
       }

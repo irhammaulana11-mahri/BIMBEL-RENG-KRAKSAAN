@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Academic;
 
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Academic\LearningLocationRequest;
 use App\Http\Resources\Academic\LearningLocationResource;
@@ -108,7 +109,7 @@ class LearninglocationController extends Controller {
             ], 422);
         }
 
-        $location->delete();
+        SafeDelete::run(fn() => $location->delete(), 'Lokasi masih dipakai oleh kelas atau sesi belajar sehingga tidak dapat dihapus. Nonaktifkan lokasi sebagai gantinya.');
 
         return response()->json([
             'message' => 'Lokasi belajar berhasil dihapus.',

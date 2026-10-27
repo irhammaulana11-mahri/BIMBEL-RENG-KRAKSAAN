@@ -14,6 +14,7 @@ export default function LocationModal({ open, onClose, data, onSubmit, loading }
   });
 
   const [gettingGPS, setGettingGPS] = useState(false);
+  const [gpsError, setGpsError] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -45,9 +46,10 @@ export default function LocationModal({ open, onClose, data, onSubmit, loading }
 
   const handleGetGPS = () => {
     if (!navigator.geolocation) {
-      alert("Browser Anda tidak Mendukung Geolokasi GPS.");
+      setGpsError("Browser Anda tidak mendukung geolokasi GPS.");
       return;
     }
+    setGpsError("");
     setGettingGPS(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -60,7 +62,7 @@ export default function LocationModal({ open, onClose, data, onSubmit, loading }
       },
       (error) => {
         console.error("Gagal mendapatkan GPS:", error);
-        alert("Gagal mengambil titik GPS. Pastikan izin lokasi diaktifkan.");
+        setGpsError("Gagal mengambil titik GPS. Pastikan izin lokasi diaktifkan.");
         setGettingGPS(false);
       },
       { enableHighAccuracy: true }
@@ -151,6 +153,7 @@ export default function LocationModal({ open, onClose, data, onSubmit, loading }
                 {gettingGPS ? "Mendeteksi..." : "📍 Gunakan Lokasi Saat Ini"}
               </button>
             </div>
+            {gpsError && <p className="text-xs font-medium text-red-600">{gpsError}</p>}
 
             <div className="grid grid-cols-2 gap-3">
               <div>

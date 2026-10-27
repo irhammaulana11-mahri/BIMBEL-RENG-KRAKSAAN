@@ -15,7 +15,3 @@ export const getParents = (params = {}) => {
 export const getParent = (id) => api.get(`/admin/parents/${id}`);
 export const updateParent = (id,data) => api.put(`/admin/parents/${id}`, data);
 export const deleteParent = (id) => api.delete(`/admin/parents/${id}`);
-export const attachStudent = (id, studentId) =>
-  api.post(`/admin/parents/${id}/attach-student`, {
-    student_id: studentId,
-  });

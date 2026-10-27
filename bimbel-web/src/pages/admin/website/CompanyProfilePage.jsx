@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Landmark, Save, UploadCloud, Link2, MapPin, Phone, Mail } from "lucide-react";
 import { getCompanyProfile, createCompanyProfile, updateCompanyProfile } from "../../../services/companyProfileService";
 import { uploadImage } from "../../../services/uploadService";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 export default function CompanyProfilePage() {
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
@@ -84,15 +88,14 @@ export default function CompanyProfilePage() {
       }
       if (recordId) {
         await updateCompanyProfile(recordId, payload);
-        alert("Profil institusi berhasil diperbarui");
+        showSuccess("Profil institusi berhasil diperbarui.");
       } else {
         const res = await createCompanyProfile(payload);
         setRecordId(res.data.data.id);
-        alert("Profil institusi berhasil disimpan");
+        showSuccess("Profil institusi berhasil disimpan.");
       }
     } catch (err) {
-      console.log(JSON.stringify(err.response?.data, null, 2));
-      alert("Gagal menyimpan perubahan profil");
+      showError(getApiErrorMessage(err, "Gagal menyimpan perubahan profil."));
     } finally {
       setSubmitLoading(false);
     }
@@ -110,6 +113,7 @@ export default function CompanyProfilePage() {
   return (
     // PERBAIKAN: Menggunakan standarisasi wadah luar lega & bersih mengalir ke bawah
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Halaman (text-3xl) */}

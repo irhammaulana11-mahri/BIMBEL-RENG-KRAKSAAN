@@ -136,7 +136,7 @@ class ScheduleController extends Controller {
      * Endpoint Validasi Wizard Step 2
      */
     public function validateWizard(ScheduleRequest $request) {
-        $data = $request->validate();
+        $data = $request->validated();
         $result = $this->scheduleService->validateWizardPatterns($data['patterns']);
 
         if (!$result['success']) {
@@ -150,7 +150,7 @@ class ScheduleController extends Controller {
      * Endpoint Bulk Create (Sistem Wizard Schedule 5-Step)
      */
     public function storeWizard(ScheduleRequest $request) {
-        $validatedData = $request->validate();
+        $validatedData = $request->validated();
 
         $result = $this->scheduleService->generateWizardSchedules($validatedData);
 

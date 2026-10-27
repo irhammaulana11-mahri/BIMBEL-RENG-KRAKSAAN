@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Academic;
 
+use App\Models\Admin\Subject;
+
 use App\Http\Controllers\Controller;
 use App\Models\Academic\Curriculum;
 use App\Http\Requests\Academic\CurriculumRequest;
@@ -29,7 +31,10 @@ class CurriculumController extends Controller {
     }
 
     public function store(CurriculumRequest $request) {
-        $curriculum = Curriculum::create($request->validated());
+        $data = $request->validated();
+        // Jenjang wajib di database: ikuti jenjang mapel bila tidak dikirim
+        $data['education_level_id'] ??= Subject::whereKey($data['subject_id'])->value('education_level_id');
+        $curriculum = Curriculum::create($data);
         return new CurriculumResource($curriculum->load('subject'));
     }
 

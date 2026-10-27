@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Academic;
 
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Academic\ClassRequest;
 use App\Http\Requests\Academic\ClassSubjectRequest;
@@ -64,7 +65,8 @@ class ClassController extends Controller
             $query->where('education_level', $request->education_level);
         }
 
-        $perPage = $request->integer('perPage', 10);
+        // Frontend mengirim per_page; perPage tetap diterima untuk kompatibilitas
+        $perPage = min(max($request->integer('per_page', $request->integer('perPage', 10)), 1), 200);
         $classes = $query->latest()->paginate($perPage)->withQueryString();
 
         return ClassResource::collection($classes);
@@ -416,9 +418,11 @@ class ClassController extends Controller
     }
 
     public function destroy(ClassRoom $class) {
-        $class->classSubjects()->delete();
-        $class->students()->detach();
-        $class->delete();
+        SafeDelete::run(function () use ($class) {
+            $class->classSubjects()->delete();
+            $class->students()->detach();
+            $class->delete();
+        }, 'Kelas sudah memiliki jadwal, tagihan, atau rapor sehingga tidak dapat dihapus. Nonaktifkan kelas atau ubah statusnya menjadi selesai.');
 
         return response()->json([
             'success' => true,

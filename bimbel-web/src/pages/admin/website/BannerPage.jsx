@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getBanners, deleteBanner } from "../../../services/bannerService";
 import BannerTable from "../../../components/admin/website/banner/BannerTable";
@@ -18,6 +22,8 @@ const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
 );
 
 export default function BannerPage() {
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -50,15 +56,14 @@ export default function BannerPage() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Hapus banner ini dari halaman publik?");
-    if (!confirmDelete) return;
-
+    const ok = await confirm.delete({ title: "Hapus Banner?", message: "Banner ini akan dihapus dari halaman publik." });
+    if (!ok) return;
     try {
       await deleteBanner(id);
-      await loadData();
-      alert("Banner berhasil dihapus");
-    } catch (err) {
-      console.log(err);
+      showSuccess("Banner dihapus.");
+      loadData();
+    } catch (error) {
+      showError(getApiErrorMessage(error, "Gagal menghapus data."));
     }
   };
 
@@ -66,6 +71,7 @@ export default function BannerPage() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
       
       {/* Header Halaman */}

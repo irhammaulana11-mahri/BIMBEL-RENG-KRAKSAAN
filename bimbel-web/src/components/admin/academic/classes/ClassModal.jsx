@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Layers, MapPin, Sparkles } from "lucide-react";
 
 export default function ClassModal({ open, onClose, data, onSubmit, loading }) {
+  const [gpsError, setGpsError] = useState("");
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -49,6 +50,7 @@ export default function ClassModal({ open, onClose, data, onSubmit, loading }) {
   }, [data, open]);
 
   const handleGetCurrentLocation = () => {
+    setGpsError("");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -59,11 +61,11 @@ export default function ClassModal({ open, onClose, data, onSubmit, loading }) {
           }));
         },
         () => {
-          alert("Gagal menarik koordinat GPS. Pastikan izin akses lokasi browser Anda diizinkan.");
+          setGpsError("Gagal menarik koordinat GPS. Pastikan izin akses lokasi browser diizinkan.");
         }
       );
     } else {
-      alert("Browser Anda tidak mendukung sistem pembaca geolocation.");
+      setGpsError("Browser Anda tidak mendukung geolokasi.");
     }
   };
 
@@ -227,6 +229,7 @@ export default function ClassModal({ open, onClose, data, onSubmit, loading }) {
                     <MapPin className="w-3.5 h-3.5" /> Tangkap GPS
                   </button>
                 </div>
+                {gpsError && <p className="text-xs font-medium text-red-600">{gpsError}</p>}
 
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Phone, GraduationCap, Package, User, UserCheck, MessageCircle } from "lucide-react";
+import { Phone, GraduationCap, Package, User, UserCheck, MessageCircle, KeyRound, Copy } from "lucide-react";
+import { useConfirm } from "@/components/ui/confirmation";
 import { updateLead, convertLead } from "../../../../services/admin/leadService";
 
 // Impor internal LeadStatusBadge (opsional jika ingin disatukan atau dibiarkan)
@@ -15,6 +16,11 @@ export default function LeadDetailModal({ open, onClose, data, onSuccess }) {
   
   // Mengaktifkan custom hook toast di level komponen modal
   const { toast, showSuccess, showError, hideToast } = useToast();
+  const confirm = useConfirm();
+  // Kredensial akun orang tua hasil konversi (ditampilkan sampai Admin menutup modal)
+  const [converted, setConverted] = useState(null);
+
+  useEffect(() => { setConverted(null); }, [data, open]);
 
   useEffect(() => {
     if (data) {
@@ -55,29 +61,41 @@ export default function LeadDetailModal({ open, onClose, data, onSuccess }) {
       return;
     }
 
-    const confirmConvert = window.confirm("Konversi lead menjadi akun resmi parent?");
-    if (!confirmConvert) return;
+    const ok = await confirm.confirm({
+      title: "Konversi Lead?",
+      message: `Akun login orang tua (${data.parent_name}) dan data siswa (${data.student_name}) akan dibuat.`,
+      confirmText: "Ya, Konversi",
+    });
+    if (!ok) return;
 
     try {
       setLoading(true);
       hideToast();
       
       const response = await convertLead(data.id);
-      const tempPassword = response.data?.temporary_password;
-      
-      showSuccess(`Aktivasi Berhasil! Akun login ortu dibuat. Password: ${tempPassword}`);
-      
-      setTimeout(() => {
-        onSuccess?.();
-        onClose();
-      }, 1500);
-      
+      setConverted({ email: data.email, phone: data.phone, password: response.data?.temporary_password });
+      showSuccess("Lead berhasil dikonversi. Catat password sementara sebelum menutup.");
+
     } catch (err) {
       console.error(err);
       showError(err?.response?.data?.message || "Gagal mengonversi status akun lead.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyCredentials = async () => {
+    try {
+      await navigator.clipboard.writeText(`Login Bimbel Reng Kraksaan\nEmail: ${converted.email}\nPassword: ${converted.password}`);
+      showSuccess("Kredensial disalin.");
+    } catch {
+      showError("Gagal menyalin. Salin manual dari layar.");
+    }
+  };
+
+  const finishConvert = () => {
+    onSuccess?.();
+    onClose();
   };
 
   return (
@@ -95,7 +113,7 @@ export default function LeadDetailModal({ open, onClose, data, onSuccess }) {
             <h2 className="text-2xl font-black text-gray-950 tracking-tight">Detail Lead Admission</h2>
             <p className="text-sm text-slate-500 mt-0.5">Informasi berkas pengajuan calon siswa</p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl font-bold focus:outline-none">✕</button>
+          <button type="button" onClick={converted ? finishConvert : onClose} className="text-slate-400 hover:text-slate-700 text-xl font-bold focus:outline-none">✕</button>
         </div>
         
         {/* STATUS INFO HEAD */}
@@ -186,6 +204,18 @@ export default function LeadDetailModal({ open, onClose, data, onSuccess }) {
             Hubungi via WA
           </a>
           
+          {converted ? (
+            <div className="w-full sm:w-auto flex-1 p-4 rounded-xl border border-emerald-200 bg-emerald-50 space-y-2">
+              <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5"><KeyRound size={16} /> Akun orang tua dibuat</p>
+              <p className="text-xs text-emerald-900">Email login: <b>{converted.email}</b></p>
+              <p className="text-xs text-emerald-900">Password sementara: <b className="font-mono text-sm">{converted.password}</b></p>
+              <p className="text-[11px] text-emerald-700">Password hanya tampil sekali. Kirimkan ke orang tua dan minta diganti di menu Profil.</p>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={copyCredentials} className="px-3 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1"><Copy size={13} /> Salin</button>
+                <button type="button" onClick={finishConvert} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold">Selesai</button>
+              </div>
+            </div>
+          ) : (
           <div className="flex gap-2 w-full sm:w-auto">
             <button 
               type="button"
@@ -208,6 +238,7 @@ export default function LeadDetailModal({ open, onClose, data, onSuccess }) {
               {loading ? "Menyimpan..." : data.status === "REGISTERED" ? "Sudah Terdaftar" : "Update Status"}
             </button>         
           </div>
+          )}
         </div>
 
       </div>

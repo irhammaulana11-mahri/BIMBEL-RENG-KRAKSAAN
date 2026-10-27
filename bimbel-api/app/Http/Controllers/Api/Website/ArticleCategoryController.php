@@ -21,18 +21,19 @@ class ArticleCategoryController extends Controller {
         return new ArticleCategoryResource($category);
     }
 
-    public function show(ArticleCategory $category) {
-        return new ArticleCategoryResource($category);
+    // Nama parameter mengikuti {article_category} agar route model binding berjalan
+    public function show(ArticleCategory $articleCategory) {
+        return new ArticleCategoryResource($articleCategory);
     }
 
-    public function update(ArticleCategoryRequest $request,ArticleCategory $category) {
-        $category->update($request->validated());
+    public function update(ArticleCategoryRequest $request, ArticleCategory $articleCategory) {
+        $articleCategory->update($request->validated());
 
-        return new ArticleCategoryResource($category->fresh());
+        return new ArticleCategoryResource($articleCategory->fresh());
     }
 
-    public function destroy(ArticleCategory $category) {
-        $category->delete();
+    public function destroy(ArticleCategory $articleCategory) {
+        $articleCategory->delete();
 
         return response()->json(['message' => 'Deleted successfully']);
     }

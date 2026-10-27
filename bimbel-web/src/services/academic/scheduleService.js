@@ -56,14 +56,6 @@ export const getScheduleAvailability = async (params) => {
 };
 
 
-export const getScheduleStatistics = async () => {
-    const response = await api.get(
-        "/admin/schedules/statistics"
-    );
-
-    return response.data;
-};
-
 export const createWizardSchedule = (payload) => {
   return api.post("/admin/schedules/wizard", payload);
 };

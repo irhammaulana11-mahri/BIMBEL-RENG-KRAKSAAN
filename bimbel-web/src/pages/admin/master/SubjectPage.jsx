@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { Search, BookOpen, FileText, ClipboardCheck, Plus, RotateCcw, RefreshCw, Layers } from "lucide-react";
 import SubjectModal from "../../../components/admin/master/subject/SubjectModal";
 import SubjectPreview from "../../../components/admin/master/subject/SubjectPreview";
@@ -98,7 +99,7 @@ export default function SubjectPage() {
       await loadData();
       getSubjectStatistics().then(setGlobalStats);
     } catch (err) {
-      showError("Gagal menghapus data.");
+      showError(getApiErrorMessage(err, "Gagal menghapus mata pelajaran."));
     } finally {
       confirm.setLoading(false);
     }

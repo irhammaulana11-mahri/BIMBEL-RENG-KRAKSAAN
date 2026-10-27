@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Models\Admin\ParentModel;
 use App\Models\Admin\User;
+use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ParentRequest;
 use App\Http\Resources\Admin\ParentResource;
@@ -80,8 +81,14 @@ class ParentController extends Controller {
         );
     }
 
+    // Akun login orang tua ikut dihapus; data anak tetap ada
     public function destroy(ParentModel $parent) {
-        $parent->delete();
-        return response()->json(['message' => 'Parent deleted']);
+        SafeDelete::run(function () use ($parent) {
+            $user = $parent->user;
+            $parent->delete();
+            $user?->delete();
+        }, 'Akun orang tua masih terhubung dengan data lain sehingga tidak dapat dihapus.');
+
+        return response()->json(['message' => 'Data orang tua berhasil dihapus.']);
     }
 }
