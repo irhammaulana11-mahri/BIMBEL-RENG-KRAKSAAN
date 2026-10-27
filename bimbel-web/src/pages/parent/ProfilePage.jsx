@@ -3,6 +3,7 @@ import { User, GraduationCap, Phone, Mail, Plus, Package, MapPin, Briefcase, Key
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import ConfirmationModal from "../../components/ui/confirmation/ConfirmationModal";
+import ChangePasswordModal from "@/components/account/ChangePasswordModal";
 import {
   getParentProfile, updateParentProfile, updateParentPassword,
   getRegistrationOptions, getParentRegistrations, submitParentRegistration, cancelParentRegistration,
@@ -147,7 +148,7 @@ export default function ParentProfilePage() {
       </div>
 
       <EditProfileModal open={editing} profile={profile} onClose={() => setEditing(false)} onDone={(m) => { setEditing(false); done(m); }} />
-      <PasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} onDone={(m) => { setPasswordOpen(false); showSuccess(m); }} />
+      <ChangePasswordModal open={passwordOpen} submit={updateParentPassword} onClose={() => setPasswordOpen(false)} onDone={(m) => { setPasswordOpen(false); showSuccess(m); }} />
       <RegistrationModal open={registerOpen} onClose={() => setRegisterOpen(false)} onDone={(m) => { setRegisterOpen(false); done(m); }} />
       <ConfirmationModal open={confirm.open} title={confirm.title} message={confirm.message} variant={confirm.variant} onConfirm={confirm.onConfirm} onClose={() => setConfirm({ open: false })} />
     </div>
@@ -215,28 +216,6 @@ function EditProfileModal({ open, profile, onClose, onDone }) {
         <div><label className={labelClass}>Alamat</label><textarea value={form.address} maxLength={500} onChange={(e) => setForm({ ...form, address: e.target.value })} className={`${inputClass} min-h-[80px]`} /></div>
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
         <button type="submit" disabled={saving} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl">{saving ? "Menyimpan..." : "Simpan"}</button>
-      </form>
-    </ModalShell>
-  );
-}
-
-function PasswordModal({ open, onClose, onDone }) {
-  const empty = { current_password: "", password: "", password_confirmation: "" };
-  const [form, setForm] = useState(empty);
-  const { saving, error, setError, handle } = useModalForm(() => updateParentPassword(form), onDone);
-
-  useEffect(() => { if (open) { setForm(empty); setError(""); } }, [open]);
-
-  if (!open) return null;
-
-  return (
-    <ModalShell title="Ganti Password" desc="Setelah diganti, login di perangkat lain akan dikeluarkan." onClose={onClose}>
-      <form onSubmit={handle} className="space-y-4">
-        <div><label className={labelClass}>Password Saat Ini</label><input type="password" required autoComplete="current-password" value={form.current_password} onChange={(e) => setForm({ ...form, current_password: e.target.value })} className={inputClass} /></div>
-        <div><label className={labelClass}>Password Baru</label><input type="password" required minLength={8} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} /></div>
-        <div><label className={labelClass}>Ulangi Password Baru</label><input type="password" required minLength={8} autoComplete="new-password" value={form.password_confirmation} onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })} className={inputClass} /></div>
-        {error && <p className="text-sm font-medium text-red-600">{error}</p>}
-        <button type="submit" disabled={saving} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl">{saving ? "Menyimpan..." : "Ganti Password"}</button>
       </form>
     </ModalShell>
   );

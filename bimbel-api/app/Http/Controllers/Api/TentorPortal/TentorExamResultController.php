@@ -81,6 +81,11 @@ class TentorExamResultController extends Controller {
         $tentorId = Tentor::where('user_id', Auth::id())->value('id');
         abort_unless($tentorId, 403, 'Akun ini tidak terhubung dengan data tentor.');
 
+        return self::ownedQuery($tentorId);
+    }
+
+    // Hasil ujian pada sesi milik tentor atau ujian buatan tentor (dipakai juga dashboard)
+    public static function ownedQuery(string $tentorId): Builder {
         return ExamResult::query()->where(fn($q) => $q
             ->whereHas('sessionActivity.session', fn($sq) => $sq->where('tentor_id', $tentorId))
             ->orWhereHas('exam', fn($sq) => $sq->where('tutor_id', $tentorId)));

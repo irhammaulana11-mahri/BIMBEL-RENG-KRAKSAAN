@@ -33,10 +33,12 @@ class TentorScheduleService {
             ->where('tentor_id', $tentor->id);
 
         $mode = $filters['filter_mode'] ?? 'hari_ini';
+        // Hari & minggu menurut WIB (timezone aplikasi UTC)
+        $now = Carbon::now(AttendanceService::TIMEZONE);
         if ($mode === 'hari_ini') {
-            $query->whereDate('session_date', Carbon::today());
+            $query->whereDate('session_date', $now->toDateString());
         } elseif ($mode === 'minggu_ini') {
-            $query->whereBetween('session_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $query->whereBetween('session_date', [$now->copy()->startOfWeek()->toDateString(), $now->copy()->endOfWeek()->toDateString()]);
         } elseif ($mode === 'bulanan' && !empty($filters['month'])) {
             // 🟢 Tangani filter bulanan
             $year = substr($filters['month'], 0, 4);

@@ -6,6 +6,10 @@ use App\Services\Tentor\TentorScheduleService;
 use App\Http\Requests\Tentor\TentorScheduleRequest;
 use App\Http\Requests\Academic\BulkStudentAttendanceRequest;
 use App\Http\Resources\Tentor\TentorScheduleResource;
+use App\Models\Academic\RescheduleRequest;
+use App\Services\Academic\RescheduleRequestService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class TentorScheduleController extends Controller {
     protected $scheduleService;
@@ -36,13 +40,30 @@ class TentorScheduleController extends Controller {
     }
 
     // POST: Mengajukan Reschedule
+    // Kesalahan validasi (sesi sudah lewat, jadwal sama, pengajuan ganda) dikembalikan apa adanya (422)
     public function requestReschedule(TentorScheduleRequest $request, $id) {
-        try {
-            $this->scheduleService->requestReschedule($id, $request->validated());
-            return response()->json(['success' => true, 'message' => 'Pengajuan reschedule berhasil dikirim.']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
-        }
+        $this->scheduleService->requestReschedule($id, $request->validated());
+        return response()->json(['success' => true, 'message' => 'Pengajuan reschedule terkirim. Admin akan mengonfirmasi.']);
+    }
+
+    // GET: Riwayat pengajuan reschedule milik tentor
+    public function rescheduleRequests() {
+        $requests = RescheduleRequest::with(RescheduleRequestService::relations())
+            ->where('requested_by', Auth::id())
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $requests->map(fn($r) => RescheduleRequestService::present($r))]);
+    }
+
+    public function cancelReschedule($id, RescheduleRequestService $service) {
+        abort_unless(Str::isUuid($id), 404, 'Pengajuan tidak ditemukan.');
+        $request = RescheduleRequest::where('requested_by', Auth::id())->where('id', $id)->first();
+        abort_unless($request, 404, 'Pengajuan tidak ditemukan.');
+        $service->cancel($request);
+
+        return response()->json(['success' => true, 'message' => 'Pengajuan reschedule dibatalkan.']);
     }
 
     // GET: Membuka Halaman Workspace

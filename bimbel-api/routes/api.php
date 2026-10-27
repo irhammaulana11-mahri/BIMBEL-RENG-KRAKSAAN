@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\StudentPortal\StudentExamController;
 use App\Http\Controllers\Api\StudentPortal\StudentProgressReportController;
 use App\Http\Controllers\Api\StudentPortal\StudentLearningController;
 use App\Http\Controllers\Api\TentorPortal\TentorProgressNoteController;
+use App\Http\Controllers\Api\TentorPortal\TentorProfileController;
 use App\Http\Controllers\Api\ParentPortal\ParentProgressReportController;
 use App\Http\Controllers\Api\Academic\ProgressReportController;
 use App\Http\Controllers\Api\Academic\ParentRequestController;
@@ -362,6 +363,8 @@ Route::prefix('tentor')
         Route::post('/sessions/{id}/end', [TentorScheduleController::class, 'endSession']);
         Route::post('/sessions/{id}/attendance', [TentorScheduleController::class, 'saveAttendance']);
         Route::post('/sessions/{id}/reschedule-request', [TentorScheduleController::class, 'requestReschedule']);
+        Route::get('/reschedule-requests', [TentorScheduleController::class, 'rescheduleRequests']);
+        Route::patch('/reschedule-requests/{id}/cancel', [TentorScheduleController::class, 'cancelReschedule']);
         Route::get('/sessions/{id}/workspace', [TentorScheduleController::class, 'showWorkspace']);
         Route::get('/sessions/{id}/reference-data', [TentorScheduleController::class, 'getReferenceData']);
         Route::post('/sessions/{id}/activities', [TentorScheduleController::class, 'storeActivity']);
@@ -378,6 +381,12 @@ Route::prefix('tentor')
         Route::get('/exam-results', [TentorExamResultController::class, 'index']);
         Route::get('/exam-results/{id}', [TentorExamResultController::class, 'show']);
         Route::put('/exam-results/{id}/grade', [TentorExamResultController::class, 'grade']);
+
+        // Profil, password, dan murid
+        Route::get('/profile', [TentorProfileController::class, 'show']);
+        Route::put('/profile', [TentorProfileController::class, 'update']);
+        Route::put('/password', [TentorProfileController::class, 'updatePassword']);
+        Route::get('/students', [TentorProfileController::class, 'students']);
 
         // Catatan perkembangan siswa untuk rapor
         Route::get('/progress-notes', [TentorProgressNoteController::class, 'notes']);

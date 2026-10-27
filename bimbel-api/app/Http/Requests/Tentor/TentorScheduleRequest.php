@@ -53,8 +53,8 @@ class TentorScheduleRequest extends FormRequest {
 
             // 3. Validasi saat mengajukan reschedule (Method: requestReschedule)
             'requestReschedule', 'submitReschedule' => [
-                'reason'        => ['required', 'string', 'max:255'],
-                'proposed_date' => ['required', 'date'],
+                'reason'        => ['required', 'string', 'min:5', 'max:255'],
+                'proposed_date' => ['required', 'date_format:Y-m-d'],
                 'proposed_time' => ['nullable', 'date_format:H:i'],
             ],
 
@@ -73,6 +73,8 @@ class TentorScheduleRequest extends FormRequest {
             'filter_mode.required'      => 'Mode filter wajib diisi.',
             'filter_mode.in'            => 'Mode filter tidak valid.',
             'reason.required'           => 'Alasan reschedule wajib diisi.',
+            'reason.min'                => 'Alasan minimal 5 karakter.',
+            'proposed_date.date_format' => 'Format tanggal tidak valid.',
             'proposed_date.required'    => 'Usulan tanggal baru wajib diisi.',
             'proposed_time.date_format' => 'Format jam tidak valid (Gunakan format HH:MM).',
             'end_time.after'            => 'Waktu selesai harus lebih besar dari waktu mulai.',

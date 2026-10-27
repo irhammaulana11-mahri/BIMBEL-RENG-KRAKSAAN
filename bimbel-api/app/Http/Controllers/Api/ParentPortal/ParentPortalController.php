@@ -2,7 +2,9 @@
 namespace App\Http\Controllers\Api\ParentPortal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Account\UpdatePasswordRequest;
 use App\Http\Requests\Parent\ParentPortalRequest;
+use App\Services\Account\PasswordService;
 use App\Models\Academic\RescheduleRequest;
 use App\Models\Admin\EducationLevel;
 use App\Models\Admin\StudentRegistrationRequest;
@@ -13,10 +15,8 @@ use App\Services\Student\StudentRegistrationRequestService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Portal orang tua: dashboard, jadwal & pengajuan pindah jadwal, hasil ujian,
@@ -140,15 +140,8 @@ class ParentPortalController extends Controller {
         return response()->json(['success' => true, 'message' => 'Profil diperbarui.']);
     }
 
-    public function updatePassword(ParentPortalRequest $request) {
-        $user = Auth::user();
-        $user->update(['password' => Hash::make($request->password)]);
-
-        // Keluarkan sesi login di perangkat lain
-        $current = $user->currentAccessToken();
-        $user->tokens()
-            ->when($current instanceof PersonalAccessToken, fn($q) => $q->where('id', '!=', $current->id))
-            ->delete();
+    public function updatePassword(UpdatePasswordRequest $request, PasswordService $passwords) {
+        $passwords->change(Auth::user(), $request->password);
 
         return response()->json(['success' => true, 'message' => 'Password diperbarui. Sesi di perangkat lain telah dikeluarkan.']);
     }

@@ -8,7 +8,6 @@ use App\Models\Website\Package;
 use App\Support\LocalTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 /**
@@ -43,12 +42,6 @@ class ParentPortalRequest extends FormRequest
                 'occupation' => ['nullable', 'string', 'max:100'],
                 'address'    => ['nullable', 'string', 'max:500'],
             ],
-            'updatePassword' => [
-                'current_password' => ['required', 'string', function ($attribute, $value, $fail) {
-                    if (!Hash::check($value, Auth::user()->password)) $fail('Password saat ini salah.');
-                }],
-                'password'         => ['required', 'string', 'min:8', 'confirmed', 'different:current_password'],
-            ],
             'storeRegistration' => [
                 'full_name'          => ['required', 'string', 'max:150'],
                 'gender'             => ['nullable', 'in:L,P'],
@@ -74,11 +67,6 @@ class ParentPortalRequest extends FormRequest
             'reason.min'                     => 'Alasan minimal 5 karakter.',
             'phone.regex'                    => 'Nomor HP hanya boleh angka, spasi, + atau - (8-20 karakter).',
             'phone.unique'                   => 'Nomor HP sudah digunakan akun lain.',
-            'current_password.required'      => 'Password saat ini wajib diisi.',
-            'password.required'              => 'Password baru wajib diisi.',
-            'password.min'                   => 'Password baru minimal 8 karakter.',
-            'password.confirmed'             => 'Konfirmasi password baru tidak cocok.',
-            'password.different'             => 'Password baru harus berbeda dari password saat ini.',
             'full_name.required'             => 'Nama lengkap anak wajib diisi.',
             'birth_date.before'              => 'Tanggal lahir tidak valid.',
             'education_level_id.required'    => 'Jenjang / kelas sekolah wajib dipilih.',

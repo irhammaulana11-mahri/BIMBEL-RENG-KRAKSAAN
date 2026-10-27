@@ -52,3 +52,6 @@ export const deleteSessionActivity = (sessionId, activityId) => {
 export const reorderSessionActivities = (sessionId, activityIds) => {
   return api.put(`/tentor/sessions/${sessionId}/activities/reorder`, { activity_ids: activityIds });
 };
+
+export const getTentorRescheduleRequests = () => api.get("/tentor/reschedule-requests");
+export const cancelTentorRescheduleRequest = (id) => api.patch(`/tentor/reschedule-requests/${id}/cancel`);
