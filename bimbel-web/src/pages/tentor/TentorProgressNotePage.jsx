@@ -63,7 +63,7 @@ export default function TentorProgressNotePage() {
     setDrafts((prev) => ({ ...prev, [groupKey(group)]: { ...prev[groupKey(group)], [studentId]: value } }));
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
 
       <div className="flex flex-wrap items-end justify-between gap-3">

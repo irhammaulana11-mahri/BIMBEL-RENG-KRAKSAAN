@@ -15,7 +15,7 @@ function StudentContent() {
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${isExpanded ? "lg:ml-72" : "lg:ml-20"}`}>
         <Header />
         {/* Konten siswa menggunakan latar belakang bersih slate-50 */}
-        <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
+        <main className="app-main flex-1 p-6 overflow-y-auto bg-slate-50">
           <Outlet />
         </main>
       </div>
@@ -26,7 +26,7 @@ function StudentContent() {
 export default function StudentLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="app-shell min-h-screen bg-slate-50">
         <StudentContent />
       </div>
     </SidebarProvider>

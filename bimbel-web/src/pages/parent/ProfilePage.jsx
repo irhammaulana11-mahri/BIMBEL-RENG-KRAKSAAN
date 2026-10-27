@@ -54,7 +54,7 @@ export default function ParentProfilePage() {
   if (!profile) return <div className="p-12 text-center text-sm font-bold text-gray-400">Memuat profil...</div>;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-300">
+    <div className="page-card space-y-6 animate-in fade-in duration-300">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
 
       <div>

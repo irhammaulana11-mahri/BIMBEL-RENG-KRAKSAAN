@@ -18,7 +18,7 @@ export default function TentorHonorPage() {
   if (!data) return <div className="p-12 text-center text-sm font-bold text-gray-400">{error || "Memuat honor..."}</div>;
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Honor Saya</h1>
         <p className="text-sm text-gray-500 mt-0.5">Honor dihitung dari tarif per sesi × sesi yang Anda hadiri dan selesaikan.</p>

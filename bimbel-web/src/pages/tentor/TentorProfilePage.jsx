@@ -34,7 +34,7 @@ export default function TentorProfilePage() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in max-w-4xl">
+    <div className="page-card space-y-6 animate-in fade-in">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div>
         <h1 className="text-2xl font-black text-gray-900">Profil Tentor</h1>

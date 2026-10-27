@@ -10,6 +10,7 @@ import { AppWrapper } from "./components/layout/PageMeta";
 import { router } from "./routes";
 
 import "./index.css";
+import "./styles/dark-theme.css";
 import { ConfirmationProvider } from "./components/ui/confirmation";
 
 

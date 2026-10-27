@@ -8,8 +8,10 @@ import { Mail, Lock, LogIn, AlertCircle, CheckCircle2, X } from "lucide-react";
 // Impor reusable komponen & hook
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
+import { useForceLightTheme } from "../../context/ThemeContext";
 
 export default function LoginPage() {
+  useForceLightTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

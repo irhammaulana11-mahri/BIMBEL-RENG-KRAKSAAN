@@ -42,7 +42,7 @@ export default function TentorAttendancePage() {
   const unfilledCount = logs.filter(l => l.attendance_status === "BELUM ABSEN" && ["COMPLETED", "IN_PROGRESS"].includes(l.session_status)).length;
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Absensi & Kehadiran</h1>

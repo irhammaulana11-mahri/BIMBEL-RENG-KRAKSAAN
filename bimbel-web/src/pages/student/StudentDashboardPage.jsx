@@ -31,7 +31,7 @@ export default function StudentDashboardPage() {
   const waiting = data.history.filter(r => r.status === "SUBMITTED").length;
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Halo, {user?.name || "Siswa"} 👋</h1>
         <p className="text-sm text-gray-500 mt-0.5">

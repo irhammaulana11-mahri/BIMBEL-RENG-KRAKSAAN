@@ -37,7 +37,7 @@ export default function TentorEvaluationPage() {
   }, [status, keyword, activityId]);
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Evaluasi Murid</h1>
         <p className="text-sm text-gray-500 mt-0.5">Hasil ujian online siswa pada sesi Anda. Nilai essay agar hasil tampil ke siswa.</p>

@@ -206,7 +206,7 @@ export default function TentorSessionWorkspacePage() {
   const totalActivities = session.activities.length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in">
+    <div className="page-card space-y-6 pb-12 animate-in fade-in">
       <button onClick={() => navigate('/tentor/schedules')} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">
         <ArrowLeft size={16} /> Kembali ke Jadwal
       </button>

@@ -35,7 +35,7 @@ export default function ParentBillingPage() {
   const lastPayment = (inv) => inv.payments?.[0];
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="page-card space-y-6 animate-in fade-in duration-300">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
 
       <div className="flex flex-wrap items-end justify-between gap-3">

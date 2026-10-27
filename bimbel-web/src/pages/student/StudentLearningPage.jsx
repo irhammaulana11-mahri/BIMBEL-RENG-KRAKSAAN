@@ -47,7 +47,7 @@ export default function StudentLearningPage() {
   }, [sessions]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in">
+    <div className="page-card space-y-6 animate-in fade-in">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Pembelajaran</h1>

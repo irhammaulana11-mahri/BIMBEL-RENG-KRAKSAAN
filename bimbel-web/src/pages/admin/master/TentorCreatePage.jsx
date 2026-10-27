@@ -78,7 +78,7 @@ export default function TentorCreatePage() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs space-y-6">
+    <div className="page-card space-y-6">
       <Toast {...toast} onClose={hideToast} />
 
       {/* Header Page */}

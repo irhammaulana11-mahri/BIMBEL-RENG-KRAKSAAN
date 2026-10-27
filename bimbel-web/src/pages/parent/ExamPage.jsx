@@ -24,7 +24,7 @@ export default function ExamPage() {
   }, [childFilter]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="page-card space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-black text-gray-950 tracking-tight">Hasil Ujian</h1>

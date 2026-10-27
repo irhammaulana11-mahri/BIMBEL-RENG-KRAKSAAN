@@ -44,7 +44,7 @@ export default function StudentExamPage() {
   if (loading) return <div className="p-12 text-center text-sm font-bold text-gray-400 animate-pulse">Memuat ujian...</div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="page-card space-y-8 animate-in fade-in">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
 
       <div>
