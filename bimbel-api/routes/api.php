@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\TentorPortal\TentorExamResultController;
 // StudentPortal
 use App\Http\Controllers\Api\StudentPortal\StudentExamController;
 use App\Http\Controllers\Api\StudentPortal\StudentProgressReportController;
+use App\Http\Controllers\Api\StudentPortal\StudentLearningController;
 use App\Http\Controllers\Api\TentorPortal\TentorProgressNoteController;
 use App\Http\Controllers\Api\ParentPortal\ParentProgressReportController;
 use App\Http\Controllers\Api\Academic\ProgressReportController;
@@ -399,6 +400,12 @@ Route::prefix('student')
         Route::get('/exam-results/{id}', [StudentExamController::class, 'show']);
         Route::put('/exam-results/{id}/answers', [StudentExamController::class, 'saveAnswer']);
         Route::post('/exam-results/{id}/submit', [StudentExamController::class, 'submit']);
+
+        // Pembelajaran: dashboard, jadwal & aktivitas sesi, materi
+        Route::get('/dashboard', [StudentLearningController::class, 'dashboard']);
+        Route::get('/sessions', [StudentLearningController::class, 'sessions']);
+        Route::get('/sessions/{id}', [StudentLearningController::class, 'showSession']);
+        Route::get('/materials', [StudentLearningController::class, 'materials']);
 
         // Rapor (yang sudah diterbitkan)
         Route::get('/progress-reports', [StudentProgressReportController::class, 'reports']);
