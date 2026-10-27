@@ -11,7 +11,7 @@ const ICONS = { DOCUMENT: FileText, PRESENTATION: Presentation, IMAGE: Image, VI
 function openMaterial(material, user) {
   if (material.material_type === "VIDEO" && material.video_url) return window.open(material.video_url, "_blank", "noopener,noreferrer");
   if (material.material_type === "LINK" && material.external_url) return window.open(material.external_url, "_blank", "noopener,noreferrer");
-  if (material.file_path) return openMaterialProtectedPreview(material.file_path, material.title, user);
+  if (material.file_path) return openMaterialProtectedPreview(material, user);
   if (material.video_url || material.external_url) window.open(material.video_url || material.external_url, "_blank", "noopener,noreferrer");
 }
 

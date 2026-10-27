@@ -28,81 +28,39 @@ export const toggleMaterialStatus = async (id) => {
 };
 
 /**
- * 🟢 POST /api/upload/document
- * Mengunggah berkas fisik (PDF, DOCX, PPTX, MP4, Gambar, dll)
- * @param {File} file - Berkas yang dipilih dari input/dropzone
- * @param {string} folder - Folder tujuan di storage public (default: 'modules')
- * @param {function} onUploadProgress - Callback opsional untuk melacak progress upload (%)
+ * Unggah berkas materi (PDF, Office, gambar, MP4) ke penyimpanan privat server.
+ * Hasil data.path disimpan sebagai file_path materi.
  */
-export const uploadMaterialFile = async (file, folder = "modules", onUploadProgress = null) => {
+export const uploadMaterialFile = async (file, onUploadProgress = null) => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("folder", folder);
 
-  const response = await api.post("/uploads/document", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+  const response = await api.post("/admin/materials/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (progressEvent) => {
       if (onUploadProgress && progressEvent.total) {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        onUploadProgress(percentCompleted);
+        onUploadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
       }
     },
   });
 
-  return response.data; // Mengembalikan { success: true, data: { url, path, original_name, ... } }
+  return response.data;
 };
 
-export const getMaterialPreviewUrl = (material) => {
-  if (!material) return "#";
+// Ambil berkas materi (ber-otorisasi) sebagai blob untuk penampil dokumen
+export const fetchMaterialFile = (materialId) => api.get(`/materials/${materialId}/file`, { responseType: "blob" });
 
-  switch (material.material_type) {
-    case "VIDEO":
-      return material.video_url || material.file_path || "#";
-      
-    case "LINK":
-      return material.external_url || "#";
+// Buka penampil terlindungi di tab baru; berkas diambil dengan token login, bukan URL publik
+export const openMaterialProtectedPreview = (material, user = null) => {
+  if (!material?.id || !material.file_path) return;
 
-    case "DOCUMENT":
-    case "PRESENTATION":
-    case "IMAGE":
-    default:
-      if (!material.file_path) return "#";
-      
-      // Jika file_path sudah berupa URL lengkap (http/https), langsung gunakan
-      if (material.file_path.startsWith("http://") || material.file_path.startsWith("https://")) {
-        return material.file_path;
-      }
-      
-      // Jika berbentuk relative path (misal: /storage/modules/xxx.pdf), sesuaikan dengan baseURL API
-      const baseURL = api.defaults.baseURL?.replace(/\/api\/?$/, "") || "";
-      return `${baseURL}${material.file_path.startsWith("/") ? "" : "/"}${material.file_path}`;
-  }
-};
-
-export const openMaterialProtectedPreview = (filePath, title = "Dokumen Material", user = null) => {
-  if (!filePath) return;
-
-  let streamUrl = filePath;
-
-  // Jika berupa path lokal/storage backend
-  if (!filePath.startsWith("http://") && !filePath.startsWith("https://")) {
-    const cleanPath = filePath.replace(/^\/?storage\//, "");
-    const apiBase = api.defaults.baseURL || "http://localhost:8000/api";
-    const normalizedApi = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
-    
-    // Alur stream file
-    streamUrl = `${normalizedApi}/files/view/${cleanPath}`;
-  }
-
-  // Dapatkan info nama user aktif
   const userName = user?.name || user?.email || "Siswa Bimbel";
+  const params = new URLSearchParams({ material: material.id, title: material.title || "Dokumen Materi", user: userName });
 
-  // Susun URL React Viewer dengan query param terenkripsi sederhana
-  const previewAppUrl = `/preview/document?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}&user=${encodeURIComponent(userName)}`;
-  
-  window.open(previewAppUrl, "_blank", "noopener,noreferrer");
+  window.open(`/preview/document?${params.toString()}`, "_blank", "noopener,noreferrer");
 };
+
+// Pustaka materi lintas mapel (menu Modul)
+export const getMaterials = (params = {}) => api.get("/admin/materials", { params });
+export const getSubjectOptions = () => api.get("/admin/subjects", { params: { per_page: 200 } });
+export const getCurriculumOptions = (subjectId) => api.get("/admin/curriculums", { params: { subject_id: subjectId, per_page: 200 } });

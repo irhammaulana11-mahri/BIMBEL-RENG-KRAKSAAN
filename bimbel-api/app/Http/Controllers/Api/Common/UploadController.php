@@ -24,27 +24,4 @@ class UploadController extends Controller {
             ]
         ]);
     }
-
-    public function document(Request $request) {
-        $request->validate([
-            'file'   => ['required', 'file', 'mimes:pdf,doc,docx,ppt,pptx,png,jpg,jpeg,mp4,zip', 'max:20480'], // Maksimal 20MB
-            'folder' => ['nullable', 'string', 'max:50', 'regex:/^[a-z0-9_-]+$/i']
-        ]);
-
-        $folder = $request->folder ?? 'modules';
-        $file   = $request->file('file');
-        
-        $path = $file->store($folder, 'public');
-
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'url'           => Storage::url($path),
-                'path'          => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'size'          => $file->getSize(),
-                'extension'     => $file->getClientOriginalExtension()
-            ]
-        ]);
-    }
 }

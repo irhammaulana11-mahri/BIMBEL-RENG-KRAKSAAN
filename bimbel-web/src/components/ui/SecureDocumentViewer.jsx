@@ -1,15 +1,39 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ShieldAlert, Lock, ArrowLeft, EyeOff } from "lucide-react";
+import { fetchMaterialFile } from "@/services/academic/materialService";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 export default function DocumentPreviewPage() {
   const [searchParams] = useSearchParams();
-  const fileUrl = searchParams.get("url");
+  const materialId = searchParams.get("material");
   const title = searchParams.get("title") || "Dokumen Pembelajaran";
   const userName = searchParams.get("user") || "Siswa Bimbel Reng Kraksaan";
 
   const [devToolsDetected, setDevToolsDetected] = useState(false);
   const [accessTime] = useState(() => new Date().toLocaleString("id-ID"));
+  // Berkas diambil dengan token login lalu ditampilkan dari blob lokal (tidak ada URL publik)
+  const [fileUrl, setFileUrl] = useState(null);
+  const [fileType, setFileType] = useState("");
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!materialId) return;
+    let objectUrl = null;
+    fetchMaterialFile(materialId)
+      .then((res) => {
+        objectUrl = URL.createObjectURL(res.data);
+        setFileType(res.data.type || "");
+        setFileUrl(objectUrl);
+      })
+      .catch(async (err) => {
+        // Respons error berupa blob; baca pesannya
+        let message = getApiErrorMessage(err, "Berkas tidak dapat dibuka.");
+        try { message = JSON.parse(await err.response.data.text()).message || message; } catch { /* abaikan */ }
+        setLoadError(message);
+      });
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [materialId]);
 
   useEffect(() => {
     // 🔴 1. DETEKSI DEVELOPER TOOLS / INSPECT ELEMENT
@@ -108,10 +132,18 @@ export default function DocumentPreviewPage() {
     );
   }
 
+  if (!materialId || loadError) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900 text-white font-sans p-6 text-center">
+        <p className="text-sm font-bold text-red-400">{loadError || "Materi tidak ditemukan."}</p>
+      </div>
+    );
+  }
+
   if (!fileUrl) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-900 text-white font-sans">
-        <p className="text-sm font-bold text-red-400">URL Berkas tidak ditemukan atau tidak valid.</p>
+      <div className="flex h-screen items-center justify-center bg-slate-900 text-slate-300 font-sans">
+        <p className="text-sm font-bold animate-pulse">Memuat dokumen terlindungi...</p>
       </div>
     );
   }
@@ -186,11 +218,25 @@ export default function DocumentPreviewPage() {
         </div>
 
         {/* Frame PDF Viewer */}
-        <iframe
-          src={securePdfUrl}
-          className="w-full h-full border-0 relative z-0"
-          title="Protected Document Viewer"
-        />
+        {fileType.startsWith("image/") ? (
+          <div className="w-full h-full flex items-center justify-center overflow-auto relative z-0 p-6">
+            <img src={fileUrl} alt={title} className="max-w-full max-h-full object-contain pointer-events-none" draggable={false} />
+          </div>
+        ) : fileType.startsWith("video/") ? (
+          <div className="w-full h-full flex items-center justify-center relative z-0 p-6">
+            <video src={fileUrl} controls controlsList="nodownload" disablePictureInPicture className="max-w-full max-h-full" onContextMenu={(e) => e.preventDefault()} />
+          </div>
+        ) : fileType === "application/pdf" ? (
+          <iframe
+            src={securePdfUrl}
+            className="w-full h-full border-0 relative z-0"
+            title="Protected Document Viewer"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center relative z-0 p-6 text-center">
+            <p className="text-sm text-slate-300 max-w-md">Format berkas ini tidak dapat ditampilkan di penampil terlindungi. Minta Admin mengunggah versi PDF dari materi ini.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -37,6 +37,12 @@ class Material extends Model
         return $this->belongsTo(Curriculum::class, 'curriculum_id');
     }
 
+    // Aktivitas sesi yang memakai materi ini (morph alias 'material')
+    public function sessionActivities()
+    {
+        return $this->morphMany(SessionActivity::class, 'activityable');
+    }
+
     public function tentor()
     {
         return $this->belongsTo(Tentor::class, 'tentor_id');

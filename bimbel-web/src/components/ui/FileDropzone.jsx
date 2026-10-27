@@ -1,33 +1,27 @@
 import React, { useState, useRef } from "react";
 import { Upload, FileText, X, CheckCircle2, Loader2 } from "lucide-react";
-import api from "../../api/axios";
+import { uploadMaterialFile } from "@/services/academic/materialService";
+import { getApiErrorMessage } from "@/utils/apiError";
 
-export default function FileDropzone({ value, onChange, accept = ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg", folder = "modules" }) {
+// Unggah berkas materi ke penyimpanan privat; value = file_path tersimpan
+export default function FileDropzone({ value, onChange, accept = ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg" }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [error, setError] = useState("");
   const fileInputRef = useRef(null);
 
   const handleFileUpload = async (file) => {
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", folder);
-
     try {
       setUploading(true);
+      setError("");
       setFileName(file.name);
-      const response = await api.post("/uploads/document", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (response.data.success) {
-        onChange(response.data.data.url); // Menyimpan URL berkas yang diunggah
-      }
-    } catch (error) {
-      console.error("Gagal mengunggah berkas", error);
-      alert("Gagal mengunggah berkas. Pastikan ukuran file maks 20MB.");
+      const response = await uploadMaterialFile(file);
+      if (response.success) onChange(response.data.path);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal mengunggah berkas. Pastikan ukuran file maks 20 MB."));
       setFileName("");
     } finally {
       setUploading(false);
@@ -92,14 +86,7 @@ export default function FileDropzone({ value, onChange, accept = ".pdf,.doc,.doc
             </div>
             <div className="truncate">
               <p className="text-xs font-bold text-emerald-900 truncate">Berkas Berhasil Diunggah</p>
-              <a
-                href={value}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] font-mono text-emerald-600 hover:underline truncate block"
-              >
-                {value}
-              </a>
+              <p className="text-[11px] font-mono text-emerald-600 truncate">{fileName || value.split("/").pop()}</p>
             </div>
           </div>
           <button
@@ -112,6 +99,7 @@ export default function FileDropzone({ value, onChange, accept = ".pdf,.doc,.doc
           </button>
         </div>
       )}
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
     </div>
   );
 }

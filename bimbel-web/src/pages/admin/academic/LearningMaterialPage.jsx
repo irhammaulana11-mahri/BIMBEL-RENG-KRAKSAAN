@@ -1,180 +1,202 @@
-import React, { useState } from "react";
-import { Plus, Search, BookOpen, Lock, DownloadCloud, FileText } from "lucide-react";
-import MaterialListTable from "../../../components/admin/master/subject/MaterialListTable";
-import MaterialModal from "../../../components/admin/master/subject/MaterialModal";
+import React, { useEffect, useState } from "react";
+import { Plus, Search, BookOpen, CheckCircle2, Layers, Eye, Pencil, Power, Trash2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import Toast from "../../../components/ui/Toast";
+import { useToast } from "../../../hooks/useToast";
+import { useConfirm } from "@/components/ui/confirmation";
+import useAuth from "@/hooks/useAuth";
+import MaterialEditorModal from "../../../components/admin/academic/material/MaterialEditorModal";
+import { MATERIAL_TYPES } from "../../../components/constants/material.constants";
+import {
+  getMaterials, getSubjectOptions, createMaterial, updateMaterial, toggleMaterialStatus, deleteMaterial, openMaterialProtectedPreview,
+} from "@/services/academic/materialService";
+import { getApiErrorMessage } from "@/utils/apiError";
 
-const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
+const StatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
+  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
     <div className="space-y-1.5">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
       <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
       <p className="text-xs text-gray-500 font-medium">{desc}</p>
     </div>
-    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
-      <Icon className="w-6 h-6" />
-    </div>
+    <div className={`p-4 rounded-2xl ${colorClass}`}><Icon className="w-6 h-6" /></div>
   </div>
 );
 
 export default function LearningMaterialPage() {
-  const [search, setSearch] = useState("");
-  const [packageFilter, setPackageFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError, hideToast } = useToast();
+  const [rows, setRows] = useState([]);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [summary, setSummary] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [filters, setFilters] = useState({ keyword: "", subject_id: "", material_type: "", status: "", page: 1 });
+  const [loading, setLoading] = useState(true);
+  const [editor, setEditor] = useState({ open: false, material: null });
 
-  // MOCK DATA: Berkas modul materi yang terikat dengan batasan paket
-  const [mockMaterials, setMockMaterials] = useState([
-    {
-      id: 1,
-      title: "Kumpulan Rumus Cepat Turunan & Integral",
-      subject_name: "Matematika Peminatan",
-      education_level: "12 SMA",
-      file_name: "rumus_cepat_kalkulus_v2.pdf",
-      file_size: "4.2 MB",
-      allowed_package_id: 1,
-      allowed_package_name: "Intensif SMA 12 (Rumah)",
-      download_count: 45
-    },
-    {
-      id: 2,
-      title: "Modul Ringkasan Struktur Sosial & Konflik",
-      subject_name: "Sosiologi Dasar",
-      education_level: "10 UTBK",
-      file_name: "sosiologi_bab3_konflik.pdf",
-      file_size: "2.8 MB",
-      allowed_package_id: 2,
-      allowed_package_name: "Reguler SMP 9 (Bimbel)",
-      download_count: 12
-    },
-    {
-      id: 3,
-      title: "Bank Soal & Pembahasan Fisika Kuantum",
-      subject_name: "Fisika Klasik",
-      education_level: "12 SMA",
-      file_name: "bank_soal_kuantum_2026.pdf",
-      file_size: "5.1 MB",
-      allowed_package_id: 1,
-      allowed_package_name: "Intensif SMA 12 (Rumah)",
-      download_count: 29
-    }
-  ]);
-
-  const handleAdd = () => {
-    setSelectedMaterial(null);
-    setModalOpen(true);
-  };
-
-  const handleEdit = (material) => {
-    setSelectedMaterial(material);
-    setModalOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    if (confirm("Apakah Anda yakin ingin menghapus modul materi ini? Hak unduh tentor & siswa otomatis dicabut.")) {
-      setMockMaterials(mockMaterials.filter(m => m.id !== id));
+  const load = async () => {
+    try {
+      const res = await getMaterials({ ...filters, per_page: 15 });
+      setRows(res.data.data || []);
+      setMeta(res.data.meta || { current_page: 1, last_page: 1, total: 0 });
+      setSummary(res.data.summary);
+    } catch (err) {
+      showError(getApiErrorMessage(err, "Gagal memuat materi."));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = (formData) => {
-    setModalOpen(false);
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  useEffect(() => {
+    getSubjectOptions().then((res) => setSubjects(res.data.data || [])).catch(() => {});
+  }, []);
+
+  const setFilter = (patch) => setFilters((f) => ({ ...f, ...patch, page: 1 }));
+
+  // Dipanggil MaterialEditorModal; error dilempar kembali agar tampil di modal
+  const handleSave = async (form) => {
+    if (editor.material) await updateMaterial(editor.material.id, form);
+    else await createMaterial(form);
+    showSuccess(editor.material ? "Materi diperbarui." : "Materi ditambahkan.");
+    setEditor({ open: false, material: null });
+    load();
   };
 
-  const filteredMaterials = mockMaterials.filter(m => {
-    const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase()) || m.subject_name.toLowerCase().includes(search.toLowerCase());
-    const matchesPackage = packageFilter === "" || m.allowed_package_id === parseInt(packageFilter);
-    return matchesSearch && matchesPackage;
-  });
+  const handleToggle = async (m) => {
+    try {
+      await toggleMaterialStatus(m.id);
+      showSuccess(m.is_active ? "Materi dinonaktifkan (tidak tampil ke siswa)." : "Materi diaktifkan.");
+      load();
+    } catch (err) {
+      showError(getApiErrorMessage(err, "Gagal mengubah status materi."));
+    }
+  };
 
-  const totalDownloads = mockMaterials.reduce((sum, m) => sum + m.download_count, 0);
-  const protectedCount = mockMaterials.filter(m => m.allowed_package_id).length;
+  const handleDelete = async (m) => {
+    const ok = await confirm.delete({ title: "Hapus Materi?", message: `"${m.title}" beserta berkasnya akan dihapus permanen.` });
+    if (!ok) return;
+    try {
+      await deleteMaterial(m.id);
+      showSuccess("Materi dihapus.");
+      load();
+    } catch (err) {
+      showError(getApiErrorMessage(err, "Gagal menghapus materi."));
+    }
+  };
+
+  const openMaterial = (m) => {
+    if (m.file_path) return openMaterialProtectedPreview(m, user);
+    const url = m.video_url || m.external_url;
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const byType = summary?.by_type || {};
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-      <div className="p-6">
-        
-        {/* Header Standar (text-3xl) + Tombol Sejajar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Learning Materials</h1>
-            <p className="text-base text-gray-500 mt-1">
-              Manajemen gudang berkas silabus, bank soal PDF, dan proteksi unduh file berbasis paket siswa.
-            </p>
+            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Modul & Materi</h1>
+            <p className="text-base text-gray-500 mt-1">Pustaka seluruh materi belajar lintas mapel. Berkas tersimpan privat dan hanya dapat dibuka tentor & siswa yang berhak.</p>
           </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-xs self-start md:self-auto shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Upload Modul Baru
+          <button onClick={() => setEditor({ open: true, material: null })} className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shrink-0">
+            <Plus className="w-4 h-4" /> Tambah Materi
           </button>
         </div>
 
-        {/* Row Kumpulan Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <PremiumStatCard title="Total File Modul" value={mockMaterials.length} desc="E-Book berkas PDF aktif di server" icon={BookOpen} colorClass="bg-slate-50 text-slate-600" />
-          <PremiumStatCard title="Akses Paket Khusus" value={`${protectedCount}`} desc="Diproteksi hanya untuk siswa premium" icon={Lock} colorClass="bg-amber-50 text-amber-700" />
-          <PremiumStatCard title="Total Unduhan" value={`${totalDownloads}`} desc="Diunduh oleh tentor & siswa via Mobile" icon={DownloadCloud} colorClass="bg-emerald-50 text-emerald-700" />
-        </div>
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard title="Total Materi" value={summary.total} desc={`${summary.active} aktif • ${summary.total - summary.active} nonaktif`} icon={BookOpen} colorClass="bg-slate-50 text-slate-600" />
+            <StatCard title="Sudah Dipakai di Kelas" value={summary.used} desc="Materi yang pernah dibahas di aktivitas sesi" icon={CheckCircle2} colorClass="bg-emerald-50 text-emerald-700" />
+            <StatCard title="Jenis Materi" value={Object.keys(byType).length} desc={Object.entries(byType).map(([t, n]) => `${MATERIAL_TYPES[t]?.badgeLabel || t} ${n}`).join(" • ") || "-"} icon={Layers} colorClass="bg-indigo-50 text-indigo-700" />
+          </div>
+        )}
 
-        {/* Wadah Utama Tunggal untuk Filter, Tabel, dan Pagination */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          
-          {/* Toolbar Pencarian & Filter Terpadu */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 bg-gray-50/50 border-b border-gray-100">
-            <div className="w-full lg:w-80">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari judul materi / mapel..."
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-white focus:outline-none focus:border-blue-500"
-              />
+        <div className="border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="flex flex-col lg:flex-row gap-3 p-4 border-b border-gray-100 bg-gray-50/40">
+            <div className="relative w-full lg:w-80">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={filters.keyword} onChange={(e) => setFilter({ keyword: e.target.value })} placeholder="Cari judul materi atau bab..." className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm bg-white" />
             </div>
-
-            <div className="flex gap-3 justify-end w-full lg:w-auto">
-              <select
-                value={packageFilter}
-                onChange={(e) => setPackageFilter(e.target.value)}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white font-semibold text-gray-700"
-              >
-                <option value="">Semua Tingkat Akses Paket</option>
-                <option value="1">Intensif SMA 12 (Rumah)</option>
-                <option value="2">Reguler SMP 9 (Bimbel)</option>
-              </select>
-            </div>
+            <select value={filters.subject_id} onChange={(e) => setFilter({ subject_id: e.target.value })} className="rounded-xl border px-3 py-2.5 text-sm bg-white">
+              <option value="">Semua mapel</option>
+              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}{s.education_level_name && ` • ${s.education_level_name}`}</option>)}
+            </select>
+            <select value={filters.material_type} onChange={(e) => setFilter({ material_type: e.target.value })} className="rounded-xl border px-3 py-2.5 text-sm bg-white">
+              <option value="">Semua jenis</option>
+              {Object.values(MATERIAL_TYPES).map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+            <select value={filters.status} onChange={(e) => setFilter({ status: e.target.value })} className="rounded-xl border px-3 py-2.5 text-sm bg-white">
+              <option value="">Semua status</option>
+              <option value="true">Aktif</option>
+              <option value="false">Nonaktif</option>
+            </select>
           </div>
 
-          {/* Render Tabel Langsung di Sini */}
-          <MaterialListTable 
-            data={filteredMaterials} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm min-w-[860px]">
+              <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
+                <tr><th className="p-4">Materi</th><th className="p-4">Mapel / Bab</th><th className="p-4">Jenis</th><th className="p-4 text-center">Dipakai</th><th className="p-4 text-center">Status</th><th className="p-4 text-center">Aksi</th></tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {loading ? (
+                  <tr><td colSpan={6} className="p-6 text-center text-gray-400">Memuat materi...</td></tr>
+                ) : rows.length === 0 ? (
+                  <tr><td colSpan={6} className="p-6 text-center text-gray-400">Belum ada materi pada filter ini.</td></tr>
+                ) : rows.map((m) => {
+                  const type = MATERIAL_TYPES[m.material_type];
+                  const openable = m.file_path || m.video_url || m.external_url;
+                  return (
+                    <tr key={m.id} className="hover:bg-gray-50/50">
+                      <td className="p-4">
+                        <p className="font-bold text-gray-900">{m.title}</p>
+                        <p className="text-xs text-gray-400">{m.duration_minutes ? `${m.duration_minutes} menit` : ""}{m.tentor_name && ` • ${m.tentor_name}`}</p>
+                      </td>
+                      <td className="p-4 text-xs">
+                        <p className="font-semibold text-gray-800">{m.subject_name}{m.education_level && <span className="text-gray-400 font-medium"> • {m.education_level}</span>}</p>
+                        <p className="text-gray-500">{m.curriculum_title}</p>
+                      </td>
+                      <td className="p-4"><span className={`px-2 py-1 rounded-lg border text-[10px] font-bold ${type?.badgeBg || "bg-gray-50 text-gray-600 border-gray-200"}`}>{type?.badgeLabel || m.material_type}</span></td>
+                      <td className="p-4 text-center text-xs font-bold text-gray-700">{m.usage_count > 0 ? `${m.usage_count} sesi` : "-"}</td>
+                      <td className="p-4 text-center"><span className={`px-2 py-0.5 rounded text-[11px] font-bold ${m.is_active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>{m.is_active ? "Aktif" : "Nonaktif"}</span></td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-1">
+                          <button disabled={!openable} onClick={() => openMaterial(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-30" title={m.file_path ? "Pratinjau terlindungi" : "Buka tautan"}>
+                            {m.file_path ? <Eye className="w-4 h-4" /> : <ExternalLink className="w-4 h-4" />}
+                          </button>
+                          <button onClick={() => setEditor({ open: true, material: m })} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Ubah"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => handleToggle(m)} className={`p-2 rounded-lg ${m.is_active ? "text-gray-500 hover:bg-gray-100" : "text-emerald-600 hover:bg-emerald-50"}`} title={m.is_active ? "Nonaktifkan" : "Aktifkan"}><Power className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(m)} disabled={m.usage_count > 0} className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-30" title={m.usage_count > 0 ? "Sudah dipakai di sesi: nonaktifkan saja" : "Hapus"}><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-          {/* Footer Pagination Terpadu */}
-          <div className="border-t border-gray-100 p-5 bg-gray-50/20">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm">
-              <p className="text-gray-600 font-medium">
-                Menampilkan <span className="text-gray-900 font-bold">1</span> - <span className="text-gray-900 font-bold">{filteredMaterials.length}</span> dari <span className="text-gray-900 font-bold">{filteredMaterials.length}</span> item modul dokumen
-              </p>
-              <div className="flex items-center gap-1.5">
-                <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Prev</button>
-                <button className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white">1</button>
-                <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Next</button>
+          {meta.last_page > 1 && (
+            <div className="flex items-center justify-between p-4 border-t border-gray-100 text-xs text-gray-500">
+              <span>Halaman {meta.current_page} dari {meta.last_page} • {meta.total} materi</span>
+              <div className="flex gap-2">
+                <button disabled={meta.current_page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))} className="p-2 border rounded-lg disabled:opacity-40"><ChevronLeft size={14} /></button>
+                <button disabled={meta.current_page >= meta.last_page} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))} className="p-2 border rounded-lg disabled:opacity-40"><ChevronRight size={14} /></button>
               </div>
             </div>
-          </div>
-
+          )}
         </div>
-
-        {/* Modal Form */}
-        <MaterialModal 
-          open={modalOpen} 
-          onClose={() => setModalOpen(false)} 
-          data={selectedMaterial} 
-          onSubmit={handleSubmit}
-          loading={loading}
-        />
       </div>
+
+      <MaterialEditorModal open={editor.open} material={editor.material} onClose={() => setEditor({ open: false, material: null })} onSubmit={handleSave} />
     </div>
   );
 }

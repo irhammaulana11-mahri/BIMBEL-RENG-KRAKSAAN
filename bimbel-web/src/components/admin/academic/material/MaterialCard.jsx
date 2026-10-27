@@ -81,7 +81,7 @@ export default function MaterialCard({ material, onEdit, onDelete }) {
               onClick={(e) => {
                 e.stopPropagation();
                 // 🟢 Kirim objek user aktif untuk Watermark pada tab baru
-                openMaterialProtectedPreview(material.file_path, material.title, user);
+                openMaterialProtectedPreview(material, user);
               }}
               className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold rounded-lg transition-colors cursor-pointer"
             >

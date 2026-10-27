@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Common\UploadController;
-use App\Http\Controllers\Api\Common\FileViewerController;
+use App\Http\Controllers\Api\Common\MaterialFileController;
 
 // Admin Master
 use App\Http\Controllers\Api\Admin\UserController;
@@ -79,10 +79,6 @@ use App\Http\Controllers\Api\ParentPortal\ParentPortalController;
 // Authentication
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected File Streaming Streamed / Protected Viewer
-Route::get('files/view/{folder}/{filename}', [FileViewerController::class, 'streamFile'])
-    ->name('api.files.view');
-
 // Website Public Content (CMS): hanya baca + kirim formulir pendaftaran (lead)
 Route::prefix('website')->group(function () {
     Route::get('articles/slug/{slug}', [ArticleController::class, 'showBySlug']);
@@ -132,12 +128,13 @@ Route::prefix('website')
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // Upload Media (gambar website, dokumen modul): khusus Admin
+    // Berkas materi (disk privat): dibuka sesuai hak akses peran
+    Route::get('/materials/{material}/file', [MaterialFileController::class, 'show']);
+
+    // Upload gambar website (publik): khusus Admin. Berkas materi lewat admin/materials/upload (privat)
     Route::prefix('uploads')->middleware('role:admin,super_admin')->group(function () {
         Route::post('/image', [UploadController::class, 'image']);
-        Route::post('/document', [UploadController::class, 'document']);
     });
 });
 
@@ -153,6 +150,7 @@ Route::prefix('admin')
     ->group(function () {
 
         // --- MASTER DATA USERS, PARENTS, STUDENTS ---
+        Route::get('dashboard', [DashboardController::class, 'index']);
         Route::get('users/options', [UserController::class, 'options']);
         Route::patch('users/{user}/toggle', [UserController::class, 'toggleStatus']);
         Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword']);
@@ -189,6 +187,7 @@ Route::prefix('admin')
         Route::patch('curriculums/{curriculum}/toggle', [CurriculumController::class, 'toggleStatus']);
         Route::apiResource('curriculums', CurriculumController::class);
 
+        Route::post('materials/upload', [MaterialFileController::class, 'upload']);
         Route::patch('materials/{material}/toggle', [MaterialController::class, 'toggleStatus']);
         Route::apiResource('materials', MaterialController::class);
 

@@ -100,7 +100,6 @@ export default function MaterialFormView({ curriculum, materialType, initialData
           <FileDropzone
             value={form.file_path}
             onChange={(url) => setForm({ ...form, file_path: url })}
-            folder="modules"
             accept={
               activeType === "IMAGE"
                 ? ".png,.jpg,.jpeg,.webp"

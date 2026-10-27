@@ -1,202 +1,201 @@
 import { useEffect, useState } from "react";
-import { 
-  Users, 
-  UserCheck, 
-  Layers, 
-  TrendingUp, 
-  DollarSign, 
-  Activity, 
-  ArrowRight, 
-  Clock 
-} from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { GraduationCap, BookOpen, School, CalendarCheck, ArrowRight, Clock, Inbox, ArrowUpRight, ArrowDownRight, AlertTriangle, CheckCircle2, FileCheck2, Wallet } from "lucide-react";
 import { getDashboard } from "../../services/dashboardService";
+import { SESSION_STATUS } from "@/services/parent/parentService";
+import { PAYROLL_STATUS } from "@/services/finance/financeService";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { formatRupiah } from "@/utils/format";
 
-// Sub-Komponen Internal untuk Statistik Premium
-const ModernStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
+const StatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
+  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
     <div className="space-y-1">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
       <p className="text-3xl font-black text-gray-900 font-mono">{value}</p>
       <p className="text-xs text-gray-500 font-medium">{desc}</p>
     </div>
-    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
-      <Icon className="w-6 h-6" />
-    </div>
+    <div className={`p-4 rounded-2xl ${colorClass}`}><Icon className="w-6 h-6" /></div>
   </div>
 );
 
+const Panel = ({ title, link, children }) => (
+  <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
+    <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+      <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">{title}</h2>
+      {link && <Link to={link.to} className="text-xs font-bold text-blue-600 flex items-center gap-1">{link.label} <ArrowRight size={12} /></Link>}
+    </div>
+    {children}
+  </div>
+);
+
+const LEAD_STATUS = {
+  NEW: "bg-blue-50 text-blue-700",
+  CONTACTED: "bg-amber-50 text-amber-700",
+  FOLLOW_UP: "bg-purple-50 text-purple-700",
+  REGISTERED: "bg-emerald-50 text-emerald-700",
+};
+
 export default function DashboardPage() {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadData();
+    getDashboard()
+      .then(setData)
+      .catch((err) => setError(getApiErrorMessage(err, "Gagal memuat dashboard.")));
   }, []);
 
-  const loadData = async () => {
-    try {
-      const res = await getDashboard();
-      setData(res.data || res);
-    } catch (err) {
-      console.error(err);
-      // ================= DATA DUMMY BACKUP (MOCK COMPILATION) =================
-      // Menjamin dashboard tetap tampil menawan saat menunggu endpoint siap
-      setData({
-        stats: {
-          new_leads: 5,
-          active_parents: 42,
-          active_students: 56,
-          annual_net_profit: 14500000
-        },
-        recent_leads: [
-          { id: 101, parent_name: "Analuam Mahri", student_name: "Rian Mahri", education_level: "SMA", package_name: "Intensif SMA 12 (Rumah)", created_at: "10 Menit Lalu" },
-          { id: 102, parent_name: "Hendra Wijaya", student_name: "Budi Wijaya", education_level: "SMP", package_name: "Reguler SMP 9 (Bimbel)", created_at: "2 Jam Lalu" },
-          { id: 103, parent_name: "Siti Aminah", student_name: "Zaki Aminah", education_level: "SD", package_name: "Online Privat", created_at: "1 Hari Lalu" }
-        ],
-        package_distribution: [
-          { name: "Intensif Rumah (Private)", count: 24, color: "bg-blue-500" },
-          { name: "Reguler Tatap Muka (Bimbel)", count: 20, color: "bg-purple-500" },
-          { name: "Online Class (Zoom/Meet)", count: 12, color: "bg-amber-500" }
-        ]
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center text-sm font-bold text-gray-500 gap-2">
-        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        Menyusun Kompilasi Finansial & Akademik...
-      </div>
-    );
+  if (!data) {
+    return <div className="flex items-center justify-center min-h-[60vh] text-base text-gray-500 font-medium">{error || "Memuat dashboard..."}</div>;
   }
 
-  const formatIDR = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+  const { stats, finance, inbox, month_close: close } = data;
+  const pendingTotal = inbox.reduce((sum, i) => sum + i.count, 0);
+  const maxTrend = Math.max(1, ...finance.trend.flatMap((t) => [t.income, t.out]));
+  const maxPackage = Math.max(1, ...data.package_distribution.map((p) => p.total));
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6 bg-slate-50/50 min-h-screen rounded-3xl">
-      
-      {/* 1. HEADER WELCOME AREA */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="bg-white p-6 rounded-xl shadow">
+      <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Core Operation Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Pantau siklus pendaftaran siswa, penempatan jadwal, hingga status Laba-Rugi berjalan.</p>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Dashboard Admin</h1>
+          <p className="text-base text-gray-500 mt-1">Ringkasan operasional bimbel periode {data.period}.</p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-gray-400 bg-white border px-3 py-1.5 rounded-xl shadow-xs">
-          <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" /> Live Monitoring Active
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard title="Siswa Aktif" value={stats.active_students} desc={`${stats.enrolled_students} sudah ditempatkan di kelas`} icon={GraduationCap} colorClass="bg-blue-50 text-blue-600" />
+          <StatCard title="Tentor Aktif" value={stats.active_tentors} desc="Tentor dengan status aktif" icon={BookOpen} colorClass="bg-indigo-50 text-indigo-600" />
+          <StatCard title="Kelas Aktif" value={stats.active_classes} desc="Kelas berjalan" icon={School} colorClass="bg-purple-50 text-purple-600" />
+          <StatCard title="Sesi Bulan Ini" value={stats.sessions_month} desc={`${stats.sessions_done} sudah selesai`} icon={CalendarCheck} colorClass="bg-emerald-50 text-emerald-600" />
         </div>
-      </div>
 
-      {/* 2. CORE STATS CARDS (Mengganti DashboardStats bawaan agar terikat alur bisnis) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ModernStatCard 
-          title="Antrean Leads Baru" 
-          value={data.stats?.new_leads || 0} 
-          desc="Menunggu Aktivasi di Page Lead" 
-          icon={Clock} 
-          colorClass="bg-amber-50 text-amber-600" 
-        />
-        <ModernStatCard 
-          title="Total Wali Murid" 
-          value={data.stats?.active_parents || 0} 
-          desc="Orang Tua Teraktivasi Sistem" 
-          icon={Users} 
-          colorClass="bg-blue-50 text-blue-600" 
-        />
-        <ModernStatCard 
-          title="Siswa / Murid Aktif" 
-          value={data.stats?.active_students || 0} 
-          desc="Berjalan Mengikuti Kelas Paket" 
-          icon={UserCheck} 
-          colorClass="bg-purple-50 text-purple-600" 
-        />
-        <ModernStatCard 
-          title="Laba Bersih Berjalan" 
-          value={formatIDR(data.stats?.annual_net_profit || 0)} 
-          desc="Tahun Ini (Pendapatan - Beban)" 
-          icon={DollarSign} 
-          colorClass="bg-emerald-50 text-emerald-600" 
-        />
-      </div>
-
-      {/* 3. GRID UTAMA: KIRI PANDUAN LEADS, KANAN DISTRIBUSI PAKET BELAJAR */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* KOLOM KIRI (7 KOTAK): ANTREAN REGISTRASI SISWA BARU (LEADS) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-gray-100 p-6 shadow-xs space-y-4">
-          <div className="flex justify-between items-center border-b border-gray-50 pb-3">
-            <div>
-              <h3 className="text-base font-black text-gray-900">Antrean Pendaftaran Terkini</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Wajib ditinjau sebelum diaktivasi menjadi data master orang tua</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Arus kas bulan berjalan */}
+          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-sm">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-5">
+              <h3 className="text-sm font-bold tracking-wider uppercase text-slate-300 flex items-center gap-2"><Wallet className="w-4 h-4 text-blue-400" /> Arus Kas {data.period}</h3>
+              <Link to="/admin/cashflow" className="text-xs font-bold text-blue-300 flex items-center gap-1">Detail <ArrowRight size={12} /></Link>
             </div>
-            <button 
-              onClick={() => navigate("/admin/leads")} // Menuju halaman aktivasi lead seperti alur yang kamu minta
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              Kelola Leads <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="divide-y divide-gray-50 text-sm">
-            {data.recent_leads?.map((lead) => (
-              <div key={lead.id} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 group">
-                <div className="space-y-0.5">
-                  <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{lead.parent_name}</p>
-                  <p className="text-xs text-gray-500">Siswa: <strong className="text-gray-700">{lead.student_name}</strong> • Jenjang {lead.education_level}</p>
-                  <span className="inline-block text-[10px] bg-slate-100 text-slate-600 font-medium px-2 py-0.5 rounded mt-1">
-                    🎯 Target: {lead.package_name}
-                  </span>
-                </div>
-                <span className="text-[10px] font-semibold text-gray-400 shrink-0 bg-gray-50 px-2 py-1 rounded-md">
-                  {lead.created_at}
-                </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase flex items-center gap-1"><ArrowUpRight className="w-4 h-4 text-emerald-400" /> Kas Masuk</p>
+                <p className="text-2xl font-black font-mono text-emerald-400 mt-1">{formatRupiah(finance.income)}</p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* KOLOM KANAN (5 KOTAK): PROPORSI PEMILIHAN PAKET SISWA AKTIF */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-gray-100 p-6 shadow-xs space-y-4">
-          <div>
-            <h3 className="text-base font-black text-gray-900">Distribusi Opsi Paket Siswa</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Rasio sebaran siswa aktif berdasarkan tipe transaksi belajar</p>
-          </div>
-
-          <div className="space-y-4 pt-2">
-            {data.package_distribution?.map((pkg, idx) => {
-              // Simulasi kalkulasi persentase visual batang horizontal
-              const totalItems = data.package_distribution.reduce((s, i) => s + i.count, 0);
-              const percentage = Math.round((pkg.count / totalItems) * 100);
-
-              return (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-semibold">
-                    <p className="text-gray-700 flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${pkg.color}`} /> {pkg.name}
-                    </p>
-                    <span className="text-gray-900 font-bold font-mono">{pkg.count} Siswa ({percentage}%)</span>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase flex items-center gap-1"><ArrowDownRight className="w-4 h-4 text-rose-400" /> Kas Keluar</p>
+                <p className="text-2xl font-black font-mono text-rose-400 mt-1">{formatRupiah(finance.payroll + finance.expenses)}</p>
+                <p className="text-[11px] text-slate-400 font-mono">Honor {formatRupiah(finance.payroll)} • Ops {formatRupiah(finance.expenses)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase">Arus Kas Bersih</p>
+                <p className={`text-2xl font-black font-mono mt-1 ${finance.net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatRupiah(finance.net)}</p>
+                <p className="text-[11px] text-slate-400">Piutang {formatRupiah(finance.receivables.total)} ({finance.receivables.count} tagihan)</p>
+              </div>
+            </div>
+            <div className="flex items-end gap-2 h-24 mt-6">
+              {finance.trend.map((t) => (
+                <div key={t.label} className="flex-1 flex flex-col items-center gap-1" title={`${t.label}: masuk ${formatRupiah(t.income)}, keluar ${formatRupiah(t.out)}`}>
+                  <div className="w-full flex items-end gap-0.5 h-20">
+                    <div className="flex-1 bg-emerald-400 rounded-t" style={{ height: `${t.income / maxTrend * 100}%` }} />
+                    <div className="flex-1 bg-rose-400 rounded-t" style={{ height: `${t.out / maxTrend * 100}%` }} />
                   </div>
-                  {/* Progress Bar Visualisasi Sebaran */}
-                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className={`h-full ${pkg.color} transition-all duration-500`} style={{ width: `${percentage}%` }} />
-                  </div>
+                  <span className="text-[9px] text-slate-400 whitespace-nowrap">{t.label}</span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
-          {/* Alert Info Singkat */}
-          <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-2xl text-[11px] text-blue-700 leading-relaxed font-medium">
-            💡 <strong>Info Alur Operasional:</strong> Perubahan slot pertemuan mengajar dari tentor/parent hanya diizinkan untuk *spesifik date* jika disetujui admin tanpa mengacaukan kontrak master awal.
-          </div>
+          {/* Pekerjaan tertunda */}
+          <Panel title={`Perlu Tindakan (${pendingTotal})`}>
+            <div className="space-y-2">
+              {inbox.map((item) => (
+                <Link key={item.key} to={item.link} className={`flex items-center justify-between p-2.5 rounded-xl text-sm ${item.count > 0 ? "bg-amber-50 hover:bg-amber-100 text-amber-900" : "text-gray-400 hover:bg-gray-50"}`}>
+                  <span className="flex items-center gap-2 font-semibold">{item.count > 0 ? <AlertTriangle size={14} /> : <Inbox size={14} />} {item.label}</span>
+                  <span className="font-black">{item.count}</span>
+                </Link>
+              ))}
+            </div>
+          </Panel>
         </div>
 
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="lg:col-span-2">
+            <Panel title="Sesi Hari Ini" link={{ to: "/admin/schedules", label: "Jadwal" }}>
+              {data.today_sessions.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Tidak ada sesi hari ini.</p>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {data.today_sessions.map((s) => (
+                    <div key={s.id} className="py-3 flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-bold font-mono text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><Clock size={13} /> {s.start_time}-{s.end_time}</span>
+                      <div className="flex-1 min-w-[160px]">
+                        <p className="text-sm font-bold text-gray-900">{s.subject_name} • {s.class_name}</p>
+                        <p className="text-xs text-gray-500">{s.tentor_name || "Tentor belum ditentukan"}{s.checked_in && " • sudah check-in"}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${SESSION_STATUS[s.status]?.className}`}>{SESSION_STATUS[s.status]?.label || s.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+          </div>
 
+          <Panel title={`Tutup Buku ${close.previous_period}`}>
+            <div className="space-y-3 text-sm">
+              <Link to="/admin/rapor" className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+                <span className="flex items-center gap-2 font-semibold text-gray-700"><FileCheck2 size={16} className="text-indigo-500" /> Rapor terbit</span>
+                <span className={`font-black ${close.reports_expected > 0 && close.reports_published >= close.reports_expected ? "text-emerald-600" : "text-amber-600"}`}>{close.reports_published}/{close.reports_expected}</span>
+              </Link>
+              <Link to="/admin/finance" className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+                <span className="flex items-center gap-2 font-semibold text-gray-700"><Wallet size={16} className="text-emerald-500" /> Payroll honor tentor</span>
+                {close.payroll_status
+                  ? <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${PAYROLL_STATUS[close.payroll_status]?.className}`}>{PAYROLL_STATUS[close.payroll_status]?.label}</span>
+                  : <span className="text-xs font-bold text-amber-600">Belum disusun</span>}
+              </Link>
+              {close.reports_expected > 0 && close.reports_published >= close.reports_expected && close.payroll_status === "PAID" && (
+                <p className="text-xs text-emerald-700 flex items-center gap-1"><CheckCircle2 size={14} /> Rapor & honor bulan lalu sudah tuntas.</p>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="lg:col-span-2">
+            <Panel title="Lead Terbaru" link={{ to: "/admin/leads", label: "Semua lead" }}>
+              {data.recent_leads.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Belum ada lead.</p>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {data.recent_leads.map((lead) => (
+                    <div key={lead.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{lead.student_name} <span className="text-gray-400 font-medium">• ortu {lead.parent_name}</span></p>
+                        <p className="text-xs text-gray-500">{lead.education_level}{lead.package_name && ` • ${lead.package_name}`} • {lead.created_at}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${LEAD_STATUS[lead.status] || "bg-gray-100 text-gray-600"}`}>{lead.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+          </div>
+
+          <Panel title="Siswa per Paket">
+            {data.package_distribution.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">Belum ada siswa di kelas.</p>
+            ) : (
+              <div className="space-y-3">
+                {data.package_distribution.map((p) => (
+                  <div key={p.name}>
+                    <div className="flex justify-between text-xs"><span className="text-gray-600 font-semibold">{p.name}</span><span className="font-black">{p.total}</span></div>
+                    <div className="h-2 bg-gray-100 rounded-full mt-1"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${p.total / maxPackage * 100}%` }} /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }
