@@ -19,3 +19,6 @@ export const MATERIAL_TYPE = {
   VIDEO: "Video",
   LINK: "Tautan",
 };
+
+export const getStudentProfile = () => api.get("/student/profile");
+export const updateStudentPassword = (data) => api.put("/student/password", data);

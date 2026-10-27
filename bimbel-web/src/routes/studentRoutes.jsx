@@ -4,6 +4,7 @@ import StudentExamAttemptPage from "../pages/student/StudentExamAttemptPage";
 import StudentReportPage from "../pages/student/StudentReportPage";
 import StudentLearningPage from "../pages/student/StudentLearningPage";
 import StudentMaterialPage from "../pages/student/StudentMaterialPage";
+import StudentProfilePage from "../pages/student/StudentProfilePage";
 
 export const studentRoutes = [
     {path:"dashboard", element:<StudentDashboardPage/>},
@@ -12,4 +13,5 @@ export const studentRoutes = [
     {path:"reports", element:<StudentReportPage/>},
     {path:"learning", element:<StudentLearningPage/>},
     {path:"materials", element:<StudentMaterialPage/>},
+    {path:"profile", element:<StudentProfilePage/>},
 ];

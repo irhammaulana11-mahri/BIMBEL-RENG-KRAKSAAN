@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { profile } from "@/services/auth/authService";
+import { profile, logout as logoutApi } from "@/services/auth/authService";
 import { authStorage } from "../services/auth/authStorage";
 import { registerLogout } from "../services/auth/authEvents";
 
@@ -16,11 +16,11 @@ export default function AuthProvider({ children }) {
     const resetAuthState = () => {setUser(null);};
 
     //  * Logout
-    const logout = async () => {
+    // reason: "manual" (tombol Logout) atau alasan otomatis (sesi habis, token tidak valid)
+    const logout = async (reason = "manual") => {
         try {
-            // Optional
-            // await logoutApi();
-
+            // Cabut token di server selama masih valid (manual / idle); "expired" dilewati agar tidak loop 401
+            if (reason !== "expired" && authStorage.getToken()) await logoutApi();
         } catch (err) {
             console.warn("Logout API gagal", err);
         } finally {

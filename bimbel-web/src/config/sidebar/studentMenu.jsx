@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, ClipboardCheck, GraduationCap, CalendarDays, BookOpen } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, GraduationCap, CalendarDays, BookOpen, User } from "lucide-react";
 
 export const studentMenu = [
   {
@@ -14,5 +14,9 @@ export const studentMenu = [
       { to: "/student/exams", label: "Ujian & Hasil", icon: <ClipboardCheck size={20} /> },
       { to: "/student/reports", label: "Rapor Saya", icon: <GraduationCap size={20} /> },
     ]
+  },
+  {
+    category: "Akun",
+    menus: [{ to: "/student/profile", label: "Profil Saya", icon: <User size={20} /> }]
   },
 ];

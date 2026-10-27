@@ -61,6 +61,7 @@ use App\Http\Controllers\Api\TentorPortal\TentorExamResultController;
 use App\Http\Controllers\Api\StudentPortal\StudentExamController;
 use App\Http\Controllers\Api\StudentPortal\StudentProgressReportController;
 use App\Http\Controllers\Api\StudentPortal\StudentLearningController;
+use App\Http\Controllers\Api\StudentPortal\StudentProfileController;
 use App\Http\Controllers\Api\TentorPortal\TentorProgressNoteController;
 use App\Http\Controllers\Api\TentorPortal\TentorProfileController;
 use App\Http\Controllers\Api\ParentPortal\ParentProgressReportController;
@@ -433,6 +434,10 @@ Route::prefix('student')
         Route::get('/sessions', [StudentLearningController::class, 'sessions']);
         Route::get('/sessions/{id}', [StudentLearningController::class, 'showSession']);
         Route::get('/materials', [StudentLearningController::class, 'materials']);
+
+        // Profil & ganti password
+        Route::get('/profile', [StudentProfileController::class, 'show']);
+        Route::put('/password', [StudentProfileController::class, 'updatePassword']);
 
         // Rapor (yang sudah diterbitkan)
         Route::get('/progress-reports', [StudentProgressReportController::class, 'reports']);
