@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -197,13 +198,20 @@ return new class extends Migration
 
             $table->dropUnique('uq_invoices_number');
 
-            $table->dropIndex('idx_invoices_student');
-            $table->dropIndex('idx_invoices_class');
-            $table->dropIndex('idx_invoices_status');
-            $table->dropIndex('idx_invoices_issue_date');
-            $table->dropIndex('idx_invoices_due_date');
-            $table->dropIndex('idx_invoices_student_status');
-            $table->dropIndex('idx_invoices_period');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_student');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_class');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_status');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_issue_date');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_due_date');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_student_status');
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoices_period');
 
         });
 

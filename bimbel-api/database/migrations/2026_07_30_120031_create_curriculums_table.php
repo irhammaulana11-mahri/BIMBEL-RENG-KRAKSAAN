@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -156,29 +157,23 @@ return new class extends Migration
                 'uq_curriculums_subject_order'
             );
 
-            $table->dropIndex(
-                'idx_curriculums_subject'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_subject');
 
-            $table->dropIndex(
-                'idx_curriculums_level'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_level');
 
-            $table->dropIndex(
-                'idx_curriculums_semester'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_semester');
 
-            $table->dropIndex(
-                'idx_curriculums_order'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_order');
 
-            $table->dropIndex(
-                'idx_curriculums_active'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_active');
 
-            $table->dropIndex(
-                'idx_curriculums_subject_level'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_subject_level');
 
         });
 

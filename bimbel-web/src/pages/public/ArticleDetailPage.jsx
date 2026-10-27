@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { useParams } from "react-router-dom";
 import { getArticleBySlug } from "@/services/public/websiteService";
 
@@ -31,7 +32,7 @@ export default function ArticleDetailPage() {
       <div className="max-w-4xl mx-auto px-6">
 
         <img
-          src={`http://127.0.0.1:8001${article.featured_image}`}
+          src={assetUrl(article.featured_image)}
           className="
           w-full
           h-[500px]

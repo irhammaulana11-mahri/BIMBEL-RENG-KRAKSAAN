@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -142,17 +143,14 @@ return new class extends Migration
                 'uq_payment_details_payment_invoice'
             );
 
-            $table->dropIndex(
-                'idx_payment_details_payment'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payment_details_payment');
 
-            $table->dropIndex(
-                'idx_payment_details_invoice'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payment_details_invoice');
 
-            $table->dropIndex(
-                'idx_payment_details_payment_invoice'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payment_details_payment_invoice');
 
         });
 

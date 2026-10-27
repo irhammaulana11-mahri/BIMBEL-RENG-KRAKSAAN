@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { getCompanyProfile } from "@/services/public/websiteService";
 import { useSidebar } from "../../context/SidebarContext";
 import SidebarMenu from "./sidebarMenu";
@@ -41,7 +42,7 @@ export default function UniversalSidebar({ role }) {
         {isExpanded ? (
           <div className="flex items-center gap-3 w-full px-2 animate-in fade-in duration-200">
             {company?.logo_url && (
-              <img src={`http://127.0.0.1:8001${company.logo_url}`} alt="logo" className="h-12 w-12 object-contain rounded-xl" />
+              <img src={assetUrl(company.logo_url)} alt="logo" className="h-12 w-12 object-contain rounded-xl" />
             )}
             <div className="overflow-hidden">
               <h2 className="font-black text-sm text-gray-950 truncate tracking-tight">{company?.company_name}</h2>
@@ -51,7 +52,7 @@ export default function UniversalSidebar({ role }) {
         ) : (
           <div className="animate-in fade-in duration-200">
             {company?.logo_url ? (
-              <img src={`http://127.0.0.1:8001${company.logo_url}`} alt="logo" className="h-11 w-11 object-contain rounded-xl" />
+              <img src={assetUrl(company.logo_url)} alt="logo" className="h-11 w-11 object-contain rounded-xl" />
             ) : (
               <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
                 {getInitials(company?.company_name)}
@@ -189,7 +190,7 @@ export default function UniversalSidebar({ role }) {
 //         {isExpanded ? (
 //           <div className="flex items-center gap-3 w-full px-2 animate-in fade-in duration-200">
 //             {company?.logo_url && (
-//               <img src={`http://127.0.0.1:8001${company.logo_url}`} alt="logo" className="h-12 w-12 object-contain rounded-xl" />
+//               <img src={assetUrl(company.logo_url)} alt="logo" className="h-12 w-12 object-contain rounded-xl" />
 //             )}
 //             <div className="overflow-hidden">
 //               <h2 className="font-black text-sm text-gray-950 truncate tracking-tight">{company?.company_name}</h2>
@@ -199,7 +200,7 @@ export default function UniversalSidebar({ role }) {
 //         ) : (
 //           <div className="animate-in fade-in duration-200">
 //             {company?.logo_url ? (
-//               <img src={`http://127.0.0.1:8001${company.logo_url}`} alt="logo" className="h-11 w-11 object-contain rounded-xl" />
+//               <img src={assetUrl(company.logo_url)} alt="logo" className="h-11 w-11 object-contain rounded-xl" />
 //             ) : (
 //               <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
 //                 {getInitials(company?.company_name)}

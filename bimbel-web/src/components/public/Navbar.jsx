@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { getCompanyProfile } from "@/services/public/websiteService";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
@@ -24,7 +25,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3 flex-shrink-0">
             {company?.logo_url && (
               <img
-                src={`http://127.0.0.1:8001${company.logo_url}`}
+                src={assetUrl(company.logo_url)}
                 alt="Logo"
                 className="h-12 w-auto"
               />

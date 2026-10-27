@@ -1,4 +1,5 @@
 import { useEffect,useState } from "react";
+import { assetUrl } from "@/config/env";
 import { useParams } from "react-router-dom";
 
 import {
@@ -38,7 +39,7 @@ export default function ActivityDetailPage() {
       <div className="max-w-5xl mx-auto px-6">
 
         <img
-          src={`http://127.0.0.1:8001${activity.cover_image}`}
+          src={assetUrl(activity.cover_image)}
           className="
           w-full
           h-[500px]

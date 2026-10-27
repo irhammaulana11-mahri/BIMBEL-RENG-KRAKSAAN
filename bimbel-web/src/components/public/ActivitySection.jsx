@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { CalendarDays, ArrowRight } from "lucide-react";
 import { getActivities } from "@/services/public/websiteService";
 import { Link } from "react-router-dom";
@@ -38,7 +39,7 @@ export default function ActivitySection() {
                 shadow-sm hover:shadow-xl transition-all duration-300"
             >
               <div className="relative overflow-hidden">
-                <img src={`http://127.0.0.1:8001${item.cover_image}`} alt={item.title} className="w-full
+                <img src={assetUrl(item.cover_image)} alt={item.title} className="w-full
                     h-64 object-cover group-hover:scale-110 transition duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />

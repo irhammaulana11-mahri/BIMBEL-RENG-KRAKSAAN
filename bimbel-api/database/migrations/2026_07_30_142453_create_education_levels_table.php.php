@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -137,25 +138,20 @@ return new class extends Migration
                 'uq_education_levels_level_grade'
             );
 
-            $table->dropIndex(
-                'idx_education_levels_level'
-            );
+            // Index di schema master dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS master.idx_education_levels_level');
 
-            $table->dropIndex(
-                'idx_education_levels_grade'
-            );
+            // Index di schema master dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS master.idx_education_levels_grade');
 
-            $table->dropIndex(
-                'idx_education_levels_active'
-            );
+            // Index di schema master dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS master.idx_education_levels_active');
 
-            $table->dropIndex(
-                'idx_education_levels_sort'
-            );
+            // Index di schema master dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS master.idx_education_levels_sort');
 
-            $table->dropIndex(
-                'idx_education_levels_level_grade'
-            );
+            // Index di schema master dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS master.idx_education_levels_level_grade');
 
         });
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { assetUrl } from "@/config/env";
 import { Pencil, Trash2, Image } from "lucide-react";
 
 export default function BannerTable({ data, loading, onEdit, onDelete }) {
@@ -52,7 +53,7 @@ export default function BannerTable({ data, loading, onEdit, onDelete }) {
                 <div className="relative group rounded-xl overflow-hidden bg-slate-100 border border-gray-100 w-40 h-24 shrink-0 flex items-center justify-center">
                   {item.image_url ? (
                     <img 
-                      src={`http://127.0.0.1:8001${item.image_url}`}
+                      src={assetUrl(item.image_url)}
                       className="w-full h-full object-cover"
                       alt={item.title || "Banner"}
                     />

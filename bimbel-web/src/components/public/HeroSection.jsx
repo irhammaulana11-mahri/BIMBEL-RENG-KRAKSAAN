@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -89,7 +90,7 @@ export default function HeroBannerSection() {const [banners, setBanners] = useSt
                   <div className="relative h-[550px]">
 
                     <img
-                      src={`http://127.0.0.1:8001${banner.image_url}`}
+                      src={assetUrl(banner.image_url)}
                       alt={banner.title}
                       className="w-full h-full object-cover"
                     />

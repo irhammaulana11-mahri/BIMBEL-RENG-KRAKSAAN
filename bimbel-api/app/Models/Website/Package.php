@@ -12,24 +12,26 @@ class Package extends Model {
     protected $table = 'website.packages';
     protected $keyType = 'string';
     public $incrementing = false;
+    // Sesuai kolom website.packages (kolom lama price/is_home_visit/card_color sudah tidak ada)
     protected $fillable = [
+        'package_code',
         'package_name',
         'education_level',
         'description',
-        'price',
+        'default_price',
         'meeting_per_month',
         'duration_minutes',
-        'is_home_visit',
-        'is_building_class',
+        'class_type',
+        'display_order',
         'is_active',
-        'card_color',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'is_home_visit' => 'boolean',
-        'is_building_class' => 'boolean',
-        'is_active' => 'boolean',
+        'default_price'     => 'decimal:2',
+        'meeting_per_month' => 'integer',
+        'duration_minutes'  => 'integer',
+        'display_order'     => 'integer',
+        'is_active'         => 'boolean',
     ];
 
     public function leads() {

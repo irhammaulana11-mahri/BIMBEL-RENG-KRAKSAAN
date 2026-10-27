@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { Link } from "react-router-dom";
 import { getActivities } from "@/services/public/websiteService";
 
@@ -42,7 +43,7 @@ export default function ActivityListPage() {
             >
 
               <img
-                src={`http://127.0.0.1:8001${item.cover_image}`}
+                src={assetUrl(item.cover_image)}
                 className="
                 w-full
                 h-60

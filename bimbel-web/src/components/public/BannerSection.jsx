@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -29,7 +30,7 @@ export default function BannerSection() {
           {banners.map((item) => (
             <SwiperSlide key={item.id}>
               <img
-                src={`http://127.0.0.1:8001${item.image_url}`}
+                src={assetUrl(item.image_url)}
                 alt={item.title}
                 className="w-full h-[500px] object-cover rounded-2xl"
               />

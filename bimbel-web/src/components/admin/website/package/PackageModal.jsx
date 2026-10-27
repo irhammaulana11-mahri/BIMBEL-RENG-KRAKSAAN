@@ -2,52 +2,51 @@ import React, { useEffect, useState } from "react";
 import { X, Layers } from "lucide-react";
 import PackageForm from "./PackageForm";
 import { createPackage, updatePackage } from "@/services/admin/website/packageService";
+import { getApiErrorMessage } from "@/utils/apiError";
 
-export default function PackageModal({ open, onClose, data, onSuccess }) {
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
+const EMPTY_FORM = {
     package_name: "",
     education_level: "",
     description: "",
-    price: 0,
-    meeting_per_month: 0,
-    duration_minutes: 0,
-    is_home_visit: false,
-    is_building_class: true,
+    default_price: 0,
+    meeting_per_month: 8,
+    duration_minutes: 90,
+    class_type: "REGULER",
     is_active: true,
-    card_color: "#2563eb",
-  });
+  };
+
+export default function PackageModal({ open, onClose, data, onSuccess }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (data) {
-      setForm(data);
-    } else {
-      setForm({
-        package_name: "",
-        education_level: "",
-        description: "",
-        price: 0,
-        meeting_per_month: 0,
-        duration_minutes: 0,
-        is_home_visit: false,
-        is_building_class: true,
-        is_active: true,
-        card_color: "#2563eb",
-      });
-    }
+    setError("");
+    setForm(data
+      ? {
+          package_name: data.package_name || "",
+          education_level: data.education_level || "",
+          description: data.description || "",
+          default_price: Number(data.default_price || 0),
+          meeting_per_month: data.meeting_per_month || 0,
+          duration_minutes: data.duration_minutes || 0,
+          class_type: data.class_type || "REGULER",
+          is_active: Boolean(data.is_active),
+        }
+      : EMPTY_FORM);
   }, [data, open]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      if (data) {
-        await updatePackage(data.id, form);
-      } else {
-        await createPackage(form);
-      }
+      if (data) await updatePackage(data.id, form);
+      else await createPackage(form);
       onSuccess();
       onClose();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal menyimpan paket."));
     } finally {
       setLoading(false);
     }
@@ -80,6 +79,7 @@ export default function PackageModal({ open, onClose, data, onSuccess }) {
         {/* Form Integrasi */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <PackageForm form={form} setForm={setForm} />
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
           {/* Footer Sticky Tombol Aksi Kerja Akhir */}
           <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 bg-white">

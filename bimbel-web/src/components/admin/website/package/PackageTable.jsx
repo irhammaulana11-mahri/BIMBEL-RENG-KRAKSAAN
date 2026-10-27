@@ -1,5 +1,6 @@
 import React from "react";
-import { Pencil, Trash2, Home, Building2, Palette } from "lucide-react";
+import { PACKAGE_CLASS_TYPES } from "./packageTypes";
+import { Pencil, Trash2, Palette } from "lucide-react";
 
 export default function PackageTable({ data, loading, onEdit, onDelete }) {
   
@@ -52,8 +53,7 @@ export default function PackageTable({ data, loading, onEdit, onDelete }) {
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-4 h-4 rounded-full border border-white shadow-xs shrink-0 flex items-center justify-center text-[8px]"
-                    style={{ backgroundColor: item.card_color || "#2563eb" }}
-                    title={`Kode warna: ${item.card_color}`}
+                    style={{ backgroundColor: PACKAGE_CLASS_TYPES[item.class_type]?.color || "#2563eb" }}
                   >
                     <Palette className="w-2 h-2 text-white/40" />
                   </div>
@@ -71,7 +71,7 @@ export default function PackageTable({ data, loading, onEdit, onDelete }) {
               </td>
               
               <td className="px-6 py-5 text-right font-mono font-bold text-gray-900 text-base">
-                {formatIDR(item.price || 0)}
+                {formatIDR(item.default_price || 0)}
               </td>
               
               <td className="px-6 py-5 text-center">
@@ -81,19 +81,7 @@ export default function PackageTable({ data, loading, onEdit, onDelete }) {
               
               <td className="px-6 py-5">
                 <div className="flex flex-col gap-1">
-                  {item.is_home_visit && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
-                      <Home size={13} className="shrink-0"/> Privat Home Visit
-                    </span>
-                  )}
-                  {item.is_building_class && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                      <Building2 size={13} className="shrink-0"/> Tatap Muka Cabang
-                    </span>
-                  )}
-                  {!item.is_home_visit && !item.is_building_class && (
-                    <span className="text-xs text-gray-400 italic">Metode belum diset</span>
-                  )}
+                  <span className="text-xs font-semibold text-gray-700">{PACKAGE_CLASS_TYPES[item.class_type]?.label || item.class_type || "-"}</span>
                 </div>
               </td>
 

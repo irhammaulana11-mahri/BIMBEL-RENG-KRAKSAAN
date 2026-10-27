@@ -5,7 +5,8 @@ import {
   CalendarDays,
   Home,
   Building2,
-  Star
+  Star,
+  Video
 } from "lucide-react";
 
 import { getPackages } from "@/services/public/websiteService";
@@ -63,7 +64,8 @@ export default function PackageSection() {
 
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
           {packages.map((item, index) => {
-            const style = getColor(item.card_color);
+            // Warna kartu mengikuti tipe kelas paket
+            const style = getColor({ PRIVATE: "green", ONLINE: "red" }[item.class_type]);
             const isPopular = index === 1;
             return (
               <div key={item.id} className={`relative bg-white rounded-2xl shadow-lg border-t-4 ${style.border}
@@ -84,7 +86,7 @@ export default function PackageSection() {
                 <p className="text-gray-500 mb-6">{item.education_level}</p>
                 <div className="mb-5">
                   <span className={`text-3xl font-extrabold ${style.text}`}>
-                    Rp {Number(item.price).toLocaleString("id-ID")}
+                    Rp {Number(item.default_price || 0).toLocaleString("id-ID")}
                   </span>
                   <span className="text-gray-500 ml-1">/ bulan</span>
                 </div>
@@ -102,20 +104,27 @@ export default function PackageSection() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={18} className="text-green-500"/>
-                    <span>{item.duration_minutes}Menit / Pertemuan</span>
+                    <span>{item.duration_minutes} Menit / Pertemuan</span>
                   </div>
 
-                  {item.is_home_visit && (
+                  {item.class_type === "PRIVATE" && (
                     <div className="flex items-center gap-2">
                       <Home size={18} className="text-green-500"/>
                       <span>Home Visit</span>
                     </div>
                   )}
 
-                  {item.is_building_class && (
+                  {item.class_type === "REGULER" && (
                     <div className="flex items-center gap-2">
                       <Building2 size={18} className="text-green-500"/>
                       <span>Kelas Gedung</span>
+                    </div>
+                  )}
+
+                  {item.class_type === "ONLINE" && (
+                    <div className="flex items-center gap-2">
+                      <Video size={18} className="text-green-500"/>
+                      <span>Kelas Online</span>
                     </div>
                   )}
 

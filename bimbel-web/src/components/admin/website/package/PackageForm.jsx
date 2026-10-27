@@ -1,5 +1,6 @@
 import React from "react";
 import PackagePreview from "./PackagePreview";
+import { PACKAGE_CLASS_TYPES } from "./packageTypes";
 
 export default function PackageForm({ form, setForm }) {
   const handleChange = (e) => {
@@ -9,15 +10,6 @@ export default function PackageForm({ form, setForm }) {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
-  // Kumpulan palet warna premium untuk kustomisasi kartu visual
-  const colorPresets = [
-    { name: "Sapphire Blue", value: "#2563eb" },
-    { name: "Emerald Green", value: "#059669" },
-    { name: "Luxury Purple", value: "#7c3aed" },
-    { name: "Sunset Orange", value: "#ea580c" },
-    { name: "Ruby Red", value: "#dc2626" },
-  ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -43,8 +35,8 @@ export default function PackageForm({ form, setForm }) {
         </div>
 
         <div>
-          <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Skema Biaya Paket (Nominal IDR)</label>
-          <input type="number" required name="price" value={form.price} onChange={handleChange} className="w-full mt-1.5 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500" placeholder="Contoh: 250000"/>
+          <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Biaya Bulanan (IDR)</label>
+          <input type="number" min={0} required name="default_price" value={form.default_price} onChange={handleChange} className="w-full mt-1.5 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500" placeholder="Contoh: 250000"/>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -58,29 +50,12 @@ export default function PackageForm({ form, setForm }) {
           </div>
         </div>
 
-        {/* Kustomisasi Warna Kartu menggunakan Presets modern */}
         <div>
-          <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-2">Tema Warna Kartu Tampilan</label>
-          <div className="flex flex-wrap gap-2">
-            {colorPresets.map((color) => (
-              <button
-                key={color.value}
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, card_color: color.value }))}
-                className={`w-8 h-8 rounded-full border-2 transition-transform duration-200 ${form.card_color === color.value ? "scale-110 border-gray-950 shadow-xs" : "border-transparent hover:scale-105"}`}
-                style={{ backgroundColor: color.value }}
-                title={color.name}
-              />
-            ))}
-            <input 
-              type="color" 
-              name="card_color" 
-              value={form.card_color || "#2563eb"} 
-              onChange={handleChange} 
-              className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 shrink-0"
-              title="Kustom Warna Bebas"
-            />
-          </div>
+          <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Tipe Kelas</label>
+          <select name="class_type" required value={form.class_type} onChange={handleChange} className="w-full mt-1.5 rounded-xl border border-gray-200 px-4 py-2.5 text-sm bg-white focus:outline-none">
+            {Object.entries(PACKAGE_CLASS_TYPES).map(([value, t]) => <option key={value} value={value}>{t.label}</option>)}
+          </select>
+          <p className="text-[11px] text-gray-400 mt-1">Menentukan kelas yang memakai paket ini dan cara absensi (gedung / online / rumah siswa).</p>
         </div>
 
         <div>
@@ -88,24 +63,10 @@ export default function PackageForm({ form, setForm }) {
           <textarea rows="3" name="description" value={form.description} onChange={handleChange} className="w-full mt-1.5 rounded-xl border border-gray-200 px-4 py-2 text-xs leading-relaxed resize-none focus:outline-none focus:border-blue-500" placeholder="Jelaskan detail fasilitas pendukung paket..."/>
         </div>
 
-        {/* Parameter Boolean Tipe Akses Absensi Geotag */}
-        <div className="p-4 bg-slate-50 border border-gray-150 rounded-2xl space-y-3">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block border-b pb-1">Opsi Metode & Status Publikasi</span>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
-              <input type="checkbox" name="is_home_visit" checked={form.is_home_visit} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
-              Home Visit
-            </label>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
-              <input type="checkbox" name="is_building_class" checked={form.is_building_class} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
-              Building Class
-            </label>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
-              <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
-              Status Aktif
-            </label>
-          </div>
-        </div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
+          <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+          Paket aktif (tampil di website & bisa dipilih saat membuat kelas)
+        </label>
       </div>
 
       {/* Kolom Kanan: Sticky Preview Area (Col Span 5) */}

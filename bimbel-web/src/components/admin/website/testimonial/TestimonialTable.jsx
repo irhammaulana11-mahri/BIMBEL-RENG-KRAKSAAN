@@ -1,4 +1,5 @@
 import React from "react";
+import { assetUrl } from "@/config/env";
 import { Pencil, Trash2, Star } from "lucide-react";
 
 export default function TestimonialTable({ data, loading, onEdit, onDelete }) {
@@ -41,7 +42,7 @@ export default function TestimonialTable({ data, loading, onEdit, onDelete }) {
               <td className="px-6 py-4">
                 <div className="flex justify-center">
                   <img 
-                    src={item.photo_url ? `http://127.0.0.1:8001${item.photo_url}` : "https://ui-avatars.com/api/?name=Student"}
+                    src={item.photo_url ? assetUrl(item.photo_url) : "https://ui-avatars.com/api/?name=Student"}
                     alt={item.student_name} 
                     className="w-14 h-14 rounded-full border border-gray-100 object-cover shadow-xs bg-slate-50 shrink-0"
                   />

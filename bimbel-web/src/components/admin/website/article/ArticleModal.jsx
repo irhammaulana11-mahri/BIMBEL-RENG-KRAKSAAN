@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { X, FileEdit } from "lucide-react";
 import { createArticle, updateArticle } from "@/services/admin/website/articleService";
 import { uploadImage } from "@/services/admin/website/uploadService";
@@ -31,7 +32,7 @@ export default function ArticleModal({ open, onClose, data, onSuccess }) {
         is_published: data.is_published ?? true,
       });
       if (data.featured_image) {
-        setPreview(`http://127.0.0.1:8001${data.featured_image}`);
+        setPreview(assetUrl(data.featured_image));
       }
     } else {
       setForm({ title: "", summary: "", content: "", categories: [], featured_image: "", publish_date: "", is_published: true });

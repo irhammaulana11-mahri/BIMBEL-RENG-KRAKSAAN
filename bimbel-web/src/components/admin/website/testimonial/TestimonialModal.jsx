@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { X, MessageSquarePlus } from "lucide-react";
 import TestimonialForm from "./TestimonialForm";
 import { uploadImage } from "@/services/admin/website/uploadService";
@@ -28,7 +29,7 @@ export default function TestimonialModal({ open, onClose, data, onSuccess }) {
         is_active: data.is_active ?? true,
       });
       if (data.photo_url) {
-        setPreview(`http://127.0.0.1:8001${data.photo_url}`);
+        setPreview(assetUrl(data.photo_url));
       }
     } else {
       setForm({

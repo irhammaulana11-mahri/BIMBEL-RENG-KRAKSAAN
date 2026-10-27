@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { Link } from "react-router-dom";
 import { getArticles } from "@/services/public/websiteService";
 
@@ -51,7 +52,7 @@ export default function ArticleListPage() {
             >
 
               <img
-                src={`http://127.0.0.1:8001${item.featured_image}`}
+                src={assetUrl(item.featured_image)}
                 className="
                 w-full
                 h-60

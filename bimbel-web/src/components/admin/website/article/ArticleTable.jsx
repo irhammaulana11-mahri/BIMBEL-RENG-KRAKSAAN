@@ -1,4 +1,5 @@
 import React from "react";
+import { assetUrl } from "@/config/env";
 import { Pencil, Trash2, Eye, User, Image } from "lucide-react";
 
 export default function ArticleTable({ data, loading, onEdit, onDelete }) {
@@ -42,7 +43,7 @@ export default function ArticleTable({ data, loading, onEdit, onDelete }) {
                   <div className="relative rounded-xl overflow-hidden bg-slate-100 border border-gray-100 w-28 h-20 shrink-0 flex items-center justify-center">
                     {item.featured_image ? (
                       <img 
-                        src={`http://127.0.0.1:8001${item.featured_image}`} 
+                        src={assetUrl(item.featured_image)} 
                         className="w-full h-full object-cover"
                         alt={item.title}
                       />

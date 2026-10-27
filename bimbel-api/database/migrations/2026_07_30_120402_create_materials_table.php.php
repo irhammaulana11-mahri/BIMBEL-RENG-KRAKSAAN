@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -185,29 +186,23 @@ return new class extends Migration
                 'uq_materials_curriculum_order'
             );
 
-            $table->dropIndex(
-                'idx_materials_curriculum'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_curriculum');
 
-            $table->dropIndex(
-                'idx_materials_tentor'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_tentor');
 
-            $table->dropIndex(
-                'idx_materials_type'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_type');
 
-            $table->dropIndex(
-                'idx_materials_order'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_order');
 
-            $table->dropIndex(
-                'idx_materials_active'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_active');
 
-            $table->dropIndex(
-                'idx_materials_curriculum_order'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_materials_curriculum_order');
 
         });
 

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -194,25 +195,20 @@ return new class extends Migration
                 'uq_payroll_details_attendance'
             );
 
-            $table->dropIndex(
-                'idx_payroll_details_payroll'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payroll_details_payroll');
 
-            $table->dropIndex(
-                'idx_payroll_details_tentor'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payroll_details_tentor');
 
-            $table->dropIndex(
-                'idx_payroll_details_attendance'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payroll_details_attendance');
 
-            $table->dropIndex(
-                'idx_payroll_details_session'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payroll_details_session');
 
-            $table->dropIndex(
-                'idx_payroll_details_payroll_tentor'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payroll_details_payroll_tentor');
 
         });
 

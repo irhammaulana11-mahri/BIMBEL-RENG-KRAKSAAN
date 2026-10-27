@@ -3,12 +3,17 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\CompanyProfile;
+use App\Models\Website\CompanyProfile;
 
 class CompanyProfileSeeder extends Seeder
 {
     public function run(): void
     {
+        // Hanya satu profil lembaga; jangan gandakan bila sudah ada
+        if (CompanyProfile::exists()) {
+            return;
+        }
+
         CompanyProfile::create([
             'company_name' => 'Bimbel Reng Kraksaan',
 

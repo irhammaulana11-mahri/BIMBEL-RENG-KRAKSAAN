@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { X, ImagePlus } from "lucide-react";
 import { createBanner, updateBanner } from "@/services/admin/website/bannerService";
 import { uploadImage } from "@/services/admin/website/uploadService";
@@ -35,7 +36,7 @@ export default function BannerModal({ open, onClose, data, onSuccess }) {
         end_date: data.end_date || "",
       });
       if (data.image_url) {
-        setPreview(`http://127.0.0.1:8001${data.image_url}`);
+        setPreview(assetUrl(data.image_url));
       }
     } else {
       setForm({

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { X, CalendarDays } from "lucide-react";
 import { createActivities, updateActivities } from "@/services/admin/website/activityService";
 import { uploadImage } from "@/services/admin/website/uploadService";
@@ -29,7 +30,7 @@ export default function ActivityModal({ open, onClose, data, onSuccess }) {
         is_active: data.is_active ?? true,
       });
       if (data.cover_image) {
-        setPreview(`http://127.0.0.1:8001${data.cover_image}`);
+        setPreview(assetUrl(data.cover_image));
       }
     } else {
       setForm({

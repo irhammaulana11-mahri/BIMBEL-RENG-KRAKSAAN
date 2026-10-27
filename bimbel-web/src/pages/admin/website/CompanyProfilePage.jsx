@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { Landmark, Save, UploadCloud, Link2, MapPin, Phone, Mail } from "lucide-react";
 import { getCompanyProfile, createCompanyProfile, updateCompanyProfile } from "@/services/admin/website/companyProfileService";
 import { uploadImage } from "@/services/admin/website/uploadService";
@@ -54,7 +55,7 @@ export default function CompanyProfilePage() {
           longitude: data.longitude || "",
           logo_url: data.logo_url || "",
         });
-        setLogoPreview(data.logo_url ? `http://127.0.0.1:8001${data.logo_url}` : null);
+        setLogoPreview(data.logo_url ? assetUrl(data.logo_url) : null);
       }
     } catch (err) {
       console.log(err);

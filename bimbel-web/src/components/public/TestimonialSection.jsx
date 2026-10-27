@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { getTestimonials } from "@/services/public/websiteService";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination,Autoplay } from "swiper/modules";
@@ -60,7 +61,7 @@ export default function TestimonialSection() {
                 <div className="flex mb-4">{renderStars(item.rating)}</div>
                 <p className="text-gray-600 italic leading-relaxed flex-1">"{item.testimonial}"</p>
                 <div className="flex items-center gap-4 mt-8 pt-6 border-t">
-                  <img src={item.photo_url ? `http://127.0.0.1:8001${item.photo_url}` : "/default-avatar.png"}
+                  <img src={item.photo_url ? assetUrl(item.photo_url) : "/default-avatar.png"}
                     alt={item.student_name} className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
                   />
                   <div>

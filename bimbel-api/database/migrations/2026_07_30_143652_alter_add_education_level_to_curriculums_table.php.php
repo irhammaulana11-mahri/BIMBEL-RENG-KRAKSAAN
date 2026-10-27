@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -38,9 +39,8 @@ return new class extends Migration
                 'fk_curriculums_education_level'
             );
 
-            $table->dropIndex(
-                'idx_curriculums_education_level'
-            );
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_curriculums_education_level');
 
             $table->dropColumn(
                 'education_level_id'

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -183,29 +184,23 @@ return new class extends Migration
                 'uq_payments_number'
             );
 
-            $table->dropIndex(
-                'idx_payments_student'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_student');
 
-            $table->dropIndex(
-                'idx_payments_date'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_date');
 
-            $table->dropIndex(
-                'idx_payments_method'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_method');
 
-            $table->dropIndex(
-                'idx_payments_status'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_status');
 
-            $table->dropIndex(
-                'idx_payments_reference'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_reference');
 
-            $table->dropIndex(
-                'idx_payments_student_status'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_payments_student_status');
 
         });
 

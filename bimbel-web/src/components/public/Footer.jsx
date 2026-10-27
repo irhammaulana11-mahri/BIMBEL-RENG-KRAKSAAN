@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import {
   MapPin,
   Phone,
@@ -43,7 +44,7 @@ export default function Footer() {
 
             {company?.logo_url && (
               <img
-                src={`http://127.0.0.1:8001${company.logo_url}`}
+                src={assetUrl(company.logo_url)}
                 alt="logo"
                 className="h-20 mb-4"
               />

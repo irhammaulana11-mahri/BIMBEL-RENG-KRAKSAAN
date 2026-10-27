@@ -32,7 +32,7 @@ class LeadResource extends JsonResource
                 ? [
                     'id' => $this->package->id,
                     'package_name' => $this->package->package_name,
-                    'price' => $this->package->price,
+                    'price' => (float) $this->package->default_price,
                 ]
                 : null,
         ];

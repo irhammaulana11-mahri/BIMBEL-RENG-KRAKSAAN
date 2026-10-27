@@ -1,9 +1,10 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config/env";
 import { authStorage } from "../services/auth/authStorage";
 import { triggerLogout } from "../services/auth/authEvents";
 
 const api = axios.create({
-    baseURL: "http://127.0.0.1:8001/api",
+    baseURL: API_BASE_URL,
     headers: {Accept: "application/json",},
 });
 

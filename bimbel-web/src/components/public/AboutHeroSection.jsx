@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { getCompanyProfile } from "@/services/public/websiteService";
 
 export default function AboutHeroSection() {
@@ -28,7 +29,7 @@ export default function AboutHeroSection() {
           </div>
           <div>
             {company?.logo_url && (
-              <img src={`http://127.0.0.1:8001${company.logo_url}`} alt="logo" className="w-full max-w-md mx-auto"/>
+              <img src={assetUrl(company.logo_url)} alt="logo" className="w-full max-w-md mx-auto"/>
             )}
           </div>
         </div>

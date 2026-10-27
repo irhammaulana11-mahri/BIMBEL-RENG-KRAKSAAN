@@ -5,7 +5,7 @@ import SubjectModal from "../../../components/admin/master/subject/SubjectModal"
 import SubjectPreview from "../../../components/admin/master/subject/SubjectPreview";
 import SubjectTable from "../../../components/admin/master/subject/SubjectTable";
 import PremiumStatCard from "../../../components/ui/StatCard";
-import { createSubject, deleteSubject, getSubjects, updateSubject, getSubjectStatistics,getEducationLevels,toggleSubjectStatus, } from "../../../services/admin/subjectService";
+import { createSubject, deleteSubject, getSubject, getSubjects, updateSubject, getSubjectStatistics,getEducationLevels,toggleSubjectStatus, } from "../../../services/admin/subjectService";
 import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import useDebounce from "@/hooks/useDebounce";

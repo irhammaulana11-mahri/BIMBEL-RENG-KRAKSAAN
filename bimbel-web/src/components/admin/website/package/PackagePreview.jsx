@@ -1,11 +1,11 @@
 import React from "react";
-import { Home, Building2, Layers } from "lucide-react";
+import { PACKAGE_CLASS_TYPES } from "./packageTypes";
 
 export default function PackagePreview({ form }) {
   return (
     <div 
       className="rounded-3xl p-6 text-white shadow-md relative overflow-hidden min-h-[340px] flex flex-col justify-between transition-all duration-300 border border-white/5" 
-      style={{ backgroundColor: form.card_color || "#2563eb" }}
+      style={{ backgroundColor: PACKAGE_CLASS_TYPES[form.class_type]?.color || "#2563eb" }}
     >
       {/* Lapisan Aksen Estetika Lingkaran Khas Mobile App */}
       <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
@@ -26,7 +26,7 @@ export default function PackagePreview({ form }) {
         </div>
 
         <div className="mt-6 text-3xl font-black font-mono tracking-tight relative z-10">
-          Rp {Number(form.price || 0).toLocaleString("id-ID")}
+          Rp {Number(form.default_price || 0).toLocaleString("id-ID")}
         </div>
 
         <div className="mt-5 space-y-2 text-sm font-bold relative z-10">
@@ -38,16 +38,9 @@ export default function PackagePreview({ form }) {
           </div>
           
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {form.is_home_visit && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/15 rounded-md text-[10px] font-bold border border-white/5">
-                <Home size={10}/> Rumah
-              </span>
-            )}
-            {form.is_building_class && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/15 rounded-md text-[10px] font-bold border border-white/5">
-                <Building2 size={10}/> Gedung
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/15 rounded-md text-[10px] font-bold border border-white/5">
+              {PACKAGE_CLASS_TYPES[form.class_type]?.label || form.class_type}
+            </span>
           </div>
         </div>
 

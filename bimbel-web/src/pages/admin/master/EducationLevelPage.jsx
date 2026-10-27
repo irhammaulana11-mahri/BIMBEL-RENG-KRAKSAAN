@@ -92,7 +92,7 @@ export default function EducationLevelPage() {
 
   // Reset Filter ke Default
   const handleResetFilter = () => {
-    setFilters(DEFAULT_SUBJECT_FILTER);
+    setFilters(DEFAULT_EDUCATIONLEVEL_FILTER);
     setPagination((prev) => ({
         ...prev,
         page: 1,

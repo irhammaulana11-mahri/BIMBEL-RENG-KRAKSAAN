@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -178,25 +179,20 @@ return new class extends Migration
                 'uq_questions_exam_order'
             );
 
-            $table->dropIndex(
-                'idx_questions_exam'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_questions_exam');
 
-            $table->dropIndex(
-                'idx_questions_type'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_questions_type');
 
-            $table->dropIndex(
-                'idx_questions_order'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_questions_order');
 
-            $table->dropIndex(
-                'idx_questions_active'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_questions_active');
 
-            $table->dropIndex(
-                'idx_questions_exam_order'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_questions_exam_order');
 
         });
 

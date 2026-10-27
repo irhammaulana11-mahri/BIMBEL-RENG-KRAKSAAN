@@ -3,7 +3,7 @@ import React, {useMemo} from "react";
 import { TableLoading,TableEmpty,TablePagination, } from "@/components/ui/table";
 
 
-export default function subjectTable({ 
+export default function SubjectTable({ 
     subjects = [],
     loading = false,
     pagination = null,

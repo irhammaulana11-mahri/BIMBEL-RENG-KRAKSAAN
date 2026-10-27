@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -139,15 +140,20 @@ return new class extends Migration
 
             $table->dropUnique('uq_student_attendance_session_student');
 
-            $table->dropIndex('idx_student_attendance_session');
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_student_attendance_session');
 
-            $table->dropIndex('idx_student_attendance_student');
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_student_attendance_student');
 
-            $table->dropIndex('idx_student_attendance_status');
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_student_attendance_status');
 
-            $table->dropIndex('idx_student_attendance_checkin');
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_student_attendance_checkin');
 
-            $table->dropIndex('idx_student_attendance_session_student');
+            // Index di schema academic dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS academic.idx_student_attendance_session_student');
 
         });
 

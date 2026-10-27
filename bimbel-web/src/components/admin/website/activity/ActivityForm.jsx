@@ -1,4 +1,5 @@
 import React from "react";
+import { assetUrl } from "@/config/env";
 import DatePicker from "react-datepicker";
 import { UploadCloud } from "lucide-react";
 import ActivityPreview from "./AcitvityPreview"; 
@@ -113,7 +114,7 @@ export default function ActivityForm({ form, setForm, preview, handleImage, acti
           <ActivityPreview 
             form={{
               ...form,
-              cover_image: preview || (form.cover_image ? `http://127.0.0.1:8001${form.cover_image}` : ""),
+              cover_image: preview || (form.cover_image ? assetUrl(form.cover_image) : ""),
             }}
           />
         </div>

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -193,29 +194,23 @@ return new class extends Migration
                 'uq_invoice_items_invoice_sort'
             );
 
-            $table->dropIndex(
-                'idx_invoice_items_invoice'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_invoice');
 
-            $table->dropIndex(
-                'idx_invoice_items_package'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_package');
 
-            $table->dropIndex(
-                'idx_invoice_items_curriculum'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_curriculum');
 
-            $table->dropIndex(
-                'idx_invoice_items_type'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_type');
 
-            $table->dropIndex(
-                'idx_invoice_items_sort'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_sort');
 
-            $table->dropIndex(
-                'idx_invoice_items_invoice_sort'
-            );
+            // Index di schema finance dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS finance.idx_invoice_items_invoice_sort');
 
         });
 

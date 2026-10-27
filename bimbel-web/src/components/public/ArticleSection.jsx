@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { assetUrl } from "@/config/env";
 import { CalendarDays,Eye,ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getArticles } from "@/services/public/websiteService";
@@ -38,7 +39,7 @@ export default function ArticleSection() {
                 shadow-sm hover:shadow-xl transition-all duration-300"
             >
               <div className="overflow-hidden">
-                <img src={`http://127.0.0.1:8001${item.featured_image}`} alt={item.title}
+                <img src={assetUrl(item.featured_image)} alt={item.title}
                   className="w-full h-64 object-cover group-hover:scale-110 transition duration-500"
                 />
               </div>

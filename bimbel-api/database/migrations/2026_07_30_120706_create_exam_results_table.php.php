@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -192,25 +193,20 @@ return new class extends Migration
                 'uq_exam_results_exam_student'
             );
 
-            $table->dropIndex(
-                'idx_exam_results_exam'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_exam_results_exam');
 
-            $table->dropIndex(
-                'idx_exam_results_student'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_exam_results_student');
 
-            $table->dropIndex(
-                'idx_exam_results_status'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_exam_results_status');
 
-            $table->dropIndex(
-                'idx_exam_results_submitted'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_exam_results_submitted');
 
-            $table->dropIndex(
-                'idx_exam_results_exam_student'
-            );
+            // Index di schema exam dihapus dengan nama lengkap (dropIndex tidak menyertakan schema)
+            DB::statement('DROP INDEX IF EXISTS exam.idx_exam_results_exam_student');
 
         });
 
