@@ -1,10 +1,7 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 
 export const getArticles = () =>
   api.get("/website/articles");
-
-export const getArticle = (id) =>
-  api.get(`/website/articles/${id}`);
 
 export const createArticle = (data) =>
   api.post("/website/articles", data);
@@ -14,8 +11,3 @@ export const updateArticle = (id, data) =>
 
 export const deleteArticle = (id) =>
   api.delete(`/website/articles/${id}`);
-
-export const getArticleBySlug = (slug) =>
-  api.get(
-    `/website/articles/slug/${slug}`
-  );

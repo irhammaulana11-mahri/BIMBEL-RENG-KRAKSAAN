@@ -1,9 +1,6 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 
-export const getCurrentUser = () => {return api.get("/profile");};
-
-/* ===================== ADMIN: MANAJEMEN AKUN ===================== */
-
+// Manajemen akun login (Admin)
 export const getUsers = (params = {}) => api.get("/admin/users", { params });
 export const getUserById = (id) => api.get(`/admin/users/${id}`);
 export const getUserOptions = () => api.get("/admin/users/options");

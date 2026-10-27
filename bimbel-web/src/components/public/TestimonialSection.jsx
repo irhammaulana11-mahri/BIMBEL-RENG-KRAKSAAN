@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getTestimonials } from "../../services/testimonialService";
+import { getTestimonials } from "@/services/public/websiteService";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination,Autoplay } from "swiper/modules";
 import "swiper/css";

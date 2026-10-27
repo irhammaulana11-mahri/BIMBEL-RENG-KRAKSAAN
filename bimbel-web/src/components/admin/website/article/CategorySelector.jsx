@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getCategories } from "../../../../services/articleCategoryService";
+import { getCategories } from "@/services/admin/website/articleCategoryService";
 
 export default function CategorySelector({ value = [], onChange }) {
   const [categories, setCategories] = useState([]);

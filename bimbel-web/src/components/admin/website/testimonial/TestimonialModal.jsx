@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { X, MessageSquarePlus } from "lucide-react";
 import TestimonialForm from "./TestimonialForm";
-import { uploadImage } from "../../../../services/uploadService";
-import { createTestimonial, updateTestimonial } from "../../../../services/testimonialService";
+import { uploadImage } from "@/services/admin/website/uploadService";
+import { createTestimonial, updateTestimonial } from "@/services/admin/website/testimonialService";
 
 export default function TestimonialModal({ open, onClose, data, onSuccess }) {
   const [loading, setLoading] = useState(false);

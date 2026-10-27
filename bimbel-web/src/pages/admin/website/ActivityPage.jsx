@@ -4,7 +4,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useConfirm } from "@/components/ui/confirmation";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
-import { getActivities, deleteActivities } from "../../../services/activityService";
+import { getActivities, deleteActivities } from "@/services/admin/website/activityService";
 import ActivityTable from "../../../components/admin/website/activity/ActivityTable";
 import ActivityModal from "../../../components/admin/website/activity/ActivityModal";
 

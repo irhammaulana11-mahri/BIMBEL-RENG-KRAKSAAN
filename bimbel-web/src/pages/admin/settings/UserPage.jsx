@@ -4,7 +4,7 @@ import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import { useConfirm } from "@/components/ui/confirmation";
 import UserFormModal from "../../../components/admin/settings/UserFormModal";
-import { getUsers, createUser, updateUser, toggleUserStatus, resetUserPassword, deleteUser, ROLE_BADGE } from "@/services/userService";
+import { getUsers, createUser, updateUser, toggleUserStatus, resetUserPassword, deleteUser, ROLE_BADGE } from "@/services/admin/userService";
 import { getApiErrorMessage } from "@/utils/apiError";
 
 const PROFILE_LABEL = { tentor: "Profil tentor", orang_tua: "Profil orang tua", siswa: "Siswa" };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, CalendarDays } from "lucide-react";
-import { createActivities, updateActivities } from "../../../../services/activityService";
-import { uploadImage } from "../../../../services/uploadService";
+import { createActivities, updateActivities } from "@/services/admin/website/activityService";
+import { uploadImage } from "@/services/admin/website/uploadService";
 import ActivityForm from "./ActivityForm";
 
 export default function ActivityModal({ open, onClose, data, onSuccess }) {

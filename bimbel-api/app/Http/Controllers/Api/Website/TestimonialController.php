@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers\Api\Website;
 
+use App\Http\Controllers\Api\Website\Concerns\PublicVisibility;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Website\TestimonialRequest;
 use App\Http\Resources\Website\TestimonialResource;
 use App\Models\Website\Testimonial;
 
 class TestimonialController extends Controller {
+    use PublicVisibility;
+
     public function index() {
         return TestimonialResource::collection(
-            Testimonial::orderByDesc('created_at')
+            Testimonial::when(!$this->viewerIsCmsAdmin(), fn($q) => $q->where('is_active', true))
+                ->orderByDesc('created_at')
                 ->get()
         );
     }
@@ -22,6 +27,7 @@ class TestimonialController extends Controller {
     }
 
     public function show(Testimonial $testimonial) {
+        abort_if(!$testimonial->is_active && !$this->viewerIsCmsAdmin(), 404);
         return new TestimonialResource($testimonial);
     }
 

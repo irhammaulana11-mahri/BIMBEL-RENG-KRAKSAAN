@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Info } from "lucide-react";
-import { getUserOptions } from "@/services/userService";
+import { getUserOptions } from "@/services/admin/userService";
 import { getApiErrorMessage } from "@/utils/apiError";
 
 const inputClass = "w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm focus:outline-none focus:border-blue-500";

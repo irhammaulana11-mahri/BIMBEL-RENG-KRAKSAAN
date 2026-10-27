@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, LogOut, Activity } from "lucide-react"; 
-import { getCurrentUser } from "../../services/userService";
+import { profile } from "@/services/auth/authService";
 import useAuth from "../../hooks/useAuth";
 
 export default function ProfileDropdown() {
@@ -21,7 +21,7 @@ export default function ProfileDropdown() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const res = await getCurrentUser();
+        const res = await profile();
         setUser(res.data);
       } catch (err) {
         console.error("Gagal memuat profil user login:", err);

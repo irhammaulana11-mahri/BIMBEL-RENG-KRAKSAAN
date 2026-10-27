@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Landmark, Save, UploadCloud, Link2, MapPin, Phone, Mail } from "lucide-react";
-import { getCompanyProfile, createCompanyProfile, updateCompanyProfile } from "../../../services/companyProfileService";
-import { uploadImage } from "../../../services/uploadService";
+import { getCompanyProfile, createCompanyProfile, updateCompanyProfile } from "@/services/admin/website/companyProfileService";
+import { uploadImage } from "@/services/admin/website/uploadService";
 import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import { getApiErrorMessage } from "@/utils/apiError";

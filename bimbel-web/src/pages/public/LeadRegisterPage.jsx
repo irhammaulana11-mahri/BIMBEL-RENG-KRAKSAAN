@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { getPackages } from "../../services/packageService";
-import { createLead } from "../../services/admin/leadService";
+import { getPackages } from "@/services/public/websiteService";
+import { submitLead } from "@/services/public/leadService";
 import { User, Phone, Mail, GraduationCap, Layers, FileText, ArrowLeft } from "lucide-react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
@@ -53,8 +53,8 @@ export default function LeadRegisterPage() {
     e.preventDefault();
     hideToast();
     try {
-      // setLoading(true);
-      await createLead({ ...form, status: "NEW" });
+      setLoading(true);
+      await submitLead(form);
       
       showSuccess("Pendaftaran berhasil! Data Anda masuk ke sistem review antrean tim kami.");
       
@@ -85,8 +85,8 @@ export default function LeadRegisterPage() {
       } else {
         showError("Gagal mengirim data pendaftaran. Coba periksa kembali jaringan Anda.");
       }
-    // } finally {
-    //   setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -4,7 +4,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useConfirm } from "@/components/ui/confirmation";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
-import { getBanners, deleteBanner } from "../../../services/bannerService";
+import { getBanners, deleteBanner } from "@/services/admin/website/bannerService";
 import BannerTable from "../../../components/admin/website/banner/BannerTable";
 import BannerModal from "../../../components/admin/website/banner/BannerModal";
 

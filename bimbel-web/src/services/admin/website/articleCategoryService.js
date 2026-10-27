@@ -1,4 +1,4 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 
 export const getCategories = () =>
   api.get("/website/article-categories");

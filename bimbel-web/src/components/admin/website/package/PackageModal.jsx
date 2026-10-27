@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Layers } from "lucide-react";
 import PackageForm from "./PackageForm";
-import { createPackage, updatePackage } from "../../../../services/packageService";
+import { createPackage, updatePackage } from "@/services/admin/website/packageService";
 
 export default function PackageModal({ open, onClose, data, onSuccess }) {
   const [loading, setLoading] = useState(false);

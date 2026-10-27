@@ -1,4 +1,4 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 
 // Dashboard Admin (ringkasan akademik, keuangan, dan pekerjaan tertunda)
 export const getDashboard = async () => {

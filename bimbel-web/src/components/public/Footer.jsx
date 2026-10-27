@@ -12,7 +12,7 @@ import {
   FaYoutube
 } from "react-icons/fa";
 
-import { getCompanyProfile } from "../../services/companyProfileService";
+import { getCompanyProfile } from "@/services/public/websiteService";
 
 export default function Footer() {
 

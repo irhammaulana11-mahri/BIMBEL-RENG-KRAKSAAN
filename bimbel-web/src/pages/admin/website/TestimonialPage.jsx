@@ -4,7 +4,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useConfirm } from "@/components/ui/confirmation";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
-import { getTestimonials, deleteTestimonial } from "../../../services/testimonialService";
+import { getTestimonials, deleteTestimonial } from "@/services/admin/website/testimonialService";
 import TestimonialTable from "../../../components/admin/website/testimonial/TestimonialTable";
 import TestimonialModal from "../../../components/admin/website/testimonial/TestimonialModal";
 

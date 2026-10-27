@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, FileEdit } from "lucide-react";
-import { createArticle, updateArticle } from "../../../../services/articleService";
-import { uploadImage } from "../../../../services/uploadService";
+import { createArticle, updateArticle } from "@/services/admin/website/articleService";
+import { uploadImage } from "@/services/admin/website/uploadService";
 import ArticleForm from "./ArticleForm";
 
 export default function ArticleModal({ open, onClose, data, onSuccess }) {

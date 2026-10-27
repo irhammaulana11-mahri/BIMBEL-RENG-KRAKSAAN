@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getCurrentUser } from "../services/userService";
+import { profile } from "@/services/auth/authService";
 import { authStorage } from "../services/auth/authStorage";
 import { registerLogout } from "../services/auth/authEvents";
 
@@ -34,7 +34,7 @@ export default function AuthProvider({ children }) {
     const refreshProfile = async () => {
 
         try {
-            const res = await getCurrentUser();
+            const res = await profile();
             setUser(res.data);
             return res.data;
         } catch (err) {

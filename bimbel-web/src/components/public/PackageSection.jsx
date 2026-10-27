@@ -8,7 +8,7 @@ import {
   Star
 } from "lucide-react";
 
-import { getPackages } from "../../services/packageService";
+import { getPackages } from "@/services/public/websiteService";
 
 export default function PackageSection() {
   const [packages, setPackages] = useState([]);

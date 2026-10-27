@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getArticleBySlug } from "../../services/articleService";
+import { getArticleBySlug } from "@/services/public/websiteService";
 
 export default function ArticleDetailPage() {
 

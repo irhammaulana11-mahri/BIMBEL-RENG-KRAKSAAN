@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Website;
 
+use App\Http\Controllers\Api\Website\Concerns\PublicVisibility;
+
 use App\Support\SafeDelete;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -11,9 +13,12 @@ use App\Http\Resources\Website\PackageResource;
 use App\Models\Website\Package;
 
 class PackageController extends Controller {
+    use PublicVisibility;
+
     public function index() {
         return PackageResource::collection(
-            Package::orderBy('education_level')
+            Package::when(!$this->viewerIsCmsAdmin(), fn($q) => $q->where('is_active', true))
+                ->orderBy('education_level')
                 ->orderBy('package_name')
                 ->get()
         );
@@ -25,6 +30,7 @@ class PackageController extends Controller {
     }
 
     public function show(Package $package) {
+        abort_if(!$package->is_active && !$this->viewerIsCmsAdmin(), 404);
         return new PackageResource($package);
     }
 

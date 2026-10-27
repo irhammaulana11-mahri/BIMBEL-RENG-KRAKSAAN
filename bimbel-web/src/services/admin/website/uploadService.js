@@ -1,4 +1,4 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 
 export const uploadImage = async(file)=> {
  const formData = new FormData();

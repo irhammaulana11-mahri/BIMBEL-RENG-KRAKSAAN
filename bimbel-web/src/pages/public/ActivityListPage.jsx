@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getActivities } from "../../services/activityService";
+import { getActivities } from "@/services/public/websiteService";
 
 export default function ActivityListPage() {
   const [activities,setActivities] = useState([]);

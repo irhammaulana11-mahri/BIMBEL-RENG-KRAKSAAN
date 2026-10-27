@@ -7,7 +7,7 @@ import StepStudents from "./steps/StepStudents";
 import StepReview from "./steps/StepReview";
 
 import { getLocations } from "@/services/admin/locationService";
-import { getPackages } from "@/services/packageService";
+import { getPackages } from "@/services/admin/website/packageService";
 import { getEducationLevels } from "@/services/admin/educationLevelService";
 
 export default function ClassWizardModal({ open, onClose, onSubmit, loading, initialData }) {

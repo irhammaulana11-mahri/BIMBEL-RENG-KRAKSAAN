@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 
 import {
   getActivityById
-} from "../../services/activityService";
+} from "@/services/public/websiteService";
 
 export default function ActivityDetailPage() {
 

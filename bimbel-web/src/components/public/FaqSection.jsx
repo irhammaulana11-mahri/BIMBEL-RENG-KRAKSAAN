@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Minus } from "lucide-react";
-import { getFaqs } from "../../services/faqService";
+import { getFaqs } from "@/services/public/websiteService";
 
 export default function FaqSection() {
   const [faqs, setFaqs] = useState([]);

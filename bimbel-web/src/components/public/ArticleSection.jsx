@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CalendarDays,Eye,ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getArticles } from "../../services/articleService";
+import { getArticles } from "@/services/public/websiteService";
 
 export default function ArticleSection() {
   const [articles, setArticles] = useState([]);

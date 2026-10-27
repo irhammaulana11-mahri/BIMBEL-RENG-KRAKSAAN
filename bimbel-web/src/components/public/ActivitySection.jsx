@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CalendarDays, ArrowRight } from "lucide-react";
-import { getActivities } from "../../services/activityService";
+import { getActivities } from "@/services/public/websiteService";
 import { Link } from "react-router-dom";
 
 export default function ActivitySection() {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCompanyProfile } from "../../services/companyProfileService";
+import { getCompanyProfile } from "@/services/public/websiteService";
 import { useSidebar } from "../../context/SidebarContext";
 import SidebarMenu from "./sidebarMenu";
 
@@ -88,7 +88,7 @@ export default function UniversalSidebar({ role }) {
 //   UserPlus, ClipboardList, Shield, BookCheck, BookOpenText 
 // } from "lucide-react";
 // import { FaAward, FaChartLine, FaMoneyCheck, FaRegMoneyBillAlt } from "react-icons/fa";
-// import { getCompanyProfile } from "../../services/companyProfileService";
+// import { getCompanyProfile } from "@/services/public/websiteService";
 // import { useSidebar } from "../../context/SidebarContext";
 
 // // Tetap impor dari file terpisah agar modular

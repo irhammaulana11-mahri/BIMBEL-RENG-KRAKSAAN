@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, HelpCircle } from "lucide-react";
-import { createFaq, updateFaq } from "../../../../services/faqService";
+import { createFaq, updateFaq } from "@/services/admin/website/faqService";
 import FaqForm from "./FaqForm";
 import FaqPreview from "./FaqPreview";
 

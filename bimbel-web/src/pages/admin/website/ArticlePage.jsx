@@ -4,7 +4,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useConfirm } from "@/components/ui/confirmation";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
-import { getArticles, deleteArticle } from "../../../services/articleService";
+import { getArticles, deleteArticle } from "@/services/admin/website/articleService";
 import ArticleTable from "../../../components/admin/website/article/ArticleTable";
 import ArticleModal from "../../../components/admin/website/article/ArticleModal";
 

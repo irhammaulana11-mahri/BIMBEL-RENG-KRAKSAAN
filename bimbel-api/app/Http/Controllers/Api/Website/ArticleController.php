@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Website;
 
+use App\Http\Controllers\Api\Website\Concerns\PublicVisibility;
+
 use Str;
 use App\Models\Website\Article;
 use App\Http\Controllers\Controller;
@@ -10,12 +12,17 @@ use App\Http\Resources\Website\ArticleResource;
 
 
 class ArticleController extends Controller {
+    use PublicVisibility;
+
     public function index() {
         return ArticleResource::collection(
             Article::with([
                 'author',
                 'categories'
             ])
+            // Publik: hanya artikel terbit yang tanggal terbitnya sudah tiba
+            ->when(!$this->viewerIsCmsAdmin(), fn($q) => $q->where('is_published', true)
+                ->where(fn($d) => $d->whereNull('publish_date')->orWhere('publish_date', '<=', now())))
             ->latest()
             ->get()
         );
@@ -43,6 +50,7 @@ class ArticleController extends Controller {
     }
 
     public function show(Article $article) {
+        abort_if(!$article->is_published && !$this->viewerIsCmsAdmin(), 404);
         $article->increment('view_count');
 
         return new ArticleResource($article->load(['author','categories']));
@@ -80,6 +88,8 @@ class ArticleController extends Controller {
             'categories'
         ])
         ->where('slug',$slug)
+        ->when(!$this->viewerIsCmsAdmin(), fn($q) => $q->where('is_published', true)
+            ->where(fn($d) => $d->whereNull('publish_date')->orWhere('publish_date', '<=', now())))
         ->firstOrFail();
 
         $article->increment('view_count');

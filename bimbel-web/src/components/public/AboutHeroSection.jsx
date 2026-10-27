@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCompanyProfile } from "../../services/companyProfileService";
+import { getCompanyProfile } from "@/services/public/websiteService";
 
 export default function AboutHeroSection() {
   const [company,setCompany] = useState(null);

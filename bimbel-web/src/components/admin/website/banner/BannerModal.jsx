@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, ImagePlus } from "lucide-react";
-import { createBanner, updateBanner } from "../../../../services/bannerService";
-import { uploadImage } from "../../../../services/uploadService";
+import { createBanner, updateBanner } from "@/services/admin/website/bannerService";
+import { uploadImage } from "@/services/admin/website/uploadService";
 import BannerForm from "./BannerForm";
 
 export default function BannerModal({ open, onClose, data, onSuccess }) {

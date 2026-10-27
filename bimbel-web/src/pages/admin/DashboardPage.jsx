@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap, BookOpen, School, CalendarCheck, ArrowRight, Clock, Inbox, ArrowUpRight, ArrowDownRight, AlertTriangle, CheckCircle2, FileCheck2, Wallet } from "lucide-react";
-import { getDashboard } from "../../services/dashboardService";
+import { getDashboard } from "@/services/admin/dashboardService";
 import { SESSION_STATUS } from "@/services/parent/parentService";
 import { PAYROLL_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";

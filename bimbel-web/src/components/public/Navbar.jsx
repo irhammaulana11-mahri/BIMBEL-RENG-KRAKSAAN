@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCompanyProfile } from "../../services/companyProfileService";
+import { getCompanyProfile } from "@/services/public/websiteService";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 

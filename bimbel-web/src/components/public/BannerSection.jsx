@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import { getBanners } from "../../services/bannerService";
+import { getBanners } from "@/services/public/websiteService";
 
 export default function BannerSection() {
   const [banners, setBanners] = useState([]);
