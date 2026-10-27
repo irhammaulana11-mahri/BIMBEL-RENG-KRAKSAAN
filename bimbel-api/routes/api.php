@@ -59,6 +59,10 @@ use App\Http\Controllers\Api\TentorPortal\TentorExamResultController;
 
 // StudentPortal
 use App\Http\Controllers\Api\StudentPortal\StudentExamController;
+use App\Http\Controllers\Api\StudentPortal\StudentProgressReportController;
+use App\Http\Controllers\Api\TentorPortal\TentorProgressNoteController;
+use App\Http\Controllers\Api\ParentPortal\ParentProgressReportController;
+use App\Http\Controllers\Api\Academic\ProgressReportController;
 
 
 
@@ -232,6 +236,17 @@ Route::prefix('admin')
         Route::get('exam-results/{result}', [ExamResultController::class, 'show']);
         Route::put('exam-results/{result}/grade', [ExamResultController::class, 'grade']);
 
+        // --- RAPOR PERKEMBANGAN SISWA ---
+        Route::prefix('progress-reports')->group(function () {
+            Route::get('/', [ProgressReportController::class, 'index']);
+            Route::get('/detail', [ProgressReportController::class, 'show']);
+            Route::put('/general-note', [ProgressReportController::class, 'saveGeneralNote']);
+            Route::post('/publish', [ProgressReportController::class, 'publish']);
+            Route::post('/{report}/unpublish', [ProgressReportController::class, 'unpublish']);
+            Route::get('/semester', [ProgressReportController::class, 'semester']);
+            Route::get('/semester/detail', [ProgressReportController::class, 'semesterShow']);
+        });
+
         // --- KEUANGAN: TAGIHAN, PEMBAYARAN, HONOR, PENGELUARAN ---
         Route::prefix('finance')->group(function () {
             Route::get('/invoices', [InvoiceController::class, 'index']);
@@ -291,6 +306,12 @@ Route::prefix('parent')
         Route::get('/payments', [ParentBillingController::class, 'payments']);
         Route::get('/payments/{id}/proof', [ParentBillingController::class, 'proof']);
 
+        // Rapor anak (yang sudah diterbitkan)
+        Route::get('/progress-reports', [ParentProgressReportController::class, 'reports']);
+        Route::get('/progress-reports/semester', [ParentProgressReportController::class, 'semester']);
+        Route::get('/progress-reports/semester/detail', [ParentProgressReportController::class, 'semesterShow']);
+        Route::get('/progress-reports/{id}', [ParentProgressReportController::class, 'showReport']);
+
         // Route::get('/profile', [ParentProfileController::class, 'show']);
         // Route::get('/students', [ParentStudentController::class, 'index']);
     });
@@ -328,6 +349,10 @@ Route::prefix('tentor')
         Route::get('/exam-results', [TentorExamResultController::class, 'index']);
         Route::get('/exam-results/{id}', [TentorExamResultController::class, 'show']);
         Route::put('/exam-results/{id}/grade', [TentorExamResultController::class, 'grade']);
+
+        // Catatan perkembangan siswa untuk rapor
+        Route::get('/progress-notes', [TentorProgressNoteController::class, 'notes']);
+        Route::put('/progress-notes', [TentorProgressNoteController::class, 'saveNotes']);
     });
 
 
@@ -346,4 +371,10 @@ Route::prefix('student')
         Route::get('/exam-results/{id}', [StudentExamController::class, 'show']);
         Route::put('/exam-results/{id}/answers', [StudentExamController::class, 'saveAnswer']);
         Route::post('/exam-results/{id}/submit', [StudentExamController::class, 'submit']);
+
+        // Rapor (yang sudah diterbitkan)
+        Route::get('/progress-reports', [StudentProgressReportController::class, 'reports']);
+        Route::get('/progress-reports/semester', [StudentProgressReportController::class, 'semester']);
+        Route::get('/progress-reports/semester/detail', [StudentProgressReportController::class, 'semesterShow']);
+        Route::get('/progress-reports/{id}', [StudentProgressReportController::class, 'showReport']);
     });

@@ -12,7 +12,7 @@ export const tentorMenu = [
     category: "Akademik",
     menus: [
       { to: "/tentor/schedules", label: "Jadwal Belajar", icon: <CalendarDays size={20} /> },
-      { to: "/tentor/activities", label: "Perkembangan Nilai", icon: <GraduationCap size={20} /> },
+      { to: "/tentor/progress", label: "Perkembangan Nilai", icon: <GraduationCap size={20} /> },
       { to: "/tentor/students", label: "Murid", icon: <GraduationCap size={20} /> },
       { to: "/tentor/attendances", label: "Absensi", icon: <BookCheck size={20} /> },
       { to: "/tentor/evaluations", label: "Evaluasi Murid", icon: <FaChartLine size={20} /> },
