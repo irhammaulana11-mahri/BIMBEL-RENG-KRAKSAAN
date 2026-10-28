@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getPatternOverview } from "@/services/academic/scheduleService";
 import { X, CalendarClock, Clock, User, MapPin, Edit2, PlayCircle, PauseCircle } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import { useToast } from "../../../../hooks/useToast";
@@ -6,6 +7,13 @@ import { DAY_MAP } from "@/components/constants/schedule.constants"; // pastikan
 
 export default function MasterPreview({ open, master, onClose, onEditPattern, onToggleStatus }) {
   const { toast, showSuccess, showError, hideToast } = useToast();
+  const [stats, setStats] = useState(null);
+
+  // Rekap sesi hasil generate dari pola ini
+  useEffect(() => {
+    setStats(null);
+    if (open && master?.id) getPatternOverview(master.id).then((res) => setStats(res.data.data)).catch(() => setStats(null));
+  }, [open, master?.id]);
 
   if (!open || !master) return null;
 
@@ -87,9 +95,39 @@ export default function MasterPreview({ open, master, onClose, onEditPattern, on
             </div>
           </div>
           
+          {stats && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Sesi Hasil Generate ({stats.total})</p>
+              <div className="grid grid-cols-5 gap-1.5 text-center">
+                {[
+                  ["Terjadwal", stats.by_status.SCHEDULED, "bg-slate-50 border-slate-200 text-slate-700"],
+                  ["Dipindah", stats.by_status.RESCHEDULED, "bg-amber-50 border-amber-100 text-amber-700"],
+                  ["Berjalan", stats.by_status.IN_PROGRESS, "bg-blue-50 border-blue-100 text-blue-700"],
+                  ["Selesai", stats.by_status.COMPLETED, "bg-emerald-50 border-emerald-100 text-emerald-700"],
+                  ["Batal", stats.by_status.CANCELLED, "bg-rose-50 border-rose-100 text-rose-700"],
+                ].map(([label, value, cls]) => (
+                  <div key={label} className={`rounded-lg border py-1.5 ${cls}`}>
+                    <p className="text-base font-black">{value}</p>
+                    <p className="text-[9px] font-bold uppercase">{label}</p>
+                  </div>
+                ))}
+              </div>
+              {stats.total > 0 && (
+                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full bg-emerald-500" style={{ width: `${Math.round((stats.by_status.COMPLETED / stats.total) * 100)}%` }} />
+                </div>
+              )}
+              <p className="text-xs text-gray-600">
+                {stats.next ? <>Sesi berikutnya: <b>{stats.next.session_date}</b> (pertemuan ke-{stats.next.meeting_no})</> : "Tidak ada sesi mendatang."}
+              </p>
+            </div>
+          )}
+
           <div className="p-4 bg-amber-50/50 border border-amber-100 rounded-xl">
              <p className="text-xs font-medium text-amber-800 text-center">
-               Ini adalah Data Master. Perubahan pada Edit Pola akan mempengaruhi *generate* jadwal ke depannya.
+               {isActive
+                 ? "Ini pola jadwal (master). Mengedit pola mengubah sesi yang belum berjalan; sesi yang sudah selesai tidak berubah."
+                 : "Pola nonaktif: tidak dipakai lagi untuk sesi baru. Aktifkan kembali untuk mengubah pola."}
              </p>
           </div>
 
@@ -110,7 +148,9 @@ export default function MasterPreview({ open, master, onClose, onEditPattern, on
           
           <button 
             onClick={onEditPattern}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm shadow-amber-500/20 transition-colors"
+            disabled={!isActive}
+            title={isActive ? "" : "Aktifkan pola terlebih dahulu"}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm shadow-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Edit2 size={16} /> Edit Pola Jadwal
           </button>

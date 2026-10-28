@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Rekomendasi rapor berbasis AI (Claude). Kosongkan key untuk menonaktifkan fitur.
+    'anthropic' => [
+        'key'   => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5-5'),
+    ],
+
 ];

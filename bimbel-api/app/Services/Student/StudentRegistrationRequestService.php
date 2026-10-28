@@ -1,6 +1,12 @@
 <?php
 namespace App\Services\Student;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use App\Notifications\PortalNotification;
+use App\Models\Admin\Student;
+use App\Models\Admin\Role;
+use App\Models\Admin\User;
 use App\Models\Academic\ClassRoom;
 use App\Models\Academic\ClassStudent;
 use App\Models\Admin\EducationLevel;
@@ -44,6 +50,7 @@ class StudentRegistrationRequestService {
             'education_level_id' => $data['education_level_id'] ?? null,
             'package_id'         => $data['package_id'] ?? null,
             'note'               => $data['note'] ?? null,
+            'login_email'        => !empty($data['login_email']) ? mb_strtolower(trim($data['login_email'])) : null,
             'status'             => 'PENDING',
         ]);
     }
@@ -92,6 +99,18 @@ class StudentRegistrationRequestService {
                 ClassStudent::create(['class_id' => $class->id, 'student_id' => $student->id]);
             }
 
+            // Akun login siswa langsung dibuat dengan password sementara
+            $email = $this->loginEmailFor($student, $data['login_email'] ?? $request->login_email);
+            $password = Str::password(10, symbols: false);
+            $user = User::create([
+                'role_id'   => Role::where('role_name', 'siswa')->value('id'),
+                'name'      => $student->full_name,
+                'email'     => $email,
+                'password'  => Hash::make($password),
+                'is_active' => true,
+            ]);
+            $student->forceFill(['user_id' => $user->id])->save();
+
             $request->update([
                 'status'      => 'APPROVED',
                 'student_id'  => $student->id,
@@ -101,8 +120,30 @@ class StudentRegistrationRequestService {
                 'reviewed_at' => now(),
             ]);
 
+            // Beri tahu orang tua beserta data login anak (ikut transaksi: batal bila persetujuan gagal)
+            $request->parent?->user?->notify(new PortalNotification(
+                'registration_approved',
+                "Pendaftaran {$student->full_name} disetujui",
+                "Data siswa sudah dibuat" . ($class ? " dan ditempatkan di kelas {$class->name}" : '') . ". Gunakan data berikut untuk login anak di aplikasi, lalu segera ganti password.",
+                ['NIS' => $student->nis, 'Email login' => $email, 'Password sementara' => $password],
+            ));
+
+            $request->setAttribute('issued_credentials', ['email' => $email, 'password' => $password]);
             return $request;
         });
+    }
+
+    // Email login: usulan orang tua bila masih tersedia, selain itu dari NIS (nis@domain siswa)
+    private function loginEmailFor(Student $student, ?string $proposed): string {
+        $proposed = $proposed ? mb_strtolower(trim($proposed)) : null;
+        if ($proposed && !User::where('email', $proposed)->exists()) return $proposed;
+
+        $base = mb_strtolower($student->nis) . '@' . config('app.student_email_domain', 'siswa.bimbelreng.id');
+        $email = $base;
+        for ($i = 2; User::where('email', $email)->exists(); $i++) {
+            $email = str_replace('@', ".{$i}@", $base);
+        }
+        return $email;
     }
 
     public function reject(StudentRegistrationRequest $request, string $note): StudentRegistrationRequest {
@@ -115,6 +156,11 @@ class StudentRegistrationRequestService {
                 'reviewed_by' => Auth::id(),
                 'reviewed_at' => now(),
             ]);
+            $request->loadMissing('parent.user')->parent?->user?->notify(new PortalNotification(
+                'registration_rejected',
+                "Pendaftaran {$request->full_name} belum dapat diterima",
+                'Alasan dari Admin: ' . trim($note),
+            ));
             return $request;
         });
     }
@@ -133,6 +179,7 @@ class StudentRegistrationRequestService {
         return [
             'id'              => $r->id,
             'status'          => $r->status,
+            'login_email'     => $r->login_email,
             'full_name'       => $r->full_name,
             'gender'          => $r->gender,
             'birth_date'      => $r->birth_date?->toDateString(),

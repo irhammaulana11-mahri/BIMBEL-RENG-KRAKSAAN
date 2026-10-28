@@ -1,5 +1,7 @@
 import React from "react";
 import { Eye, CheckCircle2, AlertCircle, XCircle, ShieldAlert } from "lucide-react";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function AttendanceTable({ data, onPreview, onVerifyGeo }) {
   const renderStatusBadge = (status) => {
@@ -34,9 +36,12 @@ export default function AttendanceTable({ data, onPreview, onVerifyGeo }) {
     );
   };
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(data || []);
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
+      <table className="ui-table w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/50 text-sm font-semibold text-gray-600">
             <th className="p-6">Nama Siswa</th>
@@ -53,7 +58,7 @@ export default function AttendanceTable({ data, onPreview, onVerifyGeo }) {
               <td colSpan="6" className="p-6 text-center text-gray-400">Tidak ada log absensi pada tanggal terpilih.</td>
             </tr>
           ) : (
-            data.map((item) => (
+            pageRows.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="p-6 font-medium text-gray-900">{item.student_name}</td>
                 <td className="p-6 text-gray-600">{item.class_name}</td>
@@ -84,6 +89,7 @@ export default function AttendanceTable({ data, onPreview, onVerifyGeo }) {
           )}
         </tbody>
       </table>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
     </div>
   );
 }

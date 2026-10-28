@@ -123,7 +123,7 @@ export default function CompanyProfilePage() {
           <Landmark className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Company Profile</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Profil Lembaga</h1>
           <p className="text-base text-gray-500 mt-1">
             Konfigurasi identitas resmi Bimbel Reng Kraksaan. Data ini disinkronkan langsung ke halaman publik dan cetak invoice kuitansi.
           </p>

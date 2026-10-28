@@ -94,3 +94,6 @@ export const getUnscheduledClasses = (params) => {
 };
 // Peserta kelas: [{ id, student: { id, nis, name, ... } }]
 export const getClassStudents = (classId) => api.get(`/admin/classes/${classId}/students`);
+
+// Data drawer detail kelas (lokasi sesuai jenis, progres mapel, siswa, jadwal, kehadiran)
+export const getClassOverview = (id) => api.get(`/admin/classes/${id}/overview`);

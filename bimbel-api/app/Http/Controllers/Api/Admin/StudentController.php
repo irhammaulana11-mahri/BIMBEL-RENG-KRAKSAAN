@@ -4,15 +4,20 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Student;
+use App\Models\Admin\Role;
 use App\Models\Admin\User;
+use App\Services\Admin\MasterOverviewService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use App\Services\Student\FamilyAddressService;
+use App\Models\Admin\Student;
 use App\Models\Admin\ParentController;
 use App\Services\Student\StudentService;
 use App\Http\Requests\Admin\StudentRequest;
 use App\Http\Resources\Admin\StudentResource;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -84,14 +89,51 @@ class StudentController extends Controller
     }
 
 
-    public function update(StudentRequest $request, Student $student) {
-        // $student = Student::findOrFail($id);
+    public function update(StudentRequest $request, Student $student, FamilyAddressService $family) {
         $student->update($request->validated());
+        if ($student->wasChanged(['home_address', 'home_latitude', 'home_longitude'])) $family->syncFromStudent($student);
         return new StudentResource(
             $student->fresh()->load(['user','parents.user',])
         );
     }
 
+
+    // GET: Data drawer detail siswa (wali, kelas, jadwal, kehadiran, nilai, tagihan, akun)
+    public function overview(Student $student, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->student($student)]);
+    }
+
+    // POST: Buat akun login siswa; password kosong = dibuatkan sementara
+    public function createAccount(Request $request, Student $student) {
+        $data = $request->validate([
+            'email'    => ['required', 'email', 'max:100', Rule::unique(User::class, 'email')],
+            'password' => ['nullable', 'string', 'min:8'],
+        ], [
+            'email.required' => 'Email login wajib diisi.',
+            'email.unique'   => 'Email sudah dipakai akun lain.',
+            'password.min'   => 'Password minimal 8 karakter.',
+        ]);
+        if ($student->user_id) {
+            throw ValidationException::withMessages(['email' => 'Siswa ini sudah memiliki akun login.']);
+        }
+
+        $password = $data['password'] ?? Str::password(10, symbols: false);
+        DB::transaction(function () use ($student, $data, $password) {
+            $user = User::create([
+                'role_id'   => Role::where('role_name', 'siswa')->value('id'),
+                'name'      => $student->full_name,
+                'email'     => $data['email'],
+                'password'  => Hash::make($password),
+                'is_active' => true,
+            ]);
+            $student->forceFill(['user_id' => $user->id])->save();
+        });
+
+        return response()->json([
+            'message'            => 'Akun login siswa dibuat.',
+            'temporary_password' => empty($data['password']) ? $password : null,
+        ], 201);
+    }
 
     public function toggleStatus(Student $student) {
         $student->update([

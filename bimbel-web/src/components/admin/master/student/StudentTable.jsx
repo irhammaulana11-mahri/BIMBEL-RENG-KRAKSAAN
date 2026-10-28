@@ -9,7 +9,7 @@ export default function StudentTable({
     onPageChange = () => {},
     onPreview = () => {},
     onEdit = () => {},
-    onDelete = () => {},
+    onToggleStatus = () => {},
 }) {
 
   const renderRows = useMemo(() =>
@@ -54,8 +54,8 @@ export default function StudentTable({
 
       {/* 4. ALAMAT */}
       <td className="px-6 py-3.5">
-        <p className="text-sm font-medium text-gray-600 max-w-[220px] truncate" title={student.parent?.address || student.address}>
-          {student.parent?.address || student.address || "-"}
+        <p className="text-sm font-medium text-gray-600 max-w-[220px] truncate" title={student.home_address || student.parent?.address}>
+          {student.home_address || student.parent?.address || "-"}
         </p>
       </td>
 
@@ -94,12 +94,13 @@ export default function StudentTable({
           >
             <Pencil size={16} />
           </button>
+          {/* Siswa tidak dihapus agar riwayat belajar & keuangan tetap utuh, cukup dinonaktifkan */}
           <button
-            onClick={() => onDelete(student.id)}
-            className="rounded-xl bg-red-50 p-2 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
-            title="Hapus Data"
+            onClick={() => onToggleStatus(student)}
+            className={`rounded-xl p-2 transition-colors cursor-pointer ${student.is_active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"}`}
+            title={student.is_active ? "Nonaktifkan Murid" : "Aktifkan Murid"}
           >
-            <Trash2 size={16} />
+            {student.is_active ? <UserX size={16} /> : <UserCheck size={16} />}
           </button>
         </div>
       </td>
@@ -113,7 +114,7 @@ export default function StudentTable({
   return (
     <div className="overflow-hidden border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+        <table className="ui-table w-full border-collapse text-left">
           <thead>
             <tr className="whitespace-nowrap border-b border-gray-100 bg-gray-50/70 text-sm font-bold uppercase tracking-wider text-gray-600">
               <th className="px-6 py-4.5">Nama - NIS</th>

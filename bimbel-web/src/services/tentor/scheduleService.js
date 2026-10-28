@@ -4,8 +4,9 @@ export const getTentorSchedules = (params) => {
     return api.get(`/tentor/schedules`, { params });
 };
 
-export const startTentorSession = (sessionId) => {
-    return api.post(`/tentor/sessions/${sessionId}/start`);
+// Mulai sesi + absen masuk GPS. position: { latitude, longitude, accuracy } (kosong untuk kelas online)
+export const startTentorSession = (sessionId, position = {}) => {
+    return api.post(`/tentor/sessions/${sessionId}/start`, { ...position, source: "WEB" });
 };
 
 export const requestReschedule = (sessionId, data) => {
@@ -31,9 +32,14 @@ export const saveSessionAttendance = (sessionId, data) => {
 };
 
 // Menyelesaikan sesi KBM (sekaligus check-out tentor)
-export const endTentorSession = (sessionId) => {
-  return api.post(`/tentor/sessions/${sessionId}/end`);
+export const endTentorSession = (sessionId, position = {}) => {
+  return api.post(`/tentor/sessions/${sessionId}/end`, { ...position, source: "WEB" });
 };
+
+// Pengajuan lokasi les sementara (disetujui Admin)
+export const requestLocationChange = (sessionId, data) => api.post(`/tentor/sessions/${sessionId}/location-request`, data);
+export const cancelTentorLocationRequest = (id) => api.patch(`/tentor/location-requests/${id}/cancel`);
+export const getTentorLocationRequests = () => api.get("/tentor/location-requests");
 
 // Riwayat kehadiran tentor per bulan (format YYYY-MM)
 export const getMyAttendances = (params) => {

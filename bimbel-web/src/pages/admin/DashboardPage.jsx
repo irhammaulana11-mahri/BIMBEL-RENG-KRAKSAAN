@@ -6,22 +6,21 @@ import { SESSION_STATUS } from "@/services/parent/parentService";
 import { PAYROLL_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
+import StatCard from "../../components/ui/StatCard";
+import DashboardHero from "../../components/ui/DashboardHero";
 
-const StatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-    <div className="space-y-1">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-3xl font-black text-gray-900 font-mono">{value}</p>
-      <p className="text-xs text-gray-500 font-medium">{desc}</p>
-    </div>
-    <div className={`p-4 rounded-2xl ${colorClass}`}><Icon className="w-6 h-6" /></div>
-  </div>
-);
 
-const Panel = ({ title, link, children }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
-    <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-      <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">{title}</h2>
+// Warna aksen panel & batang distribusi paket
+const PANEL_TONES = {
+  blue: "border-t-blue-500", amber: "border-t-amber-500", emerald: "border-t-emerald-500",
+  purple: "border-t-purple-500", indigo: "border-t-indigo-500",
+};
+const BAR_COLORS = ["bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-amber-500", "bg-rose-500", "bg-indigo-500"];
+
+const Panel = ({ title, link, tone = "blue", children }) => (
+  <div className={`bg-white rounded-2xl border border-gray-100 border-t-4 ${PANEL_TONES[tone]} p-5 shadow-xs`}>
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">{title}</h3>
       {link && <Link to={link.to} className="text-xs font-bold text-blue-600 flex items-center gap-1">{link.label} <ArrowRight size={12} /></Link>}
     </div>
     {children}
@@ -57,10 +56,13 @@ export default function DashboardPage() {
   return (
     <div className="bg-white p-6 rounded-xl shadow">
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Dashboard Admin</h1>
-          <p className="text-base text-gray-500 mt-1">Ringkasan operasional bimbel periode {data.period}.</p>
-        </div>
+        <DashboardHero title="Dashboard Admin" subtitle={`Ringkasan operasional bimbel periode ${data.period}.`}>
+          {pendingTotal > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-bold backdrop-blur">
+              <AlertTriangle size={16} /> {pendingTotal} hal perlu tindakan
+            </span>
+          )}
+        </DashboardHero>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <StatCard title="Siswa Aktif" value={stats.active_students} desc={`${stats.enrolled_students} sudah ditempatkan di kelas`} icon={GraduationCap} colorClass="bg-blue-50 text-blue-600" />
@@ -106,7 +108,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Pekerjaan tertunda */}
-          <Panel title={`Perlu Tindakan (${pendingTotal})`}>
+          <Panel title={`Perlu Tindakan (${pendingTotal})`} tone="amber">
             <div className="space-y-2">
               {inbox.map((item) => (
                 <Link key={item.key} to={item.link} className={`flex items-center justify-between p-2.5 rounded-xl text-sm ${item.count > 0 ? "bg-amber-50 hover:bg-amber-100 text-amber-900" : "text-gray-400 hover:bg-gray-50"}`}>
@@ -120,13 +122,13 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2">
-            <Panel title="Sesi Hari Ini" link={{ to: "/admin/schedules", label: "Jadwal" }}>
+            <Panel title="Sesi Hari Ini" link={{ to: "/admin/schedules", label: "Jadwal" }} tone="blue">
               {data.today_sessions.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Tidak ada sesi hari ini.</p>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {data.today_sessions.map((s) => (
-                    <div key={s.id} className="py-3 flex flex-wrap items-center gap-3">
+                    <div key={s.id} className="py-3 flex flex-wrap items-center gap-3 border-l-4 pl-3 rounded-sm" style={{ borderColor: s.checked_in ? "#10b981" : "#f59e0b" }}>
                       <span className="text-xs font-bold font-mono text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><Clock size={13} /> {s.start_time}-{s.end_time}</span>
                       <div className="flex-1 min-w-[160px]">
                         <p className="text-sm font-bold text-gray-900">{s.subject_name} • {s.class_name}</p>
@@ -140,7 +142,7 @@ export default function DashboardPage() {
             </Panel>
           </div>
 
-          <Panel title={`Tutup Buku ${close.previous_period}`}>
+          <Panel title={`Tutup Buku ${close.previous_period}`} tone="emerald">
             <div className="space-y-3 text-sm">
               <Link to="/admin/rapor" className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
                 <span className="flex items-center gap-2 font-semibold text-gray-700"><FileCheck2 size={16} className="text-indigo-500" /> Rapor terbit</span>
@@ -161,7 +163,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2">
-            <Panel title="Lead Terbaru" link={{ to: "/admin/leads", label: "Semua lead" }}>
+            <Panel title="Lead Terbaru" link={{ to: "/admin/leads", label: "Semua lead" }} tone="purple">
               {data.recent_leads.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Belum ada lead.</p>
               ) : (
@@ -180,7 +182,7 @@ export default function DashboardPage() {
             </Panel>
           </div>
 
-          <Panel title="Siswa per Paket">
+          <Panel title="Siswa per Paket" tone="indigo">
             {data.package_distribution.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-4">Belum ada siswa di kelas.</p>
             ) : (
@@ -188,7 +190,7 @@ export default function DashboardPage() {
                 {data.package_distribution.map((p) => (
                   <div key={p.name}>
                     <div className="flex justify-between text-xs"><span className="text-gray-600 font-semibold">{p.name}</span><span className="font-black">{p.total}</span></div>
-                    <div className="h-2 bg-gray-100 rounded-full mt-1"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${p.total / maxPackage * 100}%` }} /></div>
+                    <div className="h-2 bg-gray-100 rounded-full mt-1"><div className={`h-full rounded-full ${BAR_COLORS[data.package_distribution.indexOf(p) % BAR_COLORS.length]}`} style={{ width: `${p.total / maxPackage * 100}%` }} /></div>
                   </div>
                 ))}
               </div>

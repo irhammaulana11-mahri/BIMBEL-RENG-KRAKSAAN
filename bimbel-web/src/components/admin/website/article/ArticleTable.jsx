@@ -1,11 +1,16 @@
 import React from "react";
 import { assetUrl } from "@/config/env";
 import { Pencil, Trash2, Eye, User, Image } from "lucide-react";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function ArticleTable({ data, loading, onEdit, onDelete }) {
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(data || []);
+
   return (
     <div className="max-w-full overflow-x-auto">
-      <table className="w-full text-left border-collapse">
+      <table className="ui-table w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/70 text-sm font-bold uppercase tracking-wider text-gray-600 whitespace-nowrap">
             <th className="px-6 py-4.5">Materi Artikel</th>
@@ -36,7 +41,7 @@ export default function ArticleTable({ data, loading, onEdit, onDelete }) {
             </tr>
           )}
 
-          {!loading && data.map((item) => (
+          {!loading && pageRows.map((item) => (
             <tr key={item.id} className="hover:bg-gray-50/40 transition-colors">
               <td className="px-6 py-4">
                 <div className="flex gap-4 items-start">
@@ -116,6 +121,7 @@ export default function ArticleTable({ data, loading, onEdit, onDelete }) {
           ))}
         </tbody>
       </table>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import ProfileDropdown from "./ProfileDropdown";
 import { useSidebar } from "../../context/SidebarContext";
 import ThemeToggleButton from "./ThemeToggleButton";
 import { Link } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 
 
 export default function AdminHeader() {
@@ -67,6 +68,7 @@ const handleToggle = () => {
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
             {/* <!-- Notification Menu Area --> */}
+            <NotificationBell />
           </div>
           {/* <!-- User Area --> */}
           <ProfileDropdown />

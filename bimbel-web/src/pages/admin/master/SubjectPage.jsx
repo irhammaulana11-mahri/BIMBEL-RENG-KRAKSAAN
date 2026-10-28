@@ -171,10 +171,10 @@ export default function SubjectPage() {
 
         {/* Dashboard Card Diperbarui */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <PremiumStatCard title="Subject" value={globalStats.total_subjects} desc="Mata Pelajaran" icon={BookOpen} colorClass="bg-slate-50 text-slate-600" />
-          <PremiumStatCard title="Curriculum" value={globalStats.total_curriculums} desc="Silabus Terstruktur" icon={Layers} colorClass="bg-purple-50 text-purple-700" />
-          <PremiumStatCard title="Material" value={globalStats.total_materials} desc="Total Unggahan Modul" icon={FileText} colorClass="bg-blue-50 text-blue-700" />
-          <PremiumStatCard title="Exam" value={globalStats.total_exams} desc="Bank Soal Aktif" icon={ClipboardCheck} colorClass="bg-green-50 text-green-700" />
+          <PremiumStatCard title="Mata Pelajaran" value={globalStats.total_subjects} desc="Mata Pelajaran" icon={BookOpen} colorClass="bg-indigo-50 text-indigo-700" />
+          <PremiumStatCard title="Kurikulum" value={globalStats.total_curriculums} desc="Silabus Terstruktur" icon={Layers} colorClass="bg-purple-50 text-purple-700" />
+          <PremiumStatCard title="Materi" value={globalStats.total_materials} desc="Total Unggahan Modul" icon={FileText} colorClass="bg-blue-50 text-blue-700" />
+          <PremiumStatCard title="Ujian" value={globalStats.total_exams} desc="Bank Soal Aktif" icon={ClipboardCheck} colorClass="bg-green-50 text-green-700" />
         </div>
 
         <div className="bg-slate-50/70 p-3.5 border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -222,10 +222,11 @@ export default function SubjectPage() {
             subjects={subjects}
             loading={loading}
             pagination={pagination}
-            onPageChange={(page) =>
+            onPageChange={(page, perPage) =>
                 setPagination((prev) => ({
                     ...prev,
                     page,
+                    ...(perPage ? { perPage } : {}),
                 }))
             }
             onPreview={handleView}

@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Honor tentor = tarif per sesi tentor x sesi HADIR yang sudah selesai.
+ * Honor tentor dihitung FeeRuleEngine dari absensi tentor (HADIR, sesi selesai) + absensi siswa
+ * memakai aturan tarif PAYROLL (fallback: tarif per sesi tentor). Terpisah dari aturan tagihan wali.
  *
  * Payroll bulan M mencakup semua absensi yang belum diproses s/d akhir bulan M,
  * sehingga absensi yang dikoreksi terlambat ikut payroll berikutnya.
@@ -23,20 +24,18 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollService {
 
+    public function __construct(protected FeeRuleEngine $engine) {}
+
     /**
      * Rekap per tentor tanpa menyimpan (pratinjau / estimasi).
      */
     public function preview(int $year, int $month, ?string $tentorId = null): array {
         $attendances = $this->eligibleAttendances($year, $month)
             ->when($tentorId, fn($q) => $q->where('tentor_id', $tentorId))
-            ->with(['tentor.user', 'session'])
+            ->with(self::ATTENDANCE_RELATIONS)
             ->get();
 
-        return $this->summarizeByTentor($attendances->map(fn($att) => [
-            'tentor'           => $att->tentor,
-            'teaching_minutes' => (int) $att->teaching_minutes,
-            'subtotal'         => (float) $att->tentor->rate_per_session,
-        ]));
+        return $this->summarizeByTentor($this->engine->payrollLines($attendances));
     }
 
     /**
@@ -63,20 +62,25 @@ class PayrollService {
                 ]);
             }
 
-            $attendances = $this->eligibleAttendances($year, $month)->with('tentor')->lockForUpdate()->get();
+            $attendances = $this->eligibleAttendances($year, $month)->lockForUpdate()->get()
+                ->load(self::ATTENDANCE_RELATIONS);
 
-            foreach ($attendances as $attendance) {
-                $rate = (float) $attendance->tentor->rate_per_session;
-
+            foreach ($this->engine->payrollLines($attendances) as $line) {
                 PayrollDetail::create([
                     'payroll_id'           => $payroll->id,
-                    'tentor_id'            => $attendance->tentor_id,
-                    'tentor_attendance_id' => $attendance->id,
-                    'session_id'           => $attendance->session_id,
-                    'teaching_minutes'     => (int) $attendance->teaching_minutes,
-                    'rate_per_session'     => $rate,
-                    'rate_per_hour'        => 0,
-                    'subtotal'             => $rate,
+                    'tentor_id'            => $line['tentor']->id,
+                    'tentor_attendance_id' => $line['attendance']?->id,
+                    'session_id'           => $line['session']?->id,
+                    'teaching_minutes'     => $line['teaching_minutes'],
+                    // Kolom lama tetap diisi agar laporan lama terbaca
+                    'rate_per_session'     => $line['unit_amount'],
+                    'rate_per_hour'        => $line['method'] === 'PER_HOUR' ? $line['unit_amount'] : 0,
+                    'subtotal'             => $line['subtotal'],
+                    'fee_rule_id'          => $line['rule']?->id,
+                    'calc_method'          => $line['method'],
+                    'quantity'             => $line['quantity'],
+                    'unit_amount'          => $line['unit_amount'],
+                    'note'                 => $line['note'],
                 ]);
             }
 
@@ -94,8 +98,8 @@ class PayrollService {
         if ($payroll->details()->count() === 0) {
             throw ValidationException::withMessages(['status' => ['Payroll tidak memiliki sesi untuk dibayar.']]);
         }
-        if ($payroll->details()->where('rate_per_session', '<=', 0)->exists()) {
-            throw ValidationException::withMessages(['status' => ['Masih ada tentor dengan tarif Rp 0. Atur tarif lalu susun ulang payroll.']]);
+        if ($payroll->details()->where('calc_method', FeeRuleEngine::LEGACY)->where('unit_amount', '<=', 0)->exists()) {
+            throw ValidationException::withMessages(['status' => ['Masih ada sesi tanpa aturan honor dan tarif tentor Rp 0. Buat aturan honor atau atur tarif tentor, lalu susun ulang payroll.']]);
         }
 
         $payroll->update(['status' => 'APPROVED', 'approved_at' => now(), 'approved_by' => Auth::id()]);
@@ -170,7 +174,11 @@ class PayrollService {
                 'tentor_name'      => $tentor->user->name ?? '-',
                 'specialization'   => $tentor->specialization,
                 'rate_per_session' => (float) $rows->first()->rate_per_session,
-                'total_sessions'   => $rows->count(),
+                'calc_summary'     => $this->calcSummary($rows->map(fn($r) => [
+                    'method' => $r->calc_method ?? FeeRuleEngine::LEGACY, 'quantity' => (float) $r->quantity,
+                    'unit_amount' => (float) $r->unit_amount, 'session' => $r->session_id,
+                ])),
+                'total_sessions'   => $rows->whereNotNull('session_id')->count(),
                 'teaching_minutes' => $rows->sum('teaching_minutes'),
                 'total_amount'     => (float) $rows->sum('subtotal'),
                 'transfer'         => $transfer ? [
@@ -179,18 +187,25 @@ class PayrollService {
                     'reference_no'   => $transfer->reference_no,
                     'amount'         => (float) $transfer->amount,
                 ] : null,
-                'sessions'         => $rows->sortBy(fn($r) => $r->session->session_date)->values()->map(fn($r) => [
-                    'session_date'     => $r->session->session_date,
-                    'start_time'       => substr($r->session->start_time, 0, 5),
-                    'end_time'         => substr($r->session->end_time, 0, 5),
-                    'subject_name'     => $r->session->subject->name ?? '-',
-                    'class_name'       => $r->session->schedule->classroom->name ?? '-',
+                // Baris honor bulanan (tanpa sesi) ditaruh di akhir
+                'sessions'         => $rows->sortBy(fn($r) => $r->session?->session_date ?? '9999')->values()->map(fn($r) => [
+                    'session_date'     => $r->session?->session_date,
+                    'start_time'       => $r->session ? substr($r->session->start_time, 0, 5) : null,
+                    'end_time'         => $r->session ? substr($r->session->end_time, 0, 5) : null,
+                    'subject_name'     => $r->session?->subject->name ?? 'Honor bulanan',
+                    'class_name'       => $r->session?->schedule->classroom->name ?? '-',
                     'teaching_minutes' => $r->teaching_minutes,
+                    'calc_method'      => $r->calc_method,
+                    'quantity'         => (float) $r->quantity,
+                    'unit_amount'      => (float) $r->unit_amount,
+                    'note'             => $r->note,
                     'subtotal'         => (float) $r->subtotal,
                 ]),
             ];
         })->sortBy('tentor_name')->values();
     }
+
+    public const ATTENDANCE_RELATIONS = ['tentor.user', 'session.schedule.classroom', 'session.studentAttendances'];
 
     private function eligibleAttendances(int $year, int $month): Builder {
         $periodEnd = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
@@ -212,7 +227,7 @@ class PayrollService {
 
         $payroll->update([
             'total_tutors'           => $details->pluck('tentor_id')->unique()->count(),
-            'total_sessions'         => $details->count(),
+            'total_sessions'         => $details->whereNotNull('session_id')->count(),
             'total_teaching_minutes' => $details->sum('teaching_minutes'),
             'total_amount'           => $details->sum(fn($d) => (float) $d->subtotal),
         ]);
@@ -220,21 +235,47 @@ class PayrollService {
         return $payroll->refresh();
     }
 
-    private function summarizeByTentor(Collection $rows): array {
-        $byTentor = $rows->groupBy(fn($row) => $row['tentor']->id)->map(fn($items) => [
+    private function summarizeByTentor(Collection $lines): array {
+        $byTentor = $lines->groupBy(fn($line) => $line['tentor']->id)->map(fn($items) => [
             'tentor_id'        => $items->first()['tentor']->id,
             'tentor_name'      => $items->first()['tentor']->user->name ?? '-',
             'rate_per_session' => (float) $items->first()['tentor']->rate_per_session,
-            'total_sessions'   => $items->count(),
+            'calc_summary'     => $this->calcSummary($items->map(fn($l) => [
+                'method' => $l['method'], 'quantity' => $l['quantity'], 'unit_amount' => $l['unit_amount'], 'session' => $l['session']?->id,
+            ])),
+            'total_sessions'   => $items->whereNotNull('session')->count(),
             'teaching_minutes' => $items->sum('teaching_minutes'),
-            'total_amount'     => $items->sum('subtotal'),
+            'total_amount'     => round($items->sum('subtotal'), 2),
         ])->sortBy('tentor_name')->values();
+
+        // Tentor yang punya sesi tanpa aturan honor dan tarif per sesinya Rp 0
+        $missing = $lines->filter(fn($l) => $l['method'] === FeeRuleEngine::LEGACY && $l['unit_amount'] <= 0)
+            ->map(fn($l) => $l['tentor']->user->name ?? '-')->unique()->values();
 
         return [
             'tentors'        => $byTentor,
-            'total_sessions' => $rows->count(),
-            'total_amount'   => $rows->sum('subtotal'),
-            'missing_rate'   => $byTentor->where('rate_per_session', '<=', 0)->pluck('tentor_name')->values(),
+            'total_sessions' => $lines->whereNotNull('session')->count(),
+            'total_amount'   => round($lines->sum('subtotal'), 2),
+            'missing_rate'   => $missing,
         ];
+    }
+
+    // Ringkasan rumus per tentor, mis. "4 sesi × Rp 50.000 + 9 siswa × Rp 25.000 + bulanan Rp 500.000"
+    private function calcSummary(Collection $lines): string {
+        $rupiah = fn($v) => 'Rp ' . number_format($v, 0, ',', '.');
+        $units = ['LEGACY' => 'sesi', 'PER_MEETING' => 'pertemuan', 'PER_STUDENT' => 'siswa', 'PER_HOUR' => 'jam'];
+
+        return $lines->groupBy(fn($l) => $l['method'] . '|' . $l['unit_amount'])
+            ->map(function ($group) use ($rupiah, $units) {
+                $first = $group->first();
+                if ($first['method'] === 'MONTHLY') {
+                    $fixed = $group->whereNull('session')->first();
+                    return $fixed ? "bulanan {$rupiah($fixed['unit_amount'])}" : null;
+                }
+                $qty = round($group->sum('quantity'), 2);
+                return "{$qty} {$units[$first['method']]} × {$rupiah($first['unit_amount'])}";
+            })
+            ->filter()
+            ->join(' + ');
     }
 }

@@ -35,7 +35,7 @@ class _DashboardTab extends StatelessWidget {
         final inbox = (d['inbox'] as List? ?? []).where((i) => (i['count'] ?? 0) > 0).toList();
         final today = d['today_sessions'] as List? ?? [];
         return ListView(padding: const EdgeInsets.all(12), children: [
-          Text('Ringkasan ${text(d['period'])}', style: Theme.of(context).textTheme.titleLarge),
+          HeroBanner(title: 'Dashboard Admin', subtitle: 'Ringkasan ${text(d['period'])}'),
           const SizedBox(height: 12),
           StatGrid([
             StatCard(label: 'Siswa aktif', value: '${stats['active_students'] ?? 0}', icon: Icons.people_outline),
@@ -77,10 +77,15 @@ class _DashboardTab extends StatelessWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _SessionAttendanceScreen(s['id']))),
               footer: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  s['checked_in'] == true ? 'Tentor sudah absen masuk' : 'Tentor belum absen masuk',
-                  style: TextStyle(fontSize: 12, color: s['checked_in'] == true ? Colors.green : Colors.orange),
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    s['checked_in'] == true ? 'Tentor sudah absen masuk ${text(s['checkin_time'], '')}' : 'Tentor belum absen masuk',
+                    style: TextStyle(fontSize: 12, color: s['checked_in'] == true ? Colors.green : Colors.orange),
+                  ),
+                  // Keterangan GPS / jam (di luar lokasi, di luar jam, terlambat)
+                  if ((s['remarks'] as List? ?? []).isNotEmpty)
+                    Text((s['remarks'] as List).join(' • '), style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                ]),
               ),
             ),
         ]);

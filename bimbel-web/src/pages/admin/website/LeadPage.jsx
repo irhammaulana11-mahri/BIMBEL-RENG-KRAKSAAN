@@ -192,7 +192,7 @@ export default function LeadPage() {
       {/* 1. Header Area */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Leads Admission Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Calon Siswa (Leads)</h1>
           <p className="text-base text-gray-500 mt-1">Tinjau formulir masuk website, hubungi wali murid via WA, dan lakukan aktivasi akun master.</p>
         </div>
       </div>
@@ -318,10 +318,11 @@ export default function LeadPage() {
           leads={leads}
           loading={loading}
           pagination={pagination}
-          onPageChange={(page) =>
+          onPageChange={(page, perPage) =>
               setPagination((prev) => ({
                   ...prev,
                   page,
+                  ...(perPage ? { perPage } : {}),
               }))
           }
           onView={handleView}

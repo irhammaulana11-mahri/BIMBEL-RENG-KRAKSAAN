@@ -1,7 +1,6 @@
 <?php
 namespace App\Services\Academic;
 
-use App\Models\Academic\ClassStudent;
 use App\Models\Academic\RescheduleRequest;
 use App\Models\Academic\ScheduleSession;
 use App\Support\LocalTime;
@@ -49,6 +48,12 @@ class RescheduleRequestService {
         }
         if ($proposedStart->toDateString() === $session->session_date && $startTime === substr($session->start_time, 0, 5)) {
             throw ValidationException::withMessages(['proposed_date' => 'Jadwal pengganti sama dengan jadwal semula.']);
+        }
+
+        // Tolak sejak awal bila jam usulan bentrok, agar pengaju bisa langsung memilih jam lain
+        $conflicts = app(SessionConflictService::class)->find($session, $proposedStart->toDateString(), $proposedStart->format('H:i'), $proposedEnd->format('H:i'));
+        if ($conflicts) {
+            throw ValidationException::withMessages(['proposed_date' => 'Jadwal usulan bentrok: ' . implode(' ', $conflicts) . ' Pilih tanggal/jam lain.']);
         }
 
         $pending = RescheduleRequest::where('session_id', $session->id)
@@ -107,11 +112,11 @@ class RescheduleRequestService {
                 throw ValidationException::withMessages(['session_date' => 'Jadwal baru harus setelah waktu sekarang.']);
             }
 
-            $tentorCheck = $this->scheduleService->validateRescheduleSession($target + ['schedule_session_id' => $session->id]);
-            if (!$tentorCheck['success']) {
-                throw ValidationException::withMessages(['session_date' => $tentorCheck['message']]);
+            // Dicek ulang saat disetujui: jadwal bisa berubah sejak pengajuan dikirim
+            $check = $this->scheduleService->validateRescheduleSession($target + ['schedule_session_id' => $session->id]);
+            if (!$check['success']) {
+                throw ValidationException::withMessages(['session_date' => $check['message']]);
             }
-            $this->ensureNoStudentConflict($session, $target);
 
             $result = $this->scheduleService->rescheduleSession($session, $target + [
                 'reason' => $request->requester_type === 'PARENT' ? 'Permintaan orang tua' : 'Permintaan tentor',
@@ -161,34 +166,6 @@ class RescheduleRequestService {
         });
     }
 
-    // Siswa kelas ini tidak boleh punya sesi lain (kelas lain) yang bertumpuk di jam baru
-    private function ensureNoStudentConflict(ScheduleSession $session, array $target): void {
-        $classId = $session->schedule->class_id;
-        $studentIds = ClassStudent::where('class_id', $classId)->pluck('student_id');
-        if ($studentIds->isEmpty()) return;
-
-        $otherClassIds = ClassStudent::whereIn('student_id', $studentIds)
-            ->where('class_id', '!=', $classId)
-            ->pluck('class_id')->unique();
-        if ($otherClassIds->isEmpty()) return;
-
-        $conflict = ScheduleSession::with(['schedule.classroom', 'subject'])
-            ->whereHas('schedule', fn($q) => $q->whereIn('class_id', $otherClassIds))
-            ->whereDate('session_date', $target['session_date'])
-            ->where('status', '!=', 'CANCELLED')
-            ->whereTime('start_time', '<', $target['end_time'])
-            ->whereTime('end_time', '>', $target['start_time'])
-            ->first();
-
-        if ($conflict) {
-            $class = $conflict->schedule?->classroom?->name ?? 'kelas lain';
-            throw ValidationException::withMessages([
-                'session_date' => "Bentrok: sebagian siswa memiliki sesi {$conflict->subject?->name} di {$class} pada " .
-                    substr($conflict->start_time, 0, 5) . '-' . substr($conflict->end_time, 0, 5) . '.',
-            ]);
-        }
-    }
-
     private function ensurePending(RescheduleRequest $request): void {
         if ($request->status !== 'PENDING') {
             throw ValidationException::withMessages(['status' => 'Pengajuan ini sudah diproses.']);
@@ -224,6 +201,10 @@ class RescheduleRequestService {
             'proposed_end_time'   => substr($r->proposed_end_time, 0, 5),
             'reason'              => $r->reason,
             'review_note'         => $r->review_note,
+            // Pengecekan bentrok terkini untuk pengajuan yang masih menunggu
+            'conflicts'           => $r->status === 'PENDING' && $session
+                ? app(SessionConflictService::class)->find($session, $r->proposed_date, $r->proposed_start_time, $r->proposed_end_time)
+                : [],
             'reviewer_name'       => $r->reviewer?->name,
             'reviewed_at'         => LocalTime::format($r->reviewed_at, 'Y-m-d H:i'),
             'created_at'          => LocalTime::format($r->created_at, 'Y-m-d H:i'),

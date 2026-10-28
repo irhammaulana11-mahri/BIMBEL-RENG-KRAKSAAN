@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Edit, Lock } from "lucide-react";
+import LocationPicker from "../../../ui/LocationPicker";
 
 export default function StudentModal({ open, onClose, data, onSubmit, loading }) {
   const [formData, setFormData] = useState({
@@ -11,6 +12,9 @@ export default function StudentModal({ open, onClose, data, onSubmit, loading })
     school_name: "",
     grade: "",
     is_active: true,
+    home_address: "",
+    home_latitude: "",
+    home_longitude: "",
   });
 
   useEffect(() => {
@@ -24,6 +28,9 @@ export default function StudentModal({ open, onClose, data, onSubmit, loading })
         school_name: data.school_name || "",
         grade: data.grade || "",
         is_active: data.user?.is_active ?? data.is_active ?? true,
+        home_address: data.home_address || "",
+        home_latitude: data.home_latitude ?? "",
+        home_longitude: data.home_longitude ?? "",
       });
     } else {
       setFormData({
@@ -35,6 +42,9 @@ export default function StudentModal({ open, onClose, data, onSubmit, loading })
         school_name: "",
         grade: "",
         is_active: true,
+        home_address: "",
+        home_latitude: "",
+        home_longitude: "",
       });
     }
   }, [data, open]);
@@ -43,14 +53,18 @@ export default function StudentModal({ open, onClose, data, onSubmit, loading })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      home_latitude: formData.home_latitude === "" ? null : formData.home_latitude,
+      home_longitude: formData.home_longitude === "" ? null : formData.home_longitude,
+    });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs p-4 animate-in fade-in duration-200">
       
       {/* Diperlebar menjadi max-w-2xl dengan padding ringkas agar fit tanpa scroll */}
-      <div className="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
         
         {/* Tombol Close */}
         <button 
@@ -191,6 +205,31 @@ export default function StudentModal({ open, onClose, data, onSubmit, loading })
             </div>
 
           </div>
+
+          {/* Rumah siswa: titik absen GPS tentor untuk kelas private */}
+          <div className="border-b border-gray-100 pb-1.5 pt-2">
+            <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-0.5 rounded-md">
+              RUMAH SISWA (LES PRIVATE)
+            </span>
+            <p className="text-[11px] text-gray-400 mt-1.5">Sama dengan alamat orang tua: perubahan di sini ikut memperbarui profil orang tua & saudara kandung. Dipakai sebagai titik absen GPS tentor kelas private.</p>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Alamat Rumah</label>
+            <textarea
+              rows={2}
+              value={formData.home_address}
+              onChange={(e) => setFormData({ ...formData, home_address: e.target.value })}
+              className="w-full mt-1 rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+              placeholder="Jl. ..., RT/RW, Desa, Kecamatan"
+            />
+          </div>
+          <LocationPicker
+            label="Titik Rumah"
+            radius={100}
+            height={200}
+            value={{ latitude: formData.home_latitude, longitude: formData.home_longitude }}
+            onChange={({ latitude, longitude }) => setFormData({ ...formData, home_latitude: latitude, home_longitude: longitude })}
+          />
 
           {/* Action Buttons */}
           <div className="pt-3 border-t border-gray-100 flex gap-3 mt-4">

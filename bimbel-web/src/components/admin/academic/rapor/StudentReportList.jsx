@@ -2,11 +2,16 @@ import React from "react";
 import { Eye, Send, Undo2 } from "lucide-react";
 import { TrendBadge } from "@/components/report/ReportCardView";
 import { REPORT_STATUS, formatScore, formatPercent } from "@/services/academic/progressReportService";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function StudentReportList({ data, loading, onOpenDetail, onPublish, onUnpublish }) {
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(data || []);
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[860px]">
+      <table className="ui-table w-full text-left border-collapse min-w-[860px]">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/50 text-xs font-semibold uppercase tracking-wider text-gray-600">
             <th className="p-4">Siswa / Kelas</th>
@@ -23,7 +28,7 @@ export default function StudentReportList({ data, loading, onOpenDetail, onPubli
             <tr><td colSpan={7} className="p-6 text-center text-gray-400">Memuat rapor...</td></tr>
           ) : data.length === 0 ? (
             <tr><td colSpan={7} className="p-6 text-center text-gray-400">Tidak ada siswa pada filter ini.</td></tr>
-          ) : data.map((row) => (
+          ) : pageRows.map((row) => (
             <tr key={`${row.class_id}-${row.student_id}`} className="hover:bg-gray-50/50">
               <td className="p-4">
                 <p className="font-bold text-gray-900">{row.student_name}</p>
@@ -69,6 +74,7 @@ export default function StudentReportList({ data, loading, onOpenDetail, onPubli
           ))}
         </tbody>
       </table>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
     </div>
   );
 }

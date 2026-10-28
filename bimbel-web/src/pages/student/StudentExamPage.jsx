@@ -48,7 +48,7 @@ export default function StudentExamPage() {
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
 
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Ujian & Hasil</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Ujian & Hasil</h1>
         <p className="text-sm text-gray-500 mt-0.5">Kerjakan ujian yang sedang dibuka dan lihat hasil ujian Anda.</p>
       </div>
 

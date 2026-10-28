@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_state.dart';
+import 'notifications.dart';
 
 class PortalTab {
   final String label;
@@ -43,11 +44,20 @@ class _PortalShellState extends State<PortalShell> {
     final tab = widget.tabs[_index];
     return Scaffold(
       appBar: AppBar(
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF4338CA), Color(0xFF2563EB)], begin: Alignment.centerLeft, end: Alignment.centerRight),
+          ),
+        ),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(tab.label),
-          Text('${widget.portalName} • ${auth.name}', style: Theme.of(context).textTheme.bodySmall),
+          Text(tab.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text('${widget.portalName} • ${auth.name}', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .8))),
         ]),
-        actions: [IconButton(tooltip: 'Keluar', onPressed: _confirmLogout, icon: const Icon(Icons.logout))],
+        actions: [
+          const NotificationBellButton(),
+          IconButton(tooltip: 'Keluar', onPressed: _confirmLogout, icon: const Icon(Icons.logout)),
+        ],
       ),
       body: IndexedStack(
         index: _index,

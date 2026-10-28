@@ -171,7 +171,7 @@ export default function TentorPage() {
         {/* Header Area */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Tentor Management</h1>
+            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Tentor</h1>
             <p className="text-base text-gray-500 mt-1">Kelola data tenaga pengajar (tentor), spesialisasi, dan pengampuan mata pelajaran.</p>
           </div>
           <button
@@ -269,7 +269,7 @@ export default function TentorPage() {
           tentors={tentors}
           loading={loading}
           pagination={pagination}
-          onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+          onPageChange={(page, perPage) => setPagination((prev) => ({ ...prev, page, ...(perPage ? { perPage } : {}) }))}
           onPreview={handleView}
           onToggleStatus={handleToggleStatus}
         />

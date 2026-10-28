@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Mail, Phone, MapPin, GraduationCap, Briefcase, CalendarDays, KeyRound, Pencil, X, BookOpen, School, Wallet } from "lucide-react";
+import { Mail, Phone, MapPin, GraduationCap, Briefcase, CalendarDays, KeyRound, Pencil, X, BookOpen, School } from "lucide-react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import ChangePasswordModal from "@/components/account/ChangePasswordModal";
 import { getTentorProfile, updateTentorProfile, updateTentorPassword } from "@/services/tentor/profileService";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { formatRupiah } from "@/utils/format";
+import PremiumStatCard from "../../components/ui/StatCard";
+import { CalendarCheck, Clock3, Users } from "lucide-react";
 
 const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "T";
 
@@ -29,15 +30,16 @@ export default function TentorProfilePage() {
     { icon: Phone, label: "No. WhatsApp", value: profile.phone },
     { icon: GraduationCap, label: "Pendidikan", value: profile.education },
     { icon: Briefcase, label: "Spesialisasi", value: profile.specialization },
-    { icon: CalendarDays, label: "Bergabung", value: profile.joining_date },
-    { icon: Wallet, label: "Tarif per Sesi", value: profile.rate_per_session > 0 ? formatRupiah(profile.rate_per_session) : "Belum diatur" },
+    { icon: CalendarDays, label: "Bergabung", value: profile.joining_date ? new Date(`${profile.joining_date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : null },
+    { icon: Users, label: "Jenis Kelamin", value: profile.gender === "P" ? "Perempuan" : profile.gender === "L" ? "Laki-laki" : null },
   ];
+  const stats = profile.statistics || {};
 
   return (
     <div className="page-card space-y-6 animate-in fade-in">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Profil Tentor</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Profil Tentor</h1>
         <p className="text-sm text-gray-500 mt-0.5">Informasi akun, mapel, dan kelas yang Anda ajar.</p>
       </div>
 
@@ -56,6 +58,13 @@ export default function TentorProfilePage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <PremiumStatCard title="Kelas Diampu" value={stats.classes ?? 0} desc={`${stats.students ?? 0} siswa`} icon={School} colorClass="text-indigo-700" />
+          <PremiumStatCard title="Sesi Selesai" value={stats.sessions_done ?? 0} desc={`${stats.sessions_month ?? 0} sesi bulan ini`} icon={CalendarCheck} colorClass="text-green-700" />
+          <PremiumStatCard title="Jam Mengajar" value={stats.teaching_hours ?? 0} desc="Total dari absen tentor" icon={Clock3} colorClass="text-blue-700" />
+          <PremiumStatCard title="Mapel Dikuasai" value={stats.subjects ?? 0} desc={`${stats.late_count ?? 0} kali terlambat`} icon={BookOpen} colorClass="text-purple-700" />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           {info.map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
@@ -68,7 +77,7 @@ export default function TentorProfilePage() {
             <div><p className="text-xs text-gray-400 font-semibold">Alamat</p><p className="font-bold text-gray-800">{profile.address || "-"}</p></div>
           </div>
         </div>
-        <p className="text-[11px] text-gray-400">Nama, email, data pribadi, dan tarif diubah oleh Admin bimbel.</p>
+        <p className="text-[11px] text-gray-400">Nama, email, dan data pribadi diubah oleh Admin bimbel.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

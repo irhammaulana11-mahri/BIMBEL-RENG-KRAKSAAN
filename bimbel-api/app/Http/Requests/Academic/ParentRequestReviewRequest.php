@@ -35,8 +35,13 @@ class ParentRequestReviewRequest extends FormRequest
                 'full_name'   => ['nullable', 'string', 'max:150'],
                 'school_name' => ['nullable', 'string', 'max:150'],
                 'review_note' => ['nullable', 'string', 'max:500'],
+                // Admin boleh mengganti email login anak; kosong = usulan orang tua / dari NIS
+                'login_email' => ['nullable', 'email', 'max:100', Rule::unique(\App\Models\Admin\User::class, 'email')],
             ],
-            'rejectReschedule', 'rejectRegistration' => [
+            'approveLocation' => [
+                'review_note' => ['nullable', 'string', 'max:500'],
+            ],
+            'rejectReschedule', 'rejectRegistration', 'rejectLocation' => [
                 'review_note' => ['required', 'string', 'min:3', 'max:500'],
             ],
             default => [],

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, ClipboardCheck, Send, PenLine } from "lucide-react";
 import ExamTable from "../../../components/admin/academic/exam/ExamTable";
 import ExamModal from "../../../components/admin/academic/exam/ExamModal";
@@ -9,21 +10,11 @@ import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import { getSubjects } from "@/services/admin/subjectService";
 import {
-  getExams, createExam, updateExam, deleteExam, changeExamStatus, getApiErrorMessage,
+  getExams, getExam, createExam, updateExam, deleteExam, changeExamStatus, getApiErrorMessage,
 } from "@/services/exam/examService";
+import PremiumStatCard from "../../../components/ui/StatCard";
+import TablePagination from "@/components/ui/table/TablePagination";
 
-const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
-    <div className="space-y-1.5">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-gray-500 font-medium">{desc}</p>
-    </div>
-    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
-      <Icon className="w-6 h-6" />
-    </div>
-  </div>
-);
 
 const STATUS_ACTION = {
   PUBLISHED: { title: "Terbitkan Ujian?", message: "Ujian yang terbit dapat dipilih tentor di sesi KBM dan dikerjakan siswa sesuai jadwal.", variant: "success" },
@@ -46,6 +37,7 @@ export default function ExamPage() {
   const [subjectFilter, setSubjectFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
 
   // State Kontrol Sub-Halaman
   const [viewMode, setViewMode] = useState("list");
@@ -53,7 +45,7 @@ export default function ExamPage() {
 
   const fetchExams = async () => {
     try {
-      const res = await getExams({ keyword: search, subject_id: subjectFilter, status: statusFilter, page, per_page: 15 });
+      const res = await getExams({ keyword: search, subject_id: subjectFilter, status: statusFilter, page, per_page: perPage });
       setExams(res.data.data || []);
       setSummary(res.data.summary || {});
       setPagination(res.data.meta || { current_page: 1, last_page: 1 });
@@ -68,11 +60,29 @@ export default function ExamPage() {
     getSubjects({ perPage: 100 }).then(res => setSubjects(res.data?.data || [])).catch(() => {});
   }, []);
 
+  // Tautan dari drawer mapel: ?questions=<exam_id> buka kelola soal, ?create=<subject_id> buka form ujian baru
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [defaultSubjectId, setDefaultSubjectId] = useState("");
+  useEffect(() => {
+    const examId = searchParams.get("questions");
+    const createFor = searchParams.get("create");
+    if (examId) {
+      getExam(examId)
+        .then(res => { setCurrentExamTarget(res.data.data || res.data); setViewMode("questions"); })
+        .catch(() => showError("Ujian tidak ditemukan."));
+    } else if (createFor) {
+      setDefaultSubjectId(createFor);
+      setSelectedExam(null);
+      setModalOpen(true);
+    }
+    if (examId || createFor) setSearchParams({}, { replace: true });
+  }, [searchParams]);
+
   useEffect(() => {
     if (viewMode !== "list") return;
     const timer = setTimeout(fetchExams, 300);
     return () => clearTimeout(timer);
-  }, [search, subjectFilter, statusFilter, page, viewMode]);
+  }, [search, subjectFilter, statusFilter, page, perPage, viewMode]);
 
   const handleAdd = () => {
     setSelectedExam(null);
@@ -137,7 +147,7 @@ export default function ExamPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Exam Management</h1>
+            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Ujian</h1>
             <p className="text-gray-500">Kelola master ujian, bank soal, dan penilaian hasil ujian online siswa</p>
           </div>
           <button
@@ -206,16 +216,14 @@ export default function ExamPage() {
             />
           )}
 
-          {pagination.last_page > 1 && (
-            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-100 text-sm">
-              <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Sebelumnya</button>
-              <span className="text-gray-500">Hal {pagination.current_page} / {pagination.last_page}</span>
-              <button disabled={page >= pagination.last_page} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Berikutnya</button>
-            </div>
-          )}
+          <TablePagination
+        pagination={{ page: pagination.current_page || 1, lastPage: pagination.last_page || 1, perPage, total: pagination.total || 0, from: pagination.from || 0, to: pagination.to || 0 }}
+        onPageChange={(target, newPerPage) => { if (newPerPage) setPerPage(newPerPage); setPage(target); }}
+        label="data"
+      />
         </div>
 
-        <ExamModal open={modalOpen} onClose={() => setModalOpen(false)} data={selectedExam} onSubmit={handleSubmit} />
+        <ExamModal open={modalOpen} onClose={() => { setModalOpen(false); setDefaultSubjectId(""); }} data={selectedExam} onSubmit={handleSubmit} defaultSubjectId={defaultSubjectId} />
 
         <ConfirmationModal
           open={confirmConfig.open}

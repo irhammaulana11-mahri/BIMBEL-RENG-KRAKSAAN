@@ -33,6 +33,8 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> login(String email, String password) async {
+    // Token lama tidak boleh ikut terkirim, agar 401 dibaca sebagai email/password salah
+    await api.clearToken();
     final res = await api.post('/login', {'email': email.trim(), 'password': password});
     final roleName = res['user']?['role']?['role_name'];
     if (!supportedRoles.contains(roleName)) {

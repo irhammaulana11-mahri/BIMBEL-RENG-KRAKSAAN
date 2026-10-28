@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { 
-  X, Clock, MapPin, User, Users, CheckCircle2, 
+  X, Clock, MapPin, User, Users, 
   RotateCcw, Edit3, XCircle, History, AlertTriangle, FileText
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import EditSessionDetailModal from "./EditSessionDetailModal"; // 🟢 Import Komponen Baru
 import RescheduleModal from "./RescheduleModal"; // Pastikan path import sesuai
-import { cancelSession } from "@/services/academic/scheduleService"; // Import service API
+import { cancelSession, getSessionOverview } from "@/services/academic/scheduleService";
+import StudentAttendanceModal from "../attendance/StudentAttendanceModal";
 import Toast from "../../../../components/ui/Toast";
 import { useToast } from "../../../../hooks/useToast";
 
@@ -21,11 +22,27 @@ export default function SessionPreview({ open, session, onClose, onActionComplet
   const [cancelReason, setCancelReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [overview, setOverview] = useState(null);
+
   const { toast, showSuccess, showError, hideToast } = useToast();
+
+  // Absensi, absen tentor, aktivitas & riwayat diambil dari database setiap drawer dibuka
+  const loadOverview = () => {
+    if (!session?.id) return;
+    getSessionOverview(session.id).then((res) => setOverview(res.data.data)).catch(() => setOverview(null));
+  };
+  useEffect(() => {
+    setOverview(null);
+    if (open) loadOverview();
+  }, [open, session?.id, session?.status]);
 
   if (!open || !session) return null;
 
   const isCompleted = session.status === "COMPLETED";
+  const notStarted = ["SCHEDULED", "RESCHEDULED", "PREPARING"].includes(session.status);
+  const isRunning = session.status === "IN_PROGRESS";
+  const att = overview?.attendance;
 
   // Format tanggal menjadi: Senin, 20 Juli 2026
   const formatDateDisplay = (dateString) => {
@@ -39,10 +56,11 @@ export default function SessionPreview({ open, session, onClose, onActionComplet
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case "ONGOING": return <span className="bg-blue-100 text-blue-700 border-blue-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Sedang Berlangsung</span>;
+      case "ONGOING":
+      case "IN_PROGRESS": return <span className="bg-blue-100 text-blue-700 border-blue-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Sedang Berlangsung</span>;
       case "COMPLETED": return <span className="bg-emerald-100 text-emerald-700 border-emerald-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Selesai</span>;
       case "CANCELLED": return <span className="bg-rose-100 text-rose-700 border-rose-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Dibatalkan</span>;
-      case "RESCHEDULED": return <span className="bg-amber-100 text-amber-700 border-amber-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Reschedule</span>;
+      case "RESCHEDULED": return <span className="bg-amber-100 text-amber-700 border-amber-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Dipindah</span>;
       default: return <span className="bg-slate-100 text-slate-700 border-slate-200 border px-2 py-0.5 rounded text-[10px] font-black uppercase">Dijadwalkan</span>;
     }
   };
@@ -132,7 +150,7 @@ export default function SessionPreview({ open, session, onClose, onActionComplet
               <div className="truncate pr-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Lokasi / Ruang</p>
                 <p className="text-sm font-bold text-gray-900 truncate">
-                  {session.room_name || session.location_name || "-"}
+                  {overview?.location || session.room_name || session.location_name || "-"}
                 </p>
                 {session.meeting_url && (
                     <a href={session.meeting_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline break-all mt-0.5 block">
@@ -143,107 +161,109 @@ export default function SessionPreview({ open, session, onClose, onActionComplet
             </div>
           </div>
 
-          {/* KELOMPOK 2: LAPORAN ABSENSI */}
+          {/* KELOMPOK 2: ABSENSI SISWA (data nyata) */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-black text-gray-800 uppercase flex items-center gap-1.5">
-                <Users size={14} className="text-blue-600"/> Laporan Absensi
+                <Users size={14} className="text-blue-600"/> Absensi Siswa
               </h3>
-              {isCompleted ? (
-                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                  <CheckCircle2 size={12}/> Sudah Dilakukan
+              {att && (
+                <span className={`text-[10px] font-bold ${att.filled >= att.total_students && att.total_students > 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                  {att.filled}/{att.total_students} siswa terisi
                 </span>
-              ) : (
-                <span className="text-[10px] font-bold text-amber-600">Belum Dilakukan</span>
               )}
             </div>
-            
-            {isCompleted ? (
-               <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
-                  <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
-                      <div className="font-bold text-emerald-700">Hadir</div>
-                      <div className="font-black text-lg text-emerald-900">8</div>
-                  </div>
-                  <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
-                      <div className="font-bold text-blue-700">Izin</div>
-                      <div className="font-black text-lg text-blue-900">1</div>
-                  </div>
-                  <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
-                      <div className="font-bold text-amber-700">Sakit</div>
-                      <div className="font-black text-lg text-amber-900">1</div>
-                  </div>
-                  <div className="bg-rose-50 p-2 rounded-lg border border-rose-100">
-                      <div className="font-bold text-rose-700">Alpa</div>
-                      <div className="font-black text-lg text-rose-900">0</div>
-                  </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex-1 bg-white p-3 rounded-xl border border-gray-100 text-center shadow-sm">
-                  <p className="text-2xl font-black text-gray-900">{session.total_students || 0}</p>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Siswa Terdaftar</p>
+            {!overview ? <p className="text-xs text-gray-400 py-2">Memuat absensi...</p> : (
+              <>
+                <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+                  {[
+                    ["Hadir", att.hadir, "bg-emerald-50 border-emerald-100 text-emerald-700"],
+                    ["Izin", att.izin, "bg-blue-50 border-blue-100 text-blue-700"],
+                    ["Sakit", att.sakit, "bg-amber-50 border-amber-100 text-amber-700"],
+                    ["Alpa", att.alpa, "bg-rose-50 border-rose-100 text-rose-700"],
+                  ].map(([label, value, cls]) => (
+                    <div key={label} className={`p-2 rounded-lg border ${cls}`}>
+                      <div className="font-bold">{label}</div>
+                      <div className="font-black text-lg">{value}</div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex-1 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-center shadow-sm">
-                  <p className="text-2xl font-black text-emerald-700">-</p>
-                  <p className="text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Siswa Hadir</p>
-                </div>
-              </div>
+                {overview.students.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {overview.students.map((st, i) => (
+                      <div key={i} className="flex justify-between text-xs bg-white rounded-lg px-2.5 py-1.5 border border-gray-100">
+                        <span className="font-semibold text-gray-800">{st.name}</span>
+                        <span className="font-bold text-gray-500">{st.status === "BELUM" ? "Belum diabsen" : st.status}{st.note ? ` • ${st.note}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {notStarted && <p className="text-[11px] text-gray-400 mt-2">Absensi siswa diisi tentor setelah absen masuk di Ruang Kerja Sesi.</p>}
+              </>
             )}
           </div>
 
-          {/* KELOMPOK 3: RIWAYAT SESI (AUDIT LOG) */}
+          {/* KELOMPOK 3: ABSEN TENTOR */}
+          {overview?.tentor_attendance && (
+            <div className="p-4 bg-white border border-gray-200 rounded-2xl space-y-1">
+              <h3 className="text-xs font-black text-gray-800 uppercase flex items-center gap-1.5"><User size={14} className="text-amber-600" /> Absen Tentor</h3>
+              <p className="text-sm font-bold text-gray-900">Masuk {overview.tentor_attendance.checkin_time || "-"} • Pulang {overview.tentor_attendance.checkout_time || "-"} WIB</p>
+              {overview.tentor_attendance.target_label && <p className="text-xs text-gray-500">Titik absen: {overview.tentor_attendance.target_label}</p>}
+              {overview.tentor_attendance.remarks.length > 0 && (
+                <p className="text-xs font-semibold text-amber-700">{overview.tentor_attendance.remarks.join(" • ")}</p>
+              )}
+            </div>
+          )}
+
+          {/* KELOMPOK 4: AKTIVITAS */}
+          {overview && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-black text-gray-800 uppercase flex items-center gap-1.5"><FileText size={14} className="text-indigo-500" /> Aktivitas Pertemuan ({overview.activities.length})</h3>
+              {overview.activities.length === 0 ? <p className="text-xs text-gray-400">Belum ada aktivitas yang disusun tentor.</p> : overview.activities.map((a, i) => (
+                <div key={i} className="flex justify-between text-xs bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100">
+                  <span className="font-semibold text-gray-800">{a.title}</span>
+                  <span className="text-gray-500">{{ MATERIAL: "Materi", EXAM: "Ujian", DISCUSSION: "Diskusi", REVIEW: "Review" }[a.type] || a.type} • {{ READY: "Siap", IN_PROGRESS: "Berjalan", COMPLETED: "Selesai", CANCELLED: "Batal" }[a.status] || a.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* KELOMPOK 5: RIWAYAT SESI (dari data nyata) */}
           <div className="pt-2">
             <h3 className="text-xs font-black text-gray-800 uppercase mb-4 flex items-center gap-1.5 border-b border-gray-100 pb-2">
-              <History size={14} className="text-gray-400"/> Riwayat Sesi (Audit)
+              <History size={14} className="text-gray-400"/> Riwayat Sesi
             </h3>
             <div className="relative pl-3 space-y-4 border-l-2 border-gray-100 ml-2">
-              {/* Log Statis: Generate */}
-              <div className="relative">
-                <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></div>
-                <p className="text-xs font-bold text-gray-800">Sesi Di-generate</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">Oleh Sistem via Wizard</p>
-              </div>
-              
-              {/* Log Statis: Pembatalan */}
-              {session.status === "CANCELLED" && (
-                <div className="relative">
-                  <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></div>
-                  <p className="text-xs font-bold text-gray-800">Sesi Dibatalkan</p>
-                  <p className="text-[10px] text-gray-600 mt-0.5 bg-rose-50 p-1.5 rounded border border-rose-100">
-                     Alasan: {session.reason || "Tidak ada keterangan"}
-                  </p>
+              {(overview?.timeline || []).map((t, i) => (
+                <div key={i} className="relative">
+                  <div className={`absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white ${{ blue: "bg-blue-500", amber: "bg-amber-500", purple: "bg-purple-500", emerald: "bg-emerald-500", rose: "bg-rose-500" }[t.tone] || "bg-slate-400"}`}></div>
+                  <p className="text-xs font-bold text-gray-800">{t.title}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{t.at}{t.detail ? ` • ${t.detail}` : ""}</p>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
 
-        {/* FOOTER ACTION BUTTONS */}
+        {/* FOOTER: tombol menyesuaikan status sesi */}
         <div className="p-5 border-t border-gray-100 bg-white space-y-2 shrink-0">
-          
-          <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl cursor-pointer shadow-sm transition-colors">
-            <Users size={16} /> 
-            {isCompleted ? "Lihat / Edit Absensi" : "Lakukan Absensi Siswa"}
-          </button>
-          
-          {session.status !== "CANCELLED" && (
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <button 
-                onClick={() => setIsEditDetailOpen(true)}
-                className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[10px] rounded-xl border border-slate-200 cursor-pointer transition-colors"
-              >
+          {(isCompleted || isRunning) && (
+            <button onClick={() => setIsAttendanceOpen(true)} className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl">
+              <Users size={16} /> {isCompleted ? "Lihat / Koreksi Absensi Siswa" : "Lihat Absensi Siswa"}
+            </button>
+          )}
+          {isRunning && <p className="text-[11px] text-center text-gray-500">Sesi sedang berlangsung dan dikelola tentor di Ruang Kerja Sesi.</p>}
+          {session.status === "CANCELLED" && <p className="text-[11px] text-center text-gray-500">Sesi dibatalkan. Tidak ada aksi yang tersedia.</p>}
+
+          {notStarted && (
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => setIsEditDetailOpen(true)} className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[10px] rounded-xl border border-slate-200">
                 <FileText size={14} /> Edit Detail
               </button>
-              <button 
-                onClick={() => setIsRescheduleOpen(true)}
-                className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] rounded-xl border border-amber-200 cursor-pointer transition-colors"
-              >
-                <RotateCcw size={14} /> Reschedule
+              <button onClick={() => setIsRescheduleOpen(true)} className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] rounded-xl border border-amber-200">
+                <RotateCcw size={14} /> Pindah Jadwal
               </button>
-              <button 
-                onClick={() => setIsCancelConfirmOpen(true)}
-                className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] rounded-xl border border-rose-200 cursor-pointer transition-colors"
-              >
+              <button onClick={() => setIsCancelConfirmOpen(true)} className="inline-flex flex-col items-center justify-center gap-1 p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] rounded-xl border border-rose-200">
                 <XCircle size={14} /> Batalkan
               </button>
             </div>
@@ -321,6 +341,12 @@ export default function SessionPreview({ open, session, onClose, onActionComplet
             setIsEditDetailOpen(false);
             if (onActionComplete) onActionComplete(); // Refresh data
         }}
+      />
+ <StudentAttendanceModal
+        open={isAttendanceOpen}
+        sessionId={session.id}
+        onClose={() => setIsAttendanceOpen(false)}
+        onSuccess={() => { setIsAttendanceOpen(false); loadOverview(); if (onActionComplete) onActionComplete(); }}
       />
       <RescheduleModal 
         open={isRescheduleOpen} 

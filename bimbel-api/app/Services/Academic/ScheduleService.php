@@ -75,9 +75,11 @@ class ScheduleService {
 
 
     public function getSessions(array $filters, int $perPage = 15): LengthAwarePaginator {
-        $query = ScheduleSession::with([
-            'schedule.classroom', 'subject', 'tentor.user', 'location'
-        ]);
+        // Relasi lokasi lengkap agar label lokasi mengikuti jenis kelas (online / rumah siswa / gedung)
+        $query = ScheduleSession::with(array_merge(
+            ['subject', 'tentor.user', 'schedule.classroom' => fn($q) => $q->withCount('students')],
+            AttendanceLocationService::RELATIONS
+        ))->withCount(['studentAttendances as present_count' => fn($q) => $q->where('attendance_status', 'HADIR')]);
 
         if (!empty($filters['keyword'])) {
             $keyword = trim($filters['keyword']);
@@ -916,6 +918,10 @@ class ScheduleService {
      * @return array
      */
     public function cancelSession(ScheduleSession $session, array $data): array {
+        // Sesi yang sudah berjalan/selesai tidak boleh dibatalkan (absensi & honor sudah tercatat)
+        if (!in_array($session->status, ['SCHEDULED', 'RESCHEDULED', 'PREPARING'], true)) {
+            return ['success' => false, 'code' => 422, 'message' => 'Hanya sesi yang belum dimulai yang dapat dibatalkan.'];
+        }
         try {
             DB::beginTransaction();
             $session->status = 'CANCELLED';
@@ -951,32 +957,14 @@ class ScheduleService {
      * Memvalidasi potensi bentrok saat Reschedule Sesi
      */
     public function validateRescheduleSession(array $data): array {
-        $startTime = $data['start_time'];
-        $endTime = $data['end_time'];
-        $tentorId = $data['tentor_id'];
+        // Empat aturan bentrok (tentor, kelas sama, siswa di kelas lain, ruang) - lihat SessionConflictService
+        $session = ScheduleSession::findOrFail($data['schedule_session_id']);
+        $conflicts = app(SessionConflictService::class)->find(
+            $session, $data['session_date'], $data['start_time'], $data['end_time'], $data['tentor_id'] ?? null
+        );
 
-        // Cek bentrok pada tabel Sessions (Agenda Nyata) di tanggal yang sama
-        $conflict = ScheduleSession::whereDate('session_date', $data['session_date'])
-            ->where('id', '!=', $data['schedule_session_id']) // Abaikan sesi ini sendiri
-            ->where('tentor_id', $tentorId)
-            ->where('status', '!=', 'CANCELLED')
-            ->where(function($q) use ($startTime, $endTime) {
-                // Rumus Overlap: Start A < End B && End A > Start B
-                $q->whereTime('start_time', '<', $endTime)
-                  ->whereTime('end_time', '>', $startTime);
-            })
-            ->first();
-
-        if ($conflict) {
-            $classNm = $conflict->schedule?->classroom?->name ?? 'Kelas Lain';
-            $subName = $conflict->subject?->name ?? '';
-            $timeA = substr($conflict->start_time, 0, 5);
-            $timeB = substr($conflict->end_time, 0, 5);
-
-            return [
-                'success' => false,
-                'message' => "⚠️ BENTROK: Tentor sudah memiliki jadwal $subName di $classNm pada jam $timeA - $timeB."
-            ];
+        if ($conflicts) {
+            return ['success' => false, 'message' => '⚠️ BENTROK: ' . implode(' ', $conflicts), 'conflicts' => $conflicts];
         }
 
         return ['success' => true, 'message' => 'Jadwal baru tersedia.'];

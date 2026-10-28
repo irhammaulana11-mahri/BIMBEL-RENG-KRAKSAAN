@@ -64,7 +64,11 @@ export default function SchedulePage() {
         class_type: (item.class_type || item.classroom?.class_type)?.toUpperCase() || "REGULER",
         subject_name: item.subject_name || item.subject?.subject_name || item.subject?.name || "-",
         tentor_name: item.tentor_name || item.tentor?.user?.name || item.tentor?.tentor_name || item.tentor?.name || "Belum Diplot",
-        room_name: item.room_name || item.location?.location_name || item.location_name,
+        // Label lokasi mengikuti jenis kelas: Online / Rumah <siswa> / Gedung bimbel (+ ruang)
+        room_name: item.location_label
+          || ({ ONLINE: "Online", PRIVATE: "Rumah siswa" }[(item.class_type || item.classroom?.class_type || "").toUpperCase()])
+          || [item.location?.location_name || item.location_name, item.room_name].filter(v => v && v !== "-").join(" • ")
+          || "Lokasi belum diatur",
         start_time: item.start_time?.substring(0, 5),
         end_time: item.end_time?.substring(0, 5),
         session_date: item.session_date || item.day_of_week, // Fallback day_of_week untuk Master
@@ -124,7 +128,7 @@ export default function SchedulePage() {
       {/* HEADER & TOGGLE DATA SOURCE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Schedule Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Jadwal</h1>
           <p className="text-sm text-gray-500 mt-1">Pusat kontrol operasional sesi kelas dan absensi KBM.</p>
         </div>
         
@@ -206,6 +210,8 @@ export default function SchedulePage() {
         </div>
       </div>
 
+      <ScheduleLegend />
+
       {/* RENDER VIEWS (Menggunakan Component yang sama dengan handler handleSelectRow) */}
       {loading ? (
         <div className="p-12 flex flex-col items-center justify-center text-gray-400 font-bold text-sm">
@@ -220,7 +226,7 @@ export default function SchedulePage() {
               dataSource={dataSource} 
               onSelectSession={handleSelectRow} 
               pagination={pagination} // 🟢 Teruskan state pagination
-              onPageChange={(newPage) => setFilters(prev => ({ ...prev, page: newPage }))}
+              onPageChange={(newPage, perPage) => setFilters(prev => ({ ...prev, page: newPage, ...(perPage ? { perPage } : {}) }))}
            />}
           {viewMode === "timeline" && 
             <SessionTimeline 
@@ -228,14 +234,14 @@ export default function SchedulePage() {
               dataSource={dataSource} 
               onSelectSession={handleSelectRow} 
               pagination={pagination} 
-              onPageChange={(newPage) => setFilters(prev => ({ ...prev, page: newPage }))} />}
+              onPageChange={(newPage, perPage) => setFilters(prev => ({ ...prev, page: newPage, ...(perPage ? { perPage } : {}) }))} />}
           {viewMode === "week" && 
             <SessionWeek 
               data={data} 
               dataSource={dataSource} 
               onSelectSession={handleSelectRow} 
               pagination={pagination} 
-              onPageChange={(newPage) => setFilters(prev => ({ ...prev, page: newPage }))} />}
+              onPageChange={(newPage, perPage) => setFilters(prev => ({ ...prev, page: newPage, ...(perPage ? { perPage } : {}) }))} />}
         </>
       )}
 
@@ -271,6 +277,31 @@ export default function SchedulePage() {
         onSuccess={fetchData} 
       />
     </div>
+    </div>
+  );
+}
+
+// Legenda warna: warna kartu = jenis kelas (lokasi), pita kiri / badge = status sesi
+function ScheduleLegend() {
+  const types = [
+    ["bg-blue-50 border-blue-300", "Reguler", "di gedung bimbel"],
+    ["bg-emerald-50 border-emerald-300", "Private", "di rumah siswa"],
+    ["bg-purple-50 border-purple-300", "Online", "dari mana saja"],
+  ];
+  const statuses = [
+    ["bg-slate-300", "Terjadwal"], ["bg-blue-500", "Berlangsung"], ["bg-emerald-500", "Selesai"],
+    ["bg-amber-500", "Dipindah"], ["bg-rose-500", "Dibatalkan"],
+  ];
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-gray-100 bg-slate-50/70 px-4 py-3 text-xs text-gray-600">
+      <span className="font-black text-gray-500 uppercase tracking-wider text-[10px]">Jenis kelas</span>
+      {types.map(([cls, label, hint]) => (
+        <span key={label} className="flex items-center gap-1.5"><span className={`w-4 h-3 rounded border ${cls}`} /> <b className="text-gray-800">{label}</b> <span className="text-gray-400">{hint}</span></span>
+      ))}
+      <span className="font-black text-gray-500 uppercase tracking-wider text-[10px] ml-2">Status</span>
+      {statuses.map(([cls, label]) => (
+        <span key={label} className="flex items-center gap-1.5"><span className={`w-1.5 h-3.5 rounded ${cls}`} /> {label}</span>
+      ))}
     </div>
   );
 }

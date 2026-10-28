@@ -1,6 +1,11 @@
 import React from "react";
 import { X, Plus, BookOpen } from "lucide-react";
 
+// API mengirim education_level sebagai objek relasi; ambil nama jenjangnya saja
+const levelName = (s) =>
+  s.education_level_name || s.education_level?.display_name ||
+  (typeof s.education_level === "string" ? s.education_level : "");
+
 export default function SelectedSubjectCards({ selectedSubjects = [], onRemove, onOpenModal }) {
   return (
     <div className="space-y-3 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
@@ -46,7 +51,7 @@ export default function SelectedSubjectCards({ selectedSubjects = [], onRemove, 
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400">
                   <span className="font-mono">{sub.code || "MTK"}</span>
                   <span>•</span>
-                  <span className="text-purple-600">{sub.education_level || "SD"}</span>
+                  <span className="text-purple-600">{levelName(sub) || "SD"}</span>
                 </div>
               </div>
 

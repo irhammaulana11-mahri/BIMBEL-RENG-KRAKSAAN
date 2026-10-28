@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { 
   X, User, Phone, Mail, MapPin, GraduationCap,
-  Calendar, CheckCircle2, Edit3, PlusCircle, BookOpen, Clock, Info, Layers, BarChart3
+  Calendar, CheckCircle2, Edit3, PlusCircle, Clock, Info, Layers, BarChart3
 } from "lucide-react";
 import { getAvatarColor } from "../../../utils/avatarColor";
 import TentorEditForm from "./TentorEditForm"; // Import komponen edit terpisah
+import { getTentorOverview } from "@/services/admin/tentorService";
+import { ScheduleList, StatTiles } from "../shared/OverviewBlocks";
 
 export default function TentorPreview({ tentor, open, onClose, onSaveProfile, onPlotSubject, loading }) {
   const [activeTab, setActiveTab] = useState("overview"); // overview | assignment | schedule | statistic
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [overview, setOverview] = useState(null);
 
-  // Reset mode edit saat drawer dibuka/ditutup/berganti tentor
+  // Reset mode edit saat drawer dibuka/ditutup/berganti tentor; jadwal & statistik dari database
   useEffect(() => {
     if (tentor) {
       setIsEditingProfile(false);
     }
-  }, [tentor, open]);
+    setOverview(null);
+    if (open && tentor?.id) {
+      getTentorOverview(tentor.id).then(res => setOverview(res.data.data)).catch(console.error);
+    }
+  }, [tentor?.id, open]);
 
   if (!open || !tentor) return null;
 
@@ -57,17 +64,17 @@ export default function TentorPreview({ tentor, open, onClose, onSaveProfile, on
                 <span className="text-[10px] font-mono text-gray-400">Bergabung: {tentor.joining_date || "-"}</span>
               </div>
               <h2 className="text-xl font-black text-gray-950 tracking-tight mt-1">{tentor.name || tentor.user?.name}</h2>
-              <p className="text-xs font-bold text-blue-600">{tentor.specialization || "SAINTEK"} Spesialisasi</p>
+              <p className="text-xs font-bold text-blue-600">Spesialisasi: {tentor.specialization || "-"}</p>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="border-b border-gray-100 px-6 pt-2 flex items-center gap-1.5 overflow-x-auto shrink-0 scrollbar-none bg-white">
-          <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={<Info size={15}/>} label="Overview" />
-          <TabButton active={activeTab === "assignment"} onClick={() => setActiveTab("assignment")} icon={<Layers size={15}/>} label="Assignment" count={tentor.subjects?.length || 0} />
-          <TabButton active={activeTab === "schedule"} onClick={() => setActiveTab("schedule")} icon={<Calendar size={15}/>} label="Schedule" count={tentor.active_schedules_count || tentor.schedules?.length || 0} />
-          <TabButton active={activeTab === "statistic"} onClick={() => setActiveTab("statistic")} icon={<BarChart3 size={15}/>} label="Statistic" />
+          <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={<Info size={15}/>} label="Profil" />
+          <TabButton active={activeTab === "assignment"} onClick={() => setActiveTab("assignment")} icon={<Layers size={15}/>} label="Mapel" count={tentor.subjects?.length || 0} />
+          <TabButton active={activeTab === "schedule"} onClick={() => setActiveTab("schedule")} icon={<Calendar size={15}/>} label="Jadwal" count={overview?.schedules.length ?? 0} />
+          <TabButton active={activeTab === "statistic"} onClick={() => setActiveTab("statistic")} icon={<BarChart3 size={15}/>} label="Statistik" />
         </div>
 
         {/* Content Body */}
@@ -127,7 +134,7 @@ export default function TentorPreview({ tentor, open, onClose, onSaveProfile, on
                   onClick={() => onPlotSubject(tentor)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
                 >
-                  <PlusCircle size={14} /> + Plotting Mapel
+                  <PlusCircle size={14} /> Atur Mapel
                 </button>
               </div>
 
@@ -152,51 +159,51 @@ export default function TentorPreview({ tentor, open, onClose, onSaveProfile, on
                 </div>
               ) : (
                 <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
-                  Belum ada mata pelajaran yang diplot. Klik tombol di atas untuk menambah.
+                  Belum ada mata pelajaran. Klik tombol di atas untuk menambah.
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 3: SCHEDULE */}
+          {/* TAB 3: JADWAL (pola jadwal hasil generate + sesi mendatang) */}
           {activeTab === "schedule" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Jadwal Mengajar Aktif</h3>
-              {tentor.schedules && tentor.schedules.length > 0 ? (
-                <div className="space-y-2.5">
-                  {tentor.schedules.map((sch) => (
-                    <div key={sch.id} className="p-3.5 bg-white border border-gray-100 rounded-2xl shadow-2xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-md border border-blue-100">
-                          {sch.day_name || sch.day || "Senin"}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-gray-700 flex items-center gap-1">
-                          <Clock size={12} className="text-gray-400" /> {sch.start_time?.slice(0, 5)} - {sch.end_time?.slice(0, 5)} WIB
-                        </span>
+              {!overview ? <p className="text-center text-sm text-gray-400 py-10">Memuat jadwal...</p> : (
+                <>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Jadwal Mengajar ({overview.schedules.length})</h3>
+                  <ScheduleList schedules={overview.schedules} showTentor={false} empty="Belum ada jadwal mengajar. Jadwal dibuat lewat menu Jadwal." />
+                  {overview.upcoming.length > 0 && (
+                    <>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider pt-2">Sesi Mendatang</h3>
+                      <div className="space-y-1.5">
+                        {overview.upcoming.map((u, i) => (
+                          <div key={i} className="flex justify-between text-xs bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
+                            <span className="font-bold text-gray-800 flex items-center gap-1.5"><Clock size={12} className="text-blue-500" /> {u.session_date} • {u.start_time}-{u.end_time}</span>
+                            <span className="text-gray-500 truncate ml-2">{u.subject_name} • {u.class_name}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50">
-                        <span className="font-bold text-gray-900">{sch.subject?.name || sch.subject_name || "Mata Pelajaran"}</span>
-                        <span className="text-gray-500 font-medium">Kelas: <strong className="text-gray-800">{sch.classroom?.name || sch.classroom_name || "-"}</strong></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
-                  Belum ada jadwal mengajar aktif terdaftar untuk tentor ini.
-                </div>
+                    </>
+                  )}
+                </>
               )}
             </div>
           )}
 
-          {/* TAB 4: STATISTIC */}
+          {/* TAB 4: STATISTIK */}
           {activeTab === "statistic" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Ringkasan Performa & Kontribusi</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <StatBox icon={<Calendar size={18} className="text-blue-600" />} label="Sesi Mengajar" value={tentor.active_schedules_count || 0} />
-                <StatBox icon={<BookOpen size={18} className="text-purple-600" />} label="Mapel Diampu" value={tentor.subjects?.length || 0} />
-              </div>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Ringkasan Mengajar</h3>
+              {!overview ? <p className="text-center text-sm text-gray-400 py-10">Memuat statistik...</p> : (
+                <StatTiles items={[
+                  { label: "Kelas Diampu", value: overview.statistics.classes, tone: "indigo" },
+                  { label: "Siswa Diajar", value: overview.statistics.students, tone: "blue" },
+                  { label: "Mapel Dikuasai", value: overview.statistics.subjects, tone: "purple" },
+                  { label: "Sesi Selesai", value: `${overview.statistics.sessions_done}/${overview.statistics.sessions_total}`, hint: `${overview.statistics.sessions_month} sesi bulan ini`, tone: "emerald" },
+                  { label: "Jam Mengajar", value: overview.statistics.teaching_hours, hint: `${overview.statistics.attended} kali absen hadir`, tone: "amber" },
+                  { label: "Catatan Absen", value: overview.statistics.late_count + overview.statistics.outside_area, hint: `${overview.statistics.late_count} terlambat • ${overview.statistics.outside_area} di luar lokasi`, tone: "rose" },
+                ]} />
+              )}
             </div>
           )}
 
@@ -222,16 +229,6 @@ function TabButton({ active, onClick, icon, label, count }) {
         </span>
       )}
     </button>
-  );
-}
-
-function StatBox({ icon, label, value }) {
-  return (
-    <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 text-center space-y-1">
-      <div className="mx-auto mb-1 flex justify-center">{icon}</div>
-      <p className="text-xl font-black text-gray-950 font-mono">{value}</p>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{label}</p>
-    </div>
   );
 }
 

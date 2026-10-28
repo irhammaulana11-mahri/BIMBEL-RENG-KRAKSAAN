@@ -57,11 +57,12 @@ class TentorPortalService {
             'specialization' => $tentor->specialization,
             'education'      => $tentor->education,
             'gender'         => $tentor->gender,
-            'birth_date'     => $tentor->birth_date,
-            'joining_date'   => $tentor->joining_date,
+            'birth_date'     => $tentor->birth_date?->format('Y-m-d'),
+            'joining_date'   => $tentor->joining_date?->format('Y-m-d'),
             'address'        => $tentor->address,
             'is_active'      => (bool) $tentor->is_active,
-            'rate_per_session' => (float) $tentor->rate_per_session,
+            // Ringkasan mengajar (pengganti tarif per sesi yang hanya dikelola Admin)
+            'statistics'     => app(\App\Services\Admin\MasterOverviewService::class)->tentor($tentor)['statistics'],
             'subjects'       => $tentor->subjects->map(fn($s) => ['id' => $s->id, 'name' => $s->name, 'level' => $s->educationLevel?->display_name])->values(),
             'classes'        => $classes->map(fn($c) => [
                 'id' => $c->id, 'name' => $c->name, 'class_type' => $c->class_type, 'students_count' => $c->students_count,

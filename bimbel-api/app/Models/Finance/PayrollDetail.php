@@ -17,6 +17,7 @@ class PayrollDetail extends Model
     protected $fillable = [
         'payroll_id', 'tentor_id', 'tentor_attendance_id', 'session_id',
         'teaching_minutes', 'rate_per_session', 'rate_per_hour', 'subtotal', 'note',
+        'fee_rule_id', 'calc_method', 'quantity', 'unit_amount',
     ];
 
     protected $casts = [
@@ -24,10 +25,13 @@ class PayrollDetail extends Model
         'rate_per_session' => 'decimal:2',
         'rate_per_hour'    => 'decimal:2',
         'subtotal'         => 'decimal:2',
+        'quantity'         => 'float',
+        'unit_amount'      => 'decimal:2',
     ];
 
     public function payroll() { return $this->belongsTo(Payroll::class, 'payroll_id'); }
     public function tentor() { return $this->belongsTo(Tentor::class, 'tentor_id'); }
     public function attendance() { return $this->belongsTo(TentorAttendance::class, 'tentor_attendance_id'); }
     public function session() { return $this->belongsTo(ScheduleSession::class, 'session_id'); }
+    public function feeRule() { return $this->belongsTo(FeeRule::class, 'fee_rule_id'); }
 }

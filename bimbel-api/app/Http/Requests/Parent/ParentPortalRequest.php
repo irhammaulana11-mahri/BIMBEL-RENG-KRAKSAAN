@@ -41,6 +41,8 @@ class ParentPortalRequest extends FormRequest
                 'phone'      => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\- ]{8,20}$/', Rule::unique(User::class, 'phone')->ignore(Auth::id())],
                 'occupation' => ['nullable', 'string', 'max:100'],
                 'address'    => ['nullable', 'string', 'max:500'],
+                'latitude'   => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+                'longitude'  => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             ],
             'storeRegistration' => [
                 'full_name'          => ['required', 'string', 'max:150'],
@@ -50,6 +52,8 @@ class ParentPortalRequest extends FormRequest
                 'education_level_id' => ['required', 'uuid', Rule::exists(EducationLevel::class, 'id')->where('is_active', true)],
                 'package_id'         => ['nullable', 'uuid', Rule::exists(Package::class, 'id')->where('is_active', true)],
                 'note'               => ['nullable', 'string', 'max:1000'],
+                // Email login anak (opsional): kosong = dibuatkan otomatis dari NIS saat disetujui
+                'login_email'        => ['nullable', 'email', 'max:100', Rule::unique(User::class, 'email')],
             ],
             default => [],
         };
@@ -72,6 +76,8 @@ class ParentPortalRequest extends FormRequest
             'education_level_id.required'    => 'Jenjang / kelas sekolah wajib dipilih.',
             'education_level_id.exists'      => 'Jenjang tidak tersedia.',
             'package_id.exists'              => 'Paket tidak tersedia.',
+            'login_email.email'              => 'Format email login anak tidak valid.',
+            'login_email.unique'             => 'Email login anak sudah dipakai akun lain.',
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Academic;
 
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
+use App\Services\Admin\MasterOverviewService;
 use App\Http\Requests\Academic\ClassRequest;
 use App\Http\Requests\Academic\ClassSubjectRequest;
 use App\Http\Requests\Academic\ClassTentorRequest;
@@ -428,5 +429,10 @@ class ClassController extends Controller
             'success' => true,
             'message' => 'Kelas berhasil dihapus.'
         ]);
+    }
+
+    // GET: Data drawer detail dari relasi kelas, jadwal, sesi & absensi
+    public function overview(ClassRoom $class, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->classroom($class)]);
     }
 }

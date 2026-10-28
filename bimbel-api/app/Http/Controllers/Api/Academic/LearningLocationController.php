@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Academic;
 
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
+use App\Services\Admin\MasterOverviewService;
 use App\Http\Requests\Academic\LearningLocationRequest;
 use App\Http\Resources\Academic\LearningLocationResource;
 use App\Models\Academic\LearningLocation;
@@ -111,5 +112,10 @@ class LearninglocationController extends Controller {
         return response()->json([
             'message' => 'Lokasi belajar berhasil dihapus.',
         ]);
+    }
+
+    // GET: Data drawer detail dari relasi kelas, jadwal, sesi & absensi
+    public function overview(LearningLocation $location, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->location($location)]);
     }
 }

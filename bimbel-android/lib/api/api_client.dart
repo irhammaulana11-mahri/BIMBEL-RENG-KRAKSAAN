@@ -61,6 +61,8 @@ class ApiClient {
   Future<dynamic> put(String path, [Map<String, dynamic>? body]) => _send(() => http.put(_uri(path),
       headers: {..._headers, 'Content-Type': 'application/json'}, body: jsonEncode(body ?? {})));
 
+  Future<dynamic> delete(String path) => _send(() => http.delete(_uri(path), headers: _headers));
+
   Future<dynamic> patch(String path, [Map<String, dynamic>? body]) => _send(() => http.patch(_uri(path),
       headers: {..._headers, 'Content-Type': 'application/json'}, body: jsonEncode(body ?? {})));
 
@@ -99,7 +101,8 @@ class ApiClient {
 
     if (res.statusCode >= 200 && res.statusCode < 300) return body;
 
-    if (res.statusCode == 401 || res.statusCode == 419) {
+    // Hanya permintaan bertoken yang berarti sesi habis; 401 saat login = email/password salah
+    if ((res.statusCode == 401 || res.statusCode == 419) && _token != null) {
       await clearToken();
       onUnauthorized?.call();
       throw ApiException('Sesi berakhir. Silakan login kembali.', res.statusCode);

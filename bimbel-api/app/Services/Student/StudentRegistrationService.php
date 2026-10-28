@@ -40,6 +40,7 @@ class StudentRegistrationService {
                 'student_id' => $student->id,
 
             ]);
+            app(FamilyAddressService::class)->inheritFromParent($student, $parent);
 
             return $student->load([
                 'user',

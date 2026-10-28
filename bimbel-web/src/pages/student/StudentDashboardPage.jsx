@@ -7,6 +7,8 @@ import { getStudentDashboard } from "@/services/student/learningService";
 import { formatPercent } from "@/services/academic/progressReportService";
 import MaterialItem from "@/components/student/MaterialItem";
 import { SessionRow, SessionDetailModal } from "./StudentLearningPage";
+import DashboardHero from "../../components/ui/DashboardHero";
+import PremiumStatCard from "../../components/ui/StatCard";
 
 export default function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -33,11 +35,11 @@ export default function StudentDashboardPage() {
   return (
     <div className="page-card space-y-6 animate-in fade-in">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Halo, {user?.name || "Siswa"} 👋</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Ringkasan jadwal, materi, dan hasil belajar Anda.
-          {learning?.classes?.length > 0 && <span className="font-semibold text-gray-700"> Kelas: {learning.classes.map(c => c.name).join(", ")}</span>}
-        </p>
+        <DashboardHero
+          title={`Halo, ${user?.name || "Siswa"} 👋`}
+          subtitle={`Ringkasan jadwal, materi, dan hasil belajar Anda.${learning?.classes?.length ? ` Kelas: ${learning.classes.map(c => c.name).join(", ")}` : ""}`}
+          tone="purple"
+        />
         {learning && learning.classes.length === 0 && (
           <p className="mt-3 text-sm bg-amber-50 text-amber-800 border border-amber-100 rounded-xl px-4 py-3">Anda belum ditempatkan di kelas. Hubungi Admin bimbel.</p>
         )}
@@ -56,23 +58,10 @@ export default function StudentDashboardPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="text-xs font-bold text-emerald-600 uppercase flex items-center gap-1"><CheckCircle2 size={13}/> Kehadiran {learning?.attendance.period}</p>
-          <p className="text-3xl font-black text-emerald-900 mt-1">{learning ? formatPercent(learning.attendance.percentage) : "…"}</p>
-          {learning && <p className="text-[11px] text-gray-400">Hadir {learning.attendance.hadir} dari {learning.attendance.held_sessions} sesi</p>}
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1"><ClipboardCheck size={13}/> Ujian Dikerjakan</p>
-          <p className="text-3xl font-black text-gray-900 mt-1">{loading ? "…" : data.history.length}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="text-xs font-bold text-indigo-600 uppercase flex items-center gap-1"><Award size={13}/> Rata-rata Nilai</p>
-          <p className="text-3xl font-black text-indigo-900 mt-1">{loading ? "…" : average}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="text-xs font-bold text-amber-600 uppercase flex items-center gap-1"><Hourglass size={13}/> Menunggu Penilaian</p>
-          <p className="text-3xl font-black text-amber-900 mt-1">{loading ? "…" : waiting}</p>
-        </div>
+        <PremiumStatCard title={`Kehadiran ${learning?.attendance.period || ""}`} value={learning ? formatPercent(learning.attendance.percentage) : "…"} desc={learning ? `Hadir ${learning.attendance.hadir} dari ${learning.attendance.held_sessions} sesi` : ""} icon={CheckCircle2} colorClass="text-emerald-700" />
+        <PremiumStatCard title="Ujian Dikerjakan" value={loading ? "…" : data.history.length} desc="Total ujian online" icon={ClipboardCheck} colorClass="text-blue-700" />
+        <PremiumStatCard title="Rata-rata Nilai" value={loading ? "…" : average} desc="Ujian yang sudah dinilai" icon={Award} colorClass="text-indigo-700" />
+        <PremiumStatCard title="Menunggu Penilaian" value={loading ? "…" : waiting} desc="Essay sedang dinilai tentor" icon={Hourglass} colorClass="text-amber-700" />
       </div>
 
       {learning && (

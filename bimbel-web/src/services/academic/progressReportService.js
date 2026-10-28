@@ -5,6 +5,9 @@ import api from "@/api/axios";
 export const getProgressReports = (params = {}) => api.get("/admin/progress-reports", { params });
 export const getProgressReportDetail = (params) => api.get("/admin/progress-reports/detail", { params });
 export const saveGeneralNote = (data) => api.put("/admin/progress-reports/general-note", data);
+// Rekomendasi perkembangan: disusun AI (POST) lalu bisa disunting Admin (PUT) selama rapor masih draft
+export const generateRecommendation = (data) => api.post("/admin/progress-reports/ai-recommendation", data);
+export const saveRecommendation = (data) => api.put("/admin/progress-reports/ai-recommendation", data);
 export const publishProgressReports = (data) => api.post("/admin/progress-reports/publish", data);
 export const unpublishProgressReport = (reportId) => api.post(`/admin/progress-reports/${reportId}/unpublish`);
 export const getSemesterReports = (params) => api.get("/admin/progress-reports/semester", { params });

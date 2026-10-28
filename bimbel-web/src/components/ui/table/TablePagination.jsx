@@ -6,10 +6,14 @@ import {
     ChevronsRight,
 } from "lucide-react";
 
+// Pilihan jumlah baris per halaman; onPageChange(page, perPage) dipanggil dengan halaman 1 saat jumlah diganti
+export const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
 export default function TablePagination({
     pagination,
     onPageChange,
     label = "data",
+    perPageOptions = PER_PAGE_OPTIONS,
 }) {
     if (!pagination || pagination.total === 0) return null;
 
@@ -61,6 +65,20 @@ export default function TablePagination({
     return (
         <div className="flex flex-col gap-4 border-t border-gray-200 bg-white px-6 py-4 md:flex-row md:items-center md:justify-between">
 
+            <div className="flex flex-wrap items-center gap-3">
+            {pagination.perPage && (
+                <label className="flex items-center gap-2 text-sm text-gray-600">
+                    Tampilkan
+                    <select
+                        value={pagination.perPage}
+                        onChange={(e) => onPageChange(1, Number(e.target.value))}
+                        className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-semibold text-gray-700"
+                    >
+                        {[...new Set([...perPageOptions, pagination.perPage])].sort((x, y) => x - y).map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    baris
+                </label>
+            )}
             <p className="text-sm text-gray-600">
                 Menampilkan{" "}
                 <strong>{from}</strong>
@@ -71,6 +89,7 @@ export default function TablePagination({
                 {" "}
                 {label}
             </p>
+            </div>
 
             <div className="flex items-center gap-1">
 
@@ -104,7 +123,7 @@ export default function TablePagination({
                             onClick={() => changePage(item)}
                             className={`h-10 min-w-[40px] rounded-lg text-sm font-semibold transition ${
                                 page === item
-                                    ? "bg-blue-600 text-white"
+                                    ? "bg-blue-600 text-white shadow-sm"
                                     : "border bg-white hover:bg-gray-50"
                             }`}
                         >

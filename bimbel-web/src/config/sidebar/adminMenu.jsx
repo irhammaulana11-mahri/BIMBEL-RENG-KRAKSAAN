@@ -6,7 +6,9 @@ import {
   LocateFixed,
   CircleSlash2Icon,
   Building,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MapPinned,
+  DatabaseBackup
 } from "lucide-react";
 import { FaAward, FaChartLine, FaMoneyCheck, FaRegMoneyBillAlt } from "react-icons/fa";
 
@@ -33,6 +35,7 @@ export const adminMenu = [
       { to: "/admin/modul", label: "Modul", icon: <NotebookPen size={20} /> }, // Sesuaikan icon jika ada BookOpenText
       { to: "/admin/schedules", label: "Jadwal", icon: <CalendarDays size={20} /> },
       { to: "/admin/reschedule-requests", label: "Pengajuan Jadwal", icon: <ArrowRightLeft size={20} /> },
+      { to: "/admin/location-requests", label: "Pengajuan Lokasi", icon: <MapPinned size={20} /> },
       { to: "/admin/attandances", label: "Absensi", icon: <BookCheck size={20} /> },
       { to: "/admin/exam", label: "Ujian", icon: <FaAward size={20} /> },
       { to: "/admin/rapor", label: "Rapor", icon: <FaChartLine size={20} /> }
@@ -42,20 +45,20 @@ export const adminMenu = [
     category: "Keuangan",
     menus: [
       { to: "/admin/finance", label: "Pembayaran", icon: <FaMoneyCheck size={20} /> },
-      { to: "/admin/cashflow", label: "Cash Flow", icon: <FaRegMoneyBillAlt size={20} /> }
+      { to: "/admin/cashflow", label: "Arus Kas", icon: <FaRegMoneyBillAlt size={20} /> }
     ]
   },
   {
     category: "Pendaftaran",
     menus: [
-      { to: "/admin/leads", label: "Lead", icon: <UserPlus size={20} /> },
+      { to: "/admin/leads", label: "Calon Siswa", icon: <UserPlus size={20} /> },
       { to: "/admin/enrollments", label: "Pendaftaran Anak", icon: <ClipboardList size={20} /> }
     ]
   },
   {
     category: "Website",
     menus: [
-      { to: "/admin/company-profile", label: "Company Profile", icon: <Building2 size={20} /> },
+      { to: "/admin/company-profile", label: "Profil Lembaga", icon: <Building2 size={20} /> },
       { to: "/admin/banners", label: "Banner", icon: <Image size={20} /> },
       { to: "/admin/packages", label: "Paket", icon: <Package size={20} /> },
       { to: "/admin/activities", label: "Kegiatan", icon: <Calendar size={20} /> },
@@ -66,6 +69,9 @@ export const adminMenu = [
   },
   {
     category: "Pengaturan",
-    menus: [{ to: "/admin/users", label: "Users", icon: <Shield size={20} /> }]
+    menus: [
+      { to: "/admin/users", label: "Akun Pengguna", icon: <Shield size={20} /> },
+      { to: "/admin/backups", label: "Backup & Pemulihan", icon: <DatabaseBackup size={20} /> }
+    ]
   }
 ];

@@ -58,6 +58,14 @@ class TentorScheduleRequest extends FormRequest {
                 'proposed_time' => ['nullable', 'date_format:H:i'],
             ],
 
+            // 3a. Absen masuk / pulang GPS (Method: startSession, endSession)
+            'startSession', 'endSession' => [
+                'latitude'  => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+                'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+                'accuracy'  => ['nullable', 'numeric', 'min:0'],
+                'source'    => ['nullable', 'in:WEB,ANDROID'],
+            ],
+
             // 4. Riwayat kehadiran tentor (Method: attendances)
             'attendances' => [
                 'month' => ['nullable', 'date_format:Y-m'],

@@ -17,6 +17,8 @@ class ParentResource extends JsonResource
             'occupation' => $this->occupation,
             'relationship' => $this->relationship,
             'address' => $this->address,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
 
             'user' => [
                 'id' => $this->user?->id,

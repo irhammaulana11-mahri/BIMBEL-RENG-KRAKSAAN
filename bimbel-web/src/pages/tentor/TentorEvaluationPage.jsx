@@ -1,17 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, PenLine, CheckCircle2, Award, Clock } from "lucide-react";
+import { Search, PenLine, CheckCircle2, Award, Clock, FileDown, Users } from "lucide-react";
+import PremiumStatCard from "../../components/ui/StatCard";
+import { downloadFile } from "@/utils/download";
 import ExamResultDetailModal from "@/components/exam/ExamResultDetailModal";
 import {
   getTentorExamResults, getTentorExamResultDetail, gradeTentorExamResult, getApiErrorMessage,
 } from "@/services/exam/examService";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function TentorEvaluationPage() {
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get("activity") || "";
 
   const [results, setResults] = useState([]);
-  const [summary, setSummary] = useState({ pending: 0, graded: 0 });
+  const [summary, setSummary] = useState({ pending: 0, graded: 0, average: null, students: 0 });
+  const [exporting, setExporting] = useState(false);
+
+  // Rekap PDF mengikuti filter yang sedang aktif
+  const exportPdf = async () => {
+    setExporting(true);
+    try {
+      await downloadFile("/tentor/exam-results/export", "Rekap-Evaluasi.pdf", { status, keyword, session_activity_id: activityId });
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal mengekspor PDF."));
+    } finally {
+      setExporting(false);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [status, setStatus] = useState(activityId ? "" : "SUBMITTED");
@@ -22,7 +39,7 @@ export default function TentorEvaluationPage() {
     try {
       const res = await getTentorExamResults({ status, keyword, session_activity_id: activityId });
       setResults(res.data.data || []);
-      setSummary(res.data.summary || { pending: 0, graded: 0 });
+      setSummary(res.data.summary || { pending: 0, graded: 0, average: null, students: 0 });
       setError("");
     } catch (err) {
       setError(getApiErrorMessage(err, "Gagal memuat hasil ujian."));
@@ -36,22 +53,21 @@ export default function TentorEvaluationPage() {
     return () => clearTimeout(timer);
   }, [status, keyword, activityId]);
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(results || []);
+
   return (
     <div className="page-card space-y-6 animate-in fade-in">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Evaluasi Murid</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Evaluasi Murid</h1>
         <p className="text-sm text-gray-500 mt-0.5">Hasil ujian online siswa pada sesi Anda. Nilai essay agar hasil tampil ke siswa.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-w-md">
-        <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
-          <p className="text-xs font-bold text-amber-700 uppercase flex items-center gap-1"><PenLine size={12}/> Perlu Dinilai</p>
-          <p className="text-3xl font-black text-amber-900">{summary.pending}</p>
-        </div>
-        <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
-          <p className="text-xs font-bold text-emerald-700 uppercase flex items-center gap-1"><CheckCircle2 size={12}/> Sudah Dinilai</p>
-          <p className="text-3xl font-black text-emerald-900">{summary.graded}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <PremiumStatCard title="Perlu Dinilai" value={summary.pending} desc="Jawaban essay menunggu" icon={PenLine} colorClass="text-amber-700" />
+        <PremiumStatCard title="Sudah Dinilai" value={summary.graded} desc="Nilai tampil ke siswa" icon={CheckCircle2} colorClass="text-green-700" />
+        <PremiumStatCard title="Rata-rata Nilai" value={summary.average ?? "-"} desc={summary.highest != null ? `Tertinggi ${summary.highest}` : "Dari hasil yang dinilai"} icon={Award} colorClass="text-indigo-700" />
+        <PremiumStatCard title="Siswa" value={summary.students ?? 0} desc="Mengerjakan ujian pada filter ini" icon={Users} colorClass="text-blue-700" />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl border border-gray-200">
@@ -65,6 +81,9 @@ export default function TentorEvaluationPage() {
           <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Cari siswa atau judul ujian..." className="w-full pl-9 pr-3 py-2 text-xs font-bold border border-gray-300 rounded-xl outline-none focus:border-indigo-500" />
         </div>
         {activityId && <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">Filter: satu aktivitas sesi</span>}
+        <button onClick={exportPdf} disabled={exporting || results.length === 0} className="ml-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+          <FileDown size={14} /> {exporting ? "Mengekspor..." : "Export PDF"}
+        </button>
       </div>
 
       {error && <p className="text-sm font-bold text-rose-600">{error}</p>}
@@ -77,7 +96,7 @@ export default function TentorEvaluationPage() {
         </div>
       ) : (
         <div className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
-          <table className="w-full text-left min-w-[720px]">
+          <table className="ui-table w-full text-left min-w-[720px]">
             <thead className="bg-slate-50 border-b border-gray-200">
               <tr className="text-[11px] font-black text-gray-500 uppercase tracking-wider">
                 <th className="p-4">Siswa</th>
@@ -88,7 +107,7 @@ export default function TentorEvaluationPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {results.map(r => (
+              {pageRows.map(r => (
                 <tr key={r.id} className="hover:bg-slate-50/80">
                   <td className="p-4">
                     <p className="text-sm font-bold text-gray-900">{r.student_name}</p>
@@ -113,7 +132,8 @@ export default function TentorEvaluationPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
+    </div>
       )}
 
       <ExamResultDetailModal

@@ -328,7 +328,7 @@ function ExamResultView({ data }) {
 
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <p className="text-xs font-bold text-gray-400 uppercase">{data.subject_name}</p>
-        <h1 className="text-2xl font-black text-gray-900">{data.exam_title}</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">{data.exam_title}</h1>
         <p className="text-xs text-gray-500 mt-1">Dikumpulkan {data.submitted_at} WIB</p>
 
         {isGraded ? (

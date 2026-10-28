@@ -171,7 +171,7 @@ export default function EducationLevelPage() {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Jenjang dan Tingkatan Management</h1>
+          <h1 className="text-2xl font-black text-gray-900">Jenjang & Tingkatan Kelas</h1>
           <p className="text-sm text-gray-500 mt-1">Kelola daftar jenjang dan tingkatan kelas pendidikan.</p>
         </div>
         <button
@@ -245,10 +245,11 @@ export default function EducationLevelPage() {
         data={levels} 
         loading={loading} 
         pagination={pagination}
-        onPageChange={(page) =>
+        onPageChange={(page, perPage) =>
               setPagination((prev) => ({
                   ...prev,
                   page,
+                  ...(perPage ? { perPage } : {}),
               }))
           }
         onEdit={handleEdit}

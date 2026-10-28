@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Award, CheckCircle, Clock, Search } from "lucide-react";
 import ExamResultDetailModal from "@/components/exam/ExamResultDetailModal";
 import { getExamResults, getExamResultDetail, gradeExamResult, getApiErrorMessage } from "@/services/exam/examService";
+import PremiumStatCard from "../../../ui/StatCard";
+import { Users, CheckCircle2, PenLine, TrendingUp } from "lucide-react";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function ExamResultList({ exam, onBack }) {
   const [results, setResults] = useState([]);
@@ -30,6 +34,9 @@ export default function ExamResultList({ exam, onBack }) {
     return () => clearTimeout(timer);
   }, [exam.id, status, keyword]);
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(results || []);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow">
       <div className="p-6">
@@ -42,11 +49,11 @@ export default function ExamResultList({ exam, onBack }) {
           <p className="text-sm text-gray-500 mt-0.5">{exam.subject_name} • Skala nilai {exam.total_score}</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-2xl border border-gray-100"><p className="text-xs font-bold text-gray-400 uppercase">Mengumpulkan</p><p className="text-2xl font-black text-gray-900">{summary.total}</p></div>
-          <div className="p-4 rounded-2xl border border-gray-100"><p className="text-xs font-bold text-gray-400 uppercase">Sudah Dinilai</p><p className="text-2xl font-black text-green-700">{summary.graded}</p></div>
-          <div className="p-4 rounded-2xl border border-gray-100"><p className="text-xs font-bold text-gray-400 uppercase">Menunggu Essay</p><p className="text-2xl font-black text-amber-600">{summary.pending}</p></div>
-          <div className="p-4 rounded-2xl border border-gray-100"><p className="text-xs font-bold text-gray-400 uppercase">Rata-rata</p><p className="text-2xl font-black text-blue-700">{summary.average}</p></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <PremiumStatCard title="Mengumpulkan" value={summary.total} desc="Siswa yang sudah mengirim" icon={Users} colorClass="text-indigo-700" />
+          <PremiumStatCard title="Sudah Dinilai" value={summary.graded} desc="Nilai final tampil ke siswa" icon={CheckCircle2} colorClass="text-green-700" />
+          <PremiumStatCard title="Menunggu Essay" value={summary.pending} desc="Perlu dinilai tentor/admin" icon={PenLine} colorClass="text-amber-700" />
+          <PremiumStatCard title="Rata-rata" value={summary.average} desc={`Skala ${exam.total_score}`} icon={TrendingUp} colorClass="text-blue-700" />
         </div>
 
         <div className="flex flex-wrap gap-3 mb-4">
@@ -64,7 +71,7 @@ export default function ExamResultList({ exam, onBack }) {
         {error && <p className="mb-4 text-sm font-medium text-red-600">{error}</p>}
 
         <div className="overflow-x-auto border border-gray-200 rounded-2xl shadow-xs">
-          <table className="w-full text-left border-collapse min-w-[720px]">
+          <table className="ui-table w-full text-left border-collapse min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50 text-sm font-semibold text-gray-600">
                 <th className="p-5">Nama Lengkap Siswa</th>
@@ -79,7 +86,7 @@ export default function ExamResultList({ exam, onBack }) {
                 <tr><td colSpan="5" className="p-6 text-center text-gray-400">Memuat hasil...</td></tr>
               ) : results.length === 0 ? (
                 <tr><td colSpan="5" className="p-6 text-center text-gray-400">Belum ada siswa yang mengumpulkan ujian ini.</td></tr>
-              ) : results.map((r) => (
+              ) : pageRows.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50/50">
                   <td className="p-5">
                     <p className="font-bold text-gray-900">{r.student_name}</p>
@@ -107,6 +114,7 @@ export default function ExamResultList({ exam, onBack }) {
             </tbody>
           </table>
         </div>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
       </div>
 
       <ExamResultDetailModal

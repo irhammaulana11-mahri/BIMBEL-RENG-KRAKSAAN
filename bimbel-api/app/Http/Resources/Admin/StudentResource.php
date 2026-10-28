@@ -25,6 +25,9 @@ class StudentResource extends JsonResource {
             'grade' => $this->grade,            
             'is_active' => $this->is_active,
             'photo' => $this->photo,
+            'home_address' => $this->home_address,
+            'home_latitude' => $this->home_latitude,
+            'home_longitude' => $this->home_longitude,
             'parent' => [
                 'id' => $parent?->id,
                 'full_name' => $parent?->full_name,

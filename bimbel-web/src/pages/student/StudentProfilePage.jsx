@@ -34,7 +34,7 @@ export default function StudentProfilePage() {
     <div className="page-card space-y-6 animate-in fade-in">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Profil Saya</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Profil Saya</h1>
         <p className="text-sm text-gray-500 mt-0.5">Data diri, kelas, dan keamanan akun. Perubahan data diri dilakukan oleh Admin bimbel.</p>
       </div>
 

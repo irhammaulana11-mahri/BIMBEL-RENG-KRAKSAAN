@@ -6,6 +6,7 @@ export const getExams = (params = {}) => {
   return api.get("/admin/exams", { params });
 };
 
+export const getExam = (id) => api.get(`/admin/exams/${id}`);
 export const createExam = (data) => api.post("/admin/exams", data);
 export const updateExam = (id, data) => api.put(`/admin/exams/${id}`, data);
 export const deleteExam = (id) => api.delete(`/admin/exams/${id}`);

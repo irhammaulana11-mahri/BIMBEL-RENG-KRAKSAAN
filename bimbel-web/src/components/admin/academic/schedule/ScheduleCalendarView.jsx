@@ -78,7 +78,7 @@ export default function ScheduleCalendarView({ schedules = [], onSelectSchedule 
       {/* RENDER MINGGUAN (WEEK VIEW) */}
       {calendarMode === "week" ? (
         <div className="w-full overflow-x-auto bg-white border border-gray-200 rounded-2xl shadow-2xs">
-          <table className="w-full min-w-[900px] border-collapse table-fixed">
+          <table className="ui-table w-full min-w-[900px] border-collapse table-fixed">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
                 <th className="p-3 text-xs font-bold text-gray-500 text-center w-28 border-r border-gray-100">Jam KBM</th>

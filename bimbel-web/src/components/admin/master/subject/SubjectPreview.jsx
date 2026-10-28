@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Layers, Calendar, Award, BarChart3, Info } from "lucide-react";
+import { X, Layers, Calendar, Award, BarChart3, Info, Plus, ListChecks } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ScheduleList, StatTiles, AttendanceBar } from "../shared/OverviewBlocks";
 import CurriculumListView from "../../academic/curriculum/CurriculumListView";
 import CurriculumFormView from "../../academic/curriculum/CurriculumFormView";
 import CurriculumDetailView from "../../academic/curriculum/CurriculumDetailView";
-import SubjectScheduleView from "../../academic/schedule/SubjectScheduleView";
 import { useConfirm } from "@/components/ui/confirmation";
 import { useToast } from "../../../../hooks/useToast";
-import { getSubject } from "../../../../services/admin/subjectService";
+import { getSubject, getSubjectOverview } from "../../../../services/admin/subjectService";
 import { getCurriculumsBySubject, createCurriculum,toggleCurriculumStatus,updateCurriculum } from "../../../../services/academic/curriculumService";
 
 
@@ -15,6 +16,8 @@ export default function SubjectPreview({ subject: initialSubject, onClose }) {
   const [subject, setSubject] = useState(initialSubject);
   const [curriculums, setCurriculums] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [overview, setOverview] = useState(null);
+  const navigate = useNavigate();
   
   // State Sub-view Kurikulum
   const [curriculumViewMode, setCurriculumViewMode] = useState("list"); // list | form | detail
@@ -43,6 +46,12 @@ export default function SubjectPreview({ subject: initialSubject, onClose }) {
 
       getCurriculumsBySubject(initialSubject.id)
         .then(res => setCurriculums(res))
+        .catch(console.error);
+
+      // Jadwal hasil generate, ujian & statistik dari database
+      setOverview(null);
+      getSubjectOverview(initialSubject.id)
+        .then(res => setOverview(res.data.data))
         .catch(console.error);
     }
   }, [initialSubject]);
@@ -146,17 +155,17 @@ export default function SubjectPreview({ subject: initialSubject, onClose }) {
 
         {/* NAVIGATION TABS */}
         <div className="border-b border-gray-100 px-6 pt-2 flex items-center gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
-          <TabButton active={activeTab === "overview"} onClick={() => { setActiveTab("overview"); setCurriculumViewMode("list"); }} icon={<Info size={15}/>} label="Overview" />
-          <TabButton active={activeTab === "curriculum"} onClick={() => setActiveTab("curriculum")} icon={<Layers size={15}/>} label="Curriculum" count={curriculums.length} />
-          <TabButton active={activeTab === "schedule"} onClick={() => { setActiveTab("schedule"); setCurriculumViewMode("list"); }} icon={<Calendar size={15}/>} label="Schedule" count={currentSubject.schedules_count || 0} />
-          <TabButton active={activeTab === "exam"} onClick={() => { setActiveTab("exam"); setCurriculumViewMode("list"); }} icon={<Award size={15}/>} label="Exam" count={currentSubject.exams_count || 0} />
-          <TabButton active={activeTab === "statistics"} onClick={() => { setActiveTab("statistics"); setCurriculumViewMode("list"); }} icon={<BarChart3 size={15}/>} label="Statistics" />
+          <TabButton active={activeTab === "overview"} onClick={() => { setActiveTab("overview"); setCurriculumViewMode("list"); }} icon={<Info size={15}/>} label="Ringkasan" />
+          <TabButton active={activeTab === "curriculum"} onClick={() => setActiveTab("curriculum")} icon={<Layers size={15}/>} label="Kurikulum" count={curriculums.length} />
+          <TabButton active={activeTab === "schedule"} onClick={() => { setActiveTab("schedule"); setCurriculumViewMode("list"); }} icon={<Calendar size={15}/>} label="Jadwal" count={overview?.schedules.length ?? currentSubject.schedules_count ?? 0} />
+          <TabButton active={activeTab === "exam"} onClick={() => { setActiveTab("exam"); setCurriculumViewMode("list"); }} icon={<Award size={15}/>} label="Ujian" count={overview?.exams.length ?? currentSubject.exams_count ?? 0} />
+          <TabButton active={activeTab === "statistics"} onClick={() => { setActiveTab("statistics"); setCurriculumViewMode("list"); }} icon={<BarChart3 size={15}/>} label="Statistik" />
         </div>
 
         {/* CONTENT AREA */}
         <div className="p-6 flex-1 overflow-y-auto">
           {loading && activeTab !== "curriculum" ? (
-             <div className="text-center p-10 text-sm font-medium text-gray-400">Memuat detail Subject...</div>
+             <div className="text-center p-10 text-sm font-medium text-gray-400">Memuat detail mata pelajaran...</div>
           ) : (
             <>
               {/* 🟢 TAB 1: OVERVIEW LENGKAP */}
@@ -176,11 +185,11 @@ export default function SubjectPreview({ subject: initialSubject, onClose }) {
                   <div>
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Statistik Sub-Data</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <StatBox label="Curriculum" value={curriculums.length} color="text-purple-600" />
-                      <StatBox label="Material" value={currentSubject.materials_count || 0} color="text-blue-600" />
+                      <StatBox label="Kurikulum" value={curriculums.length} color="text-purple-600" />
+                      <StatBox label="Materi" value={currentSubject.materials_count || 0} color="text-blue-600" />
                       <StatBox label="Tentor" value={currentSubject.tentors_count || 0} color="text-emerald-600" />
-                      <StatBox label="Jadwal" value={currentSubject.schedules_count || 0} color="text-amber-600" />
-                      <StatBox label="Exam" value={currentSubject.exams_count || 0} color="text-rose-600" />
+                      <StatBox label="Jadwal" value={overview?.schedules.length ?? currentSubject.schedules_count ?? 0} color="text-amber-600" />
+                      <StatBox label="Ujian" value={overview?.exams.length ?? currentSubject.exams_count ?? 0} color="text-rose-600" />
                     </div>
                   </div>
                 </div>
@@ -219,9 +228,59 @@ export default function SubjectPreview({ subject: initialSubject, onClose }) {
               )}
 
               {/* TAB LAINNYA */}
-              {activeTab === "schedule" && <SubjectScheduleView schedules={currentSubject.schedules || []} />}
-              {activeTab === "exam" && <div className="text-sm text-gray-400 text-center py-10">Data Bank Soal & Ujian...</div>}
-              {activeTab === "statistics" && <div className="text-sm text-gray-400 text-center py-10">Grafik & Analisis Performa...</div>}
+              {activeTab === "schedule" && (
+                overview ? <ScheduleList schedules={overview.schedules} showSubject={false} empty="Belum ada jadwal untuk mapel ini. Buat lewat menu Jadwal." />
+                  : <p className="text-center text-sm text-gray-400 py-10">Memuat jadwal...</p>
+              )}
+
+              {activeTab === "exam" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Bank Ujian & Soal</h3>
+                    <button onClick={() => navigate(`/admin/exam?create=${currentSubject.id}`)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1">
+                      <Plus size={14} /> Buat Ujian
+                    </button>
+                  </div>
+                  {!overview ? <p className="text-center text-sm text-gray-400 py-10">Memuat ujian...</p>
+                    : overview.exams.length === 0 ? (
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">Belum ada ujian untuk mapel ini.</div>
+                    ) : overview.exams.map((e) => (
+                      <div key={e.id} className="p-4 rounded-2xl border border-gray-100 bg-white flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-gray-900 text-sm">{e.title}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            {e.questions_count} soal • {e.duration || "-"} menit • {e.results_count} dikerjakan
+                          </p>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold ${e.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                            {e.status === "PUBLISHED" ? "Terbit" : e.status === "DRAFT" ? "Draf" : e.status}
+                          </span>
+                        </div>
+                        <button onClick={() => navigate(`/admin/exam?questions=${e.id}`)} className="shrink-0 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center gap-1">
+                          <ListChecks size={14} /> Kelola Soal
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {activeTab === "statistics" && (
+                !overview ? <p className="text-center text-sm text-gray-400 py-10">Memuat statistik...</p> : (
+                  <div className="space-y-5">
+                    <StatTiles items={[
+                      { label: "Kelas", value: overview.statistics.classes, tone: "indigo" },
+                      { label: "Siswa", value: overview.statistics.students, tone: "blue" },
+                      { label: "Tentor Mengajar", value: overview.statistics.tentors, tone: "purple" },
+                      { label: "Sesi Selesai", value: `${overview.statistics.sessions_done}/${overview.statistics.sessions_total}`, hint: "dari seluruh sesi terjadwal", tone: "emerald" },
+                      { label: "Ujian Terbit", value: overview.statistics.exams_published, hint: `${overview.statistics.exam_results} hasil dinilai`, tone: "amber" },
+                      { label: "Rata-rata Nilai", value: overview.statistics.exam_average ?? "-", tone: "rose" },
+                    ]} />
+                    <div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Kehadiran Siswa (sesi selesai)</h3>
+                      <AttendanceBar attendance={overview.statistics.attendance} />
+                    </div>
+                  </div>
+                )
+              )}
             </>
           )}
         </div>

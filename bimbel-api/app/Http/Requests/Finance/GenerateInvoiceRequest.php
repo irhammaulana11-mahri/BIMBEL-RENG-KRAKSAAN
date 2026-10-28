@@ -17,7 +17,8 @@ class GenerateInvoiceRequest extends FormRequest
     {
         return [
             'period'      => ['required', 'date_format:Y-m'],
-            'due_date'    => ['required', 'date'],
+            // Pratinjau tidak butuh jatuh tempo
+            'due_date'    => [$this->route()->getActionMethod() === 'preview' ? 'nullable' : 'required', 'date'],
             'class_ids'   => ['nullable', 'array'],
             'class_ids.*' => ['uuid', 'distinct', Rule::exists(ClassRoom::class, 'id')],
         ];

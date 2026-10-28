@@ -17,7 +17,7 @@ class StudentRegistrationRequest extends Model
 
     protected $fillable = [
         'parent_id', 'full_name', 'gender', 'birth_date', 'school_name',
-        'education_level_id', 'package_id', 'note',
+        'education_level_id', 'package_id', 'note', 'login_email',
         'status', 'review_note', 'student_id', 'class_id', 'reviewed_by', 'reviewed_at',
     ];
 

@@ -104,7 +104,7 @@ export default function PayrollTab({ period, onNotify }) {
           {preview?.missing_rate?.length > 0 && (!payroll || payroll.status === "DRAFT") && (
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-sm text-amber-800 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Tarif belum diatur untuk: <strong>{preview.missing_rate.join(", ")}</strong>. Atur di <button onClick={() => setRateOpen(true)} className="underline font-bold">Tarif Tentor</button>, lalu susun ulang payroll.</span>
+              <span>Ada sesi tanpa aturan honor dan tarif tentor Rp 0: <strong>{preview.missing_rate.join(", ")}</strong>. Buat aturan di tab Aturan Tarif atau atur <button onClick={() => setRateOpen(true)} className="underline font-bold">Tarif Tentor</button>, lalu susun ulang payroll.</span>
             </div>
           )}
 
@@ -122,7 +122,7 @@ export default function PayrollTab({ period, onNotify }) {
                     {payroll && (expanded === t.tentor_id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />)}
                     <span>
                       <span className="block font-bold text-gray-900">{t.tentor_name}</span>
-                      <span className="block text-xs text-gray-400">{t.total_sessions} sesi × {formatRupiah(t.rate_per_session)} • {Math.round((t.teaching_minutes || 0) / 60 * 10) / 10} jam mengajar</span>
+                      <span className="block text-xs text-gray-400">{t.total_sessions} sesi • {t.calc_summary || `${t.total_sessions} sesi × ${formatRupiah(t.rate_per_session)}`} • {Math.round((t.teaching_minutes || 0) / 60 * 10) / 10} jam mengajar</span>
                     </span>
                   </button>
                   <span className="text-lg font-black text-gray-900">{formatRupiah(t.total_amount)}</span>
@@ -135,11 +135,11 @@ export default function PayrollTab({ period, onNotify }) {
                 </div>
                 {expanded === t.tentor_id && t.sessions && (
                   <div className="px-4 pb-4">
-                    <table className="w-full text-xs bg-slate-50 rounded-xl overflow-hidden">
-                      <thead><tr className="text-gray-400 uppercase"><th className="p-2 text-left">Tanggal</th><th className="p-2 text-left">Kelas & Mapel</th><th className="p-2 text-right">Menit</th><th className="p-2 text-right">Honor</th></tr></thead>
+                    <table className="ui-table w-full text-xs bg-slate-50 rounded-xl overflow-hidden">
+                      <thead><tr className="text-gray-400 uppercase"><th className="p-2 text-left">Tanggal</th><th className="p-2 text-left">Kelas & Mapel</th><th className="p-2 text-left">Perhitungan</th><th className="p-2 text-right">Menit</th><th className="p-2 text-right">Honor</th></tr></thead>
                       <tbody className="divide-y divide-white">
                         {t.sessions.map((s, i) => (
-                          <tr key={i}><td className="p-2">{s.session_date} {s.start_time}</td><td className="p-2">{s.class_name} • {s.subject_name}</td><td className="p-2 text-right">{s.teaching_minutes}</td><td className="p-2 text-right font-semibold">{formatRupiah(s.subtotal)}</td></tr>
+                          <tr key={i}><td className="p-2">{s.session_date ? `${s.session_date} ${s.start_time}` : "Bulanan"}</td><td className="p-2">{s.class_name} • {s.subject_name}</td><td className="p-2 text-gray-500">{s.note || "-"}{s.quantity != null && s.unit_amount > 0 ? ` (${s.quantity} × ${formatRupiah(s.unit_amount)})` : ""}</td><td className="p-2 text-right">{s.teaching_minutes}</td><td className="p-2 text-right font-semibold">{formatRupiah(s.subtotal)}</td></tr>
                         ))}
                       </tbody>
                     </table>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Clock, PlayCircle, Eye, ArrowRightCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getTentorSchedules, startTentorSession, requestReschedule, getTentorRescheduleRequests, cancelTentorRescheduleRequest } from "@/services/tentor/scheduleService";
+import { getTentorSchedules, requestReschedule, getTentorRescheduleRequests, cancelTentorRescheduleRequest, requestLocationChange, getTentorLocationRequests, cancelTentorLocationRequest } from "@/services/tentor/scheduleService";
+import LocationChangeModal from "../../components/shared/LocationChangeModal";
+import LocationRequestList from "../../components/shared/LocationRequestList";
 import { APP_ROUTES } from "../../components/constants/routes"; 
 import SessionDetailDrawer from "../../components/tentor/SessionDetailDrawer"; // Komponen terpisah
 import ConfirmationModal from "../../components/ui/confirmation/ConfirmationModal";
@@ -19,6 +21,8 @@ export default function TentorSchedulePage() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [locationRequests, setLocationRequests] = useState([]);
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false });
   const { toast, showSuccess, showError, hideToast } = useToast();
   
@@ -47,30 +51,40 @@ export default function TentorSchedulePage() {
     return () => clearTimeout(timer);
   }, [fetchSchedules]);
 
-  const fetchRequests = () => getTentorRescheduleRequests()
-    .then((res) => setRequests(res.data.data || []))
-    .catch(() => {});
+  const fetchRequests = () => {
+    getTentorRescheduleRequests().then((res) => setRequests(res.data.data || [])).catch(() => {});
+    getTentorLocationRequests().then((res) => setLocationRequests(res.data.data || [])).catch(() => {});
+  };
 
-  useEffect(() => { fetchRequests(); }, []);
+  // Dipanggil LocationChangeModal; error dilempar kembali agar tampil di modal
+  const submitLocation = async (form) => {
+    const res = await requestLocationChange(selectedSession.id, form);
+    showSuccess(res.data.message);
+    setIsLocationOpen(false);
+    setSelectedSession(null);
+    fetchRequests();
+  };
 
-  // --- ACTIONS ---
-  const handleStartSession = (sessionId) => setConfirm({
+  const handleCancelLocation = (req) => setConfirm({
     open: true,
-    title: "Mulai Sesi?",
-    message: "Sesi KBM akan dimulai sekarang dan check-in Anda tercatat.",
-    variant: "primary",
+    title: "Batalkan Pengajuan Lokasi?",
+    message: `Pengajuan lokasi "${req.location_name}" untuk ${req.session?.subject_name} akan dibatalkan.`,
+    variant: "warning",
     onConfirm: async () => {
       setConfirm({ open: false });
       try {
-        await startTentorSession(sessionId);
-        setSelectedSession(null);
-        navigate(APP_ROUTES.TENTOR.WORKSPACE(sessionId));
+        const res = await cancelTentorLocationRequest(req.id);
+        showSuccess(res.data.message);
+        fetchRequests();
       } catch (error) {
-        showError(getApiErrorMessage(error, "Gagal memulai sesi."));
+        showError(getApiErrorMessage(error, "Gagal membatalkan pengajuan."));
       }
     },
   });
 
+  useEffect(() => { fetchRequests(); }, []);
+
+  // --- ACTIONS ---
   const handleContinueSession = (sessionId) => {
     setSelectedSession(null);
     navigate(APP_ROUTES.TENTOR.WORKSPACE(sessionId));
@@ -149,7 +163,7 @@ export default function TentorSchedulePage() {
         
         {/* HEADER */}
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Jadwal Mengajar</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Jadwal Mengajar</h1>
           <p className="text-sm text-gray-500 mt-1">Daftar sesi mengajar yang telah dijadwalkan untuk Anda.</p>
         </div>
 
@@ -247,6 +261,7 @@ export default function TentorSchedulePage() {
 
       <div className="px-6 md:px-8 pb-8 -mt-2">
         <RescheduleRequestList requests={requests} onCancel={handleCancelRequest} />
+        <LocationRequestList requests={locationRequests} onCancel={handleCancelLocation} />
       </div>
 
       {/* Komponen Eksternal */}
@@ -254,11 +269,12 @@ export default function TentorSchedulePage() {
         isOpen={!!selectedSession} 
         session={selectedSession} 
         onClose={() => setSelectedSession(null)}
-        onStartSession={handleStartSession}
         onContinueSession={handleContinueSession}
         onOpenReschedule={() => setIsRescheduleOpen(true)}
+        onOpenLocation={() => setIsLocationOpen(true)}
       />
       <RescheduleModal open={isRescheduleOpen} session={selectedSession} onClose={() => setIsRescheduleOpen(false)} onSubmit={submitReschedule} />
+      <LocationChangeModal open={isLocationOpen} session={selectedSession} onClose={() => setIsLocationOpen(false)} onSubmit={submitLocation} />
       <ConfirmationModal open={confirm.open} title={confirm.title} message={confirm.message} variant={confirm.variant} onConfirm={confirm.onConfirm} onClose={() => setConfirm({ open: false })} />
     </div>
   );
@@ -330,7 +346,7 @@ function RescheduleRequestList({ requests, onCancel }) {
 
   return (
     <div className="mt-8 border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 font-black text-gray-900 text-sm">Pengajuan Reschedule Saya</div>
+      <div className="px-5 py-4 border-b border-gray-100 font-black text-gray-900 text-sm">Riwayat Pengajuan Pindah Jadwal</div>
       <div className="divide-y divide-gray-100">
         {requests.map((r) => (
           <div key={r.id} className="p-4 flex flex-wrap items-start justify-between gap-3">

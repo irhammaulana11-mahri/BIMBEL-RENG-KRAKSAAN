@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Wallet, Users, ShieldCheck } from "lucide-react";
+import { Wallet, Users, ShieldCheck, Scale } from "lucide-react";
 import InvoiceTab from "../../../components/admin/finance/InvoiceTab";
 import PaymentTab from "../../../components/admin/finance/PaymentTab";
 import PayrollTab from "../../../components/admin/finance/PayrollTab";
+import FeeRuleTab from "../../../components/admin/finance/FeeRuleTab";
 import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import { currentPeriod } from "@/utils/format";
@@ -11,6 +12,7 @@ const TABS = [
   { id: "invoice", label: "Tagihan Siswa", icon: Users },
   { id: "payment", label: "Verifikasi Pembayaran", icon: ShieldCheck },
   { id: "payroll", label: "Honor Tentor", icon: Wallet },
+  { id: "rules", label: "Aturan Tarif", icon: Scale },
 ];
 
 export default function FinancePage() {
@@ -28,7 +30,7 @@ export default function FinancePage() {
 
         {/* Header Title */}
         <div className="mb-6">
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Finance Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Keuangan</h1>
           <p className="text-gray-500">Kelola tagihan bulanan siswa, verifikasi pembayaran orang tua, dan honor mengajar tentor</p>
         </div>
 
@@ -73,6 +75,7 @@ export default function FinancePage() {
               <PaymentTab period={period} onNotify={notify} onPendingChange={setPendingCount} />
             </div>
             {activeTab === "payroll" && <PayrollTab period={period} onNotify={notify} />}
+            {activeTab === "rules" && <FeeRuleTab onNotify={notify} />}
           </div>
         </div>
       </div>

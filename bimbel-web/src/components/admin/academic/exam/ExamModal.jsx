@@ -18,7 +18,7 @@ const emptyForm = {
   class_ids: [],
 };
 
-export default function ExamModal({ open, onClose, data, onSubmit }) {
+export default function ExamModal({ open, onClose, data, onSubmit, defaultSubjectId }) {
   const [formData, setFormData] = useState(emptyForm);
   const [isScheduled, setIsScheduled] = useState(false);
   const [options, setOptions] = useState({ subjects: [], tentors: [], classes: [] });
@@ -59,7 +59,8 @@ export default function ExamModal({ open, onClose, data, onSubmit }) {
       });
       setIsScheduled(!!data.is_scheduled);
     } else {
-      setFormData(emptyForm);
+      // Ujian baru dari drawer mapel: mapel sudah terpilih
+      setFormData({ ...emptyForm, subject_id: defaultSubjectId || "" });
       setIsScheduled(false);
     }
   }, [data, open]);

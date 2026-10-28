@@ -1,0 +1,30 @@
+/*
+ * Tabel standar semua role (Admin, Tentor, Orang Tua, Siswa).
+ * Sengaja di luar @layer agar menimpa kelas Tailwind lama di tiap tabel:
+ * yang diseragamkan tipografi, warna header, garis & hover - padding tiap tabel tidak diubah.
+ */
+table.ui-table { width: 100%; border-collapse: collapse; }
+
+table.ui-table thead,
+table.ui-table thead tr { background-color: #f8fafc; }
+table.ui-table thead th {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+table.ui-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background-color 0.15s; }
+table.ui-table tbody tr:last-child { border-bottom: none; }
+table.ui-table tbody tr:hover { background-color: #f8fafc; }
+table.ui-table tbody td { font-size: 0.875rem; color: #374151; vertical-align: middle; }
+
+.dark table.ui-table thead,
+.dark table.ui-table thead tr { background-color: var(--dk-surface-2); }
+.dark table.ui-table thead th { color: var(--dk-text-muted); border-bottom-color: var(--dk-border); }
+.dark table.ui-table tbody tr { border-bottom-color: var(--dk-border); }
+.dark table.ui-table tbody tr:hover { background-color: var(--dk-surface-3); }
+.dark table.ui-table tbody td { color: var(--dk-text); }

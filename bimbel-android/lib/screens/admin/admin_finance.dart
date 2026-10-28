@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../api/api_client.dart';
 import '../../widgets/common.dart';
@@ -61,9 +64,50 @@ class AdminPaymentsTab extends StatefulWidget {
 
 class _AdminPaymentsTabState extends State<AdminPaymentsTab> {
   String _status = 'PENDING';
+  // Periode: ALL (semua tanggal), DAY (satu tanggal), MONTH (satu bulan)
+  String _mode = 'MONTH';
+  DateTime _date = DateTime.now();
+  String _keyword = '';
+  int _page = 1;
+  final _search = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> get _query => {
+        'status': _status,
+        'keyword': _keyword,
+        'page': _page,
+        'per_page': 20,
+        // Pembayaran menunggu verifikasi selalu ditampilkan semua agar tidak ada yang terlewat
+        if (_status != 'PENDING' && _mode == 'DAY') 'date': ymd(_date),
+        if (_status != 'PENDING' && _mode == 'MONTH') 'period': DateFormat('yyyy-MM').format(_date),
+      };
+
+  Future<void> _pickDate() async {
+    if (_mode == 'DAY') {
+      final d = await showDatePicker(context: context, firstDate: DateTime(2024), lastDate: DateTime.now(), initialDate: _date);
+      if (d != null) setState(() { _date = d; _page = 1; });
+    } else {
+      // Bulanan: pilih tanggal mana saja di bulan yang diinginkan
+      final d = await showDatePicker(
+        context: context, firstDate: DateTime(2024), lastDate: DateTime.now(), initialDate: _date,
+        initialDatePickerMode: DatePickerMode.year, helpText: 'Pilih bulan',
+      );
+      if (d != null) setState(() { _date = d; _page = 1; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final periodLabel = _mode == 'DAY'
+        ? tanggal(ymd(_date))
+        : DateFormat('MMMM yyyy', 'id_ID').format(_date);
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -74,17 +118,56 @@ class _AdminPaymentsTabState extends State<AdminPaymentsTab> {
             ButtonSegment(value: 'REJECTED', label: Text('Ditolak')),
           ],
           selected: {_status},
-          onSelectionChanged: (v) => setState(() => _status = v.first),
+          onSelectionChanged: (v) => setState(() { _status = v.first; _page = 1; }),
         ),
       ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: TextField(
+          controller: _search,
+          decoration: InputDecoration(
+            isDense: true,
+            prefixIcon: const Icon(Icons.search),
+            hintText: 'Cari siswa / no. bayar / referensi',
+            suffixIcon: _keyword.isEmpty ? null : IconButton(icon: const Icon(Icons.close), onPressed: () { _search.clear(); setState(() { _keyword = ''; _page = 1; }); }),
+          ),
+          onChanged: (v) {
+            _debounce?.cancel();
+            _debounce = Timer(const Duration(milliseconds: 400), () => setState(() { _keyword = v.trim(); _page = 1; }));
+          },
+        ),
+      ),
+      if (_status != 'PENDING')
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(children: [
+            for (final m in const [('ALL', 'Semua'), ('DAY', 'Harian'), ('MONTH', 'Bulanan')])
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(label: Text(m.$2), selected: _mode == m.$1, onSelected: (_) => setState(() { _mode = m.$1; _page = 1; })),
+              ),
+            const Spacer(),
+            if (_mode != 'ALL')
+              TextButton.icon(onPressed: _pickDate, icon: const Icon(Icons.calendar_month, size: 18), label: Text(periodLabel)),
+          ]),
+        ),
       Expanded(
         child: AsyncView<Map>(
-          key: ValueKey(_status),
-          load: () async => await api.get('/admin/finance/payments', query: {'status': _status, 'per_page': 50}),
+          key: ValueKey('$_status|$_mode|${ymd(_date)}|$_keyword|$_page'),
+          load: () async => await api.get('/admin/finance/payments', query: _query),
           builder: (context, res, reload) {
             final payments = res['data'] as List? ?? [];
+            final meta = res['meta'] as Map? ?? {};
+            final filtered = (res['summary'] as Map?)?['filtered'] as Map? ?? {};
+            final lastPage = (meta['last_page'] ?? 1) as int;
             return ListView(padding: const EdgeInsets.all(12), children: [
-              if (payments.isEmpty) const EmptyState('Tidak ada pembayaran.', icon: Icons.payments_outlined),
+              // Rekap sesuai filter aktif
+              StatGrid([
+                StatCard(label: 'Jumlah pembayaran', value: '${filtered['count'] ?? 0}', icon: Icons.receipt_long, color: Colors.indigo),
+                StatCard(label: 'Total nominal', value: rupiah(filtered['amount'] ?? 0), icon: Icons.payments, color: Colors.green),
+              ]),
+              const SizedBox(height: 4),
+              if (payments.isEmpty) const EmptyState('Tidak ada pembayaran untuk filter ini.', icon: Icons.payments_outlined),
               for (final p in payments)
                 Card(
                   child: ListTile(
@@ -105,6 +188,12 @@ class _AdminPaymentsTabState extends State<AdminPaymentsTab> {
                     },
                   ),
                 ),
+              if (lastPage > 1)
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  IconButton(onPressed: _page > 1 ? () => setState(() => _page--) : null, icon: const Icon(Icons.chevron_left)),
+                  Text('Halaman $_page dari $lastPage'),
+                  IconButton(onPressed: _page < lastPage ? () => setState(() => _page++) : null, icon: const Icon(Icons.chevron_right)),
+                ]),
             ]);
           },
         ),

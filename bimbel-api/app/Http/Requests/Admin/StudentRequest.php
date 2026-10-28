@@ -34,6 +34,10 @@ class StudentRequest extends FormRequest
             'school_name' => ['nullable','string','max:150'],
             'grade' => ['nullable','string','max:20'],
             'is_active' => ['nullable', 'boolean'],
+            // Titik rumah: sasaran absen GPS tentor untuk kelas PRIVATE
+            'home_address' => ['nullable','string','max:500'],
+            'home_latitude' => ['nullable','required_with:home_longitude','numeric','between:-90,90'],
+            'home_longitude' => ['nullable','required_with:home_latitude','numeric','between:-180,180'],
         ];
             if ($this->isMethod('post')) {
                 $rules['parent_id'] = [
@@ -48,5 +52,12 @@ class StudentRequest extends FormRequest
             //     Rule::exists(ParentModel::class, 'id')
         //     ],
         // ];
+    }
+
+    public function messages(): array {
+        return [
+            'home_latitude.required_with'  => 'Titik rumah belum lengkap (latitude dan longitude wajib diisi bersamaan).',
+            'home_longitude.required_with' => 'Titik rumah belum lengkap (latitude dan longitude wajib diisi bersamaan).',
+        ];
     }
 }

@@ -21,4 +21,14 @@ class GradeExamRequest extends FormRequest
             'feedback'           => ['nullable', 'string', 'max:2000'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'grades.present'             => 'Data penilaian wajib dikirim.',
+            'grades.*.answer_id.required' => 'Jawaban yang dinilai tidak dikenali.',
+            'grades.*.score.required'     => 'Nilai jawaban essay wajib diisi.',
+            'grades.*.score.min'          => 'Nilai tidak boleh negatif.',
+        ];
+    }
 }

@@ -39,7 +39,7 @@ class _DashboardTab extends StatelessWidget {
         final materials = d['recent_materials'] as List? ?? [];
         final classes = d['classes'] as List? ?? [];
         return ListView(padding: const EdgeInsets.all(12), children: [
-          Text('Halo, ${text(d['student']?['name'])}', style: Theme.of(context).textTheme.titleLarge),
+          HeroBanner(title: 'Halo, ${text(d['student']?['name'])}', subtitle: 'Semangat belajar hari ini!', colors: const [Color(0xFF6D28D9), Color(0xFF4F46E5)]),
           Text('NIS ${text(d['student']?['nis'])}', style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 12),
           StatGrid([

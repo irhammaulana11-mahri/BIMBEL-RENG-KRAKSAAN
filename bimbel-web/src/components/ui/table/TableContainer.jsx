@@ -24,7 +24,7 @@ export default function TableContainer({
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="ui-table min-w-full">
                     {thead}
                     {loading ? (
                         <TableLoading rows={skeletonRows} columns={skeletonColumns}/>

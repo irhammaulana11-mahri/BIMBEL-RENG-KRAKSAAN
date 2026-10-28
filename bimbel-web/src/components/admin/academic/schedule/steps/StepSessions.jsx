@@ -72,7 +72,7 @@ export default function StepSessions({ formData, setFormData }) {
 
       {formData.generated_sessions.length > 0 && (
         <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl max-h-96 overflow-y-auto shadow-sm">
-          <table className="w-full text-left text-xs">
+          <table className="ui-table w-full text-left text-xs">
             <thead className="bg-slate-50 sticky top-0 border-b border-gray-200 shadow-sm z-10">
               <tr>
                 <th className="p-3 font-bold text-gray-500 uppercase w-20">Meeting</th>

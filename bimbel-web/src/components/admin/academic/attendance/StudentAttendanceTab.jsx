@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Search, Calendar, Users, CheckCircle2, AlertCircle, Clock, CalendarDays } from "lucide-react";
 import StudentAttendanceModal from "./StudentAttendanceModal";
 import { getStudentSessions } from "@/services/academic/attendanceService";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function StudentAttendanceTab() {
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,9 @@ export default function StudentAttendanceTab() {
   const totalMuridHadir = sessions.reduce((sum, s) => sum + s.attended_students, 0);
   const totalMuridTerdaftar = sessions.reduce((sum, s) => sum + s.total_students, 0);
   const persentaseHadir = totalMuridTerdaftar === 0 ? 0 : Math.round((totalMuridHadir / totalMuridTerdaftar) * 100);
+
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(sessions || []);
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -139,7 +144,7 @@ export default function StudentAttendanceTab() {
 
       {/* 🟢 TABLE DATA */}
       <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-        <table className="w-full text-left">
+        <table className="ui-table w-full text-left">
           <thead className="bg-slate-50 border-b border-gray-200">
             <tr className="text-[11px] font-black text-gray-500 uppercase tracking-wider">
               <th className="p-4 w-48">Tanggal & Waktu</th>
@@ -155,7 +160,7 @@ export default function StudentAttendanceTab() {
             ) : sessions.length === 0 ? (
               <tr><td colSpan={5} className="p-8 text-center text-sm font-bold text-gray-400">Tidak ada jadwal KBM pada rentang waktu ini.</td></tr>
             ) : (
-              sessions.map((item) => (
+              pageRows.map((item) => (
                 <tr 
                   key={item.id} 
                   onClick={() => setSelectedSessionId(item.id)}
@@ -197,6 +202,7 @@ export default function StudentAttendanceTab() {
           </tbody>
         </table>
       </div>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
 
       {/* 🟢 MODAL ABSENSI SISWA */}
       <StudentAttendanceModal 

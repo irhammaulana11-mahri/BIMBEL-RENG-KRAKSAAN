@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Calendar, Clock, LogIn, LogOut, Navigation2, AlertTriangle, Hourglass, Pencil, Check, Lock } from "lucide-react";
 import { saveTentorAttendance } from "@/services/academic/attendanceService";
+import { mapsLink } from "@/utils/geo";
 
 const STATUS_OPTIONS = ["HADIR", "IZIN", "SAKIT", "ALPA"];
 
@@ -57,8 +58,8 @@ export default function TentorAttendanceDetailModal({ open, data, onClose, onSav
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[90] flex justify-end bg-black/40 backdrop-blur-2xs animate-in fade-in" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:w-[460px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100 animate-in slide-in-from-right duration-300">
 
         {/* 🟢 HEADER */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-slate-50 shrink-0">
@@ -173,6 +174,28 @@ export default function TentorAttendanceDetailModal({ open, data, onClose, onSav
               </div>
             </div>
 
+            {/* Lokasi absen GPS */}
+            {data.location && (
+              <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-1.5">
+                <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1"><Navigation2 size={12}/> LOKASI ABSEN</p>
+                <p className="text-xs font-black text-gray-800">
+                  {data.location.target_label || "-"}
+                  {data.location.target_radius_meter && <span className="font-semibold text-gray-400"> • toleransi {data.location.target_radius_meter} m</span>}
+                </p>
+                <GpsLine label="Masuk" lat={data.location.checkin_latitude} lng={data.location.checkin_longitude} distance={data.location.checkin_distance_meter} outside={data.location.checkin_outside_area} accuracy={data.location.checkin_accuracy_meter} />
+                {data.checkout_time && <GpsLine label="Pulang" lat={data.location.checkout_latitude} lng={data.location.checkout_longitude} distance={data.location.checkout_distance_meter} outside={data.location.checkout_outside_area} accuracy={data.location.checkout_accuracy_meter} />}
+              </div>
+            )}
+
+            {data.remarks?.length > 0 && (
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                <p className="text-[10px] font-bold text-amber-700 uppercase mb-1">Keterangan</p>
+                <ul className="text-xs font-semibold text-amber-800 list-disc pl-4 space-y-0.5">
+                  {data.remarks.map(r => <li key={r}>{r}</li>)}
+                </ul>
+              </div>
+            )}
+
             {data.note && (
               <div className="bg-white p-3 rounded-xl border border-gray-200">
                 <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Catatan</p>
@@ -223,5 +246,22 @@ export default function TentorAttendanceDetailModal({ open, data, onClose, onSav
 
       </div>
     </div>
+  );
+}
+
+function GpsLine({ label, lat, lng, distance, outside, accuracy }) {
+  if (lat == null || lng == null) {
+    return <p className="text-[11px] text-gray-400">{label}: tanpa data GPS</p>;
+  }
+  return (
+    <p className="text-[11px] text-gray-600">
+      {label}:{" "}
+      <span className={`font-bold ${outside ? "text-rose-600" : "text-emerald-700"}`}>
+        {distance != null ? `±${distance} m${outside ? " (di luar area)" : ""}` : "jarak tidak dihitung"}
+      </span>
+      {accuracy != null && <span className="text-gray-400"> • akurasi ±{accuracy} m</span>}
+      {" • "}
+      <a href={mapsLink(lat, lng)} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 hover:underline">Peta</a>
+    </p>
   );
 }

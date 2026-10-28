@@ -4,6 +4,7 @@ import VerificationModal from "./VerificationModal";
 import { getPayments, PAYMENT_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
+import TablePagination from "@/components/ui/table/TablePagination";
 
 export default function PaymentTab({ period, onNotify, onPendingChange }) {
   const [payments, setPayments] = useState([]);
@@ -12,12 +13,13 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
   const [status, setStatus] = useState("PENDING");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [selected, setSelected] = useState(null);
 
   const fetchPayments = async () => {
     try {
       // Antrian verifikasi tidak dibatasi periode
-      const res = await getPayments({ status, keyword, period: status === "PENDING" ? "" : period, page, per_page: 15 });
+      const res = await getPayments({ status, keyword, period: status === "PENDING" ? "" : period, page, per_page: perPage });
       setPayments(res.data.data || []);
       setMeta(res.data.meta || { current_page: 1, last_page: 1 });
       onPendingChange?.(res.data.summary?.pending ?? 0);
@@ -31,7 +33,7 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
   useEffect(() => {
     const timer = setTimeout(fetchPayments, 300);
     return () => clearTimeout(timer);
-  }, [status, keyword, period, page]);
+  }, [status, keyword, period, page, perPage]);
 
   return (
     <div className="space-y-4">
@@ -49,7 +51,7 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
       </div>
 
       <div className="overflow-x-auto border border-gray-200 rounded-2xl">
-        <table className="w-full text-left text-sm min-w-[760px]">
+        <table className="ui-table w-full text-left text-sm min-w-[760px]">
           <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
             <tr><th className="p-4">Pembayaran</th><th className="p-4">Siswa</th><th className="p-4">Metode</th><th className="p-4 text-right">Nominal</th><th className="p-4 text-center">Status</th><th className="p-4 text-right">Aksi</th></tr>
           </thead>
@@ -82,13 +84,11 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
         </table>
       </div>
 
-      {meta.last_page > 1 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Sebelumnya</button>
-          <span className="text-gray-500">Hal {meta.current_page} / {meta.last_page}</span>
-          <button disabled={page >= meta.last_page} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Berikutnya</button>
-        </div>
-      )}
+      <TablePagination
+        pagination={{ page: meta.current_page || 1, lastPage: meta.last_page || 1, perPage, total: meta.total || 0, from: meta.from || 0, to: meta.to || 0 }}
+        onPageChange={(target, newPerPage) => { if (newPerPage) setPerPage(newPerPage); setPage(target); }}
+        label="data"
+      />
 
       <VerificationModal
         open={!!selected}

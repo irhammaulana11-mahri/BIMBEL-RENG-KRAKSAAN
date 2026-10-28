@@ -7,6 +7,7 @@ import { getParentDashboard, SESSION_STATUS, ATTENDANCE_LABEL, formatSessionDate
 import { formatScore, formatPercent } from "@/services/academic/progressReportService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
+import DashboardHero from "../../components/ui/DashboardHero";
 
 function SessionRow({ session, showDate }) {
   return (
@@ -73,8 +74,7 @@ export default function ParentDashboardPage() {
     <div className="bg-white p-6 rounded-xl shadow">
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Beranda Wali Murid</h1>
-          <p className="text-base text-gray-500 mt-1">Selamat datang, {data.parent.name}. Pantau jadwal, kehadiran, nilai, dan administrasi belajar anak Anda.</p>
+          <DashboardHero title={`Selamat datang, ${data.parent.name}`} subtitle="Pantau jadwal, kehadiran, nilai, dan administrasi belajar anak Anda." tone="emerald" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">

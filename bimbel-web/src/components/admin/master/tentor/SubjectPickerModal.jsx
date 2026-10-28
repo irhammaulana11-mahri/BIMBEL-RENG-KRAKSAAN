@@ -3,6 +3,11 @@ import { X, Search, BookOpen, Check, Plus } from "lucide-react";
 import { getSubjects } from "../../../../services/admin/subjectService";
 import MiniDataTable from "../../../ui/minitable/MiniDataTable";
 
+// API mengirim education_level sebagai objek relasi; ambil nama jenjangnya saja
+const levelName = (s) =>
+  s.education_level_name || s.education_level?.display_name ||
+  (typeof s.education_level === "string" ? s.education_level : "");
+
 export default function SubjectPickerModal({ open, onClose, selectedSubjects = [], onSelect }) {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +46,7 @@ export default function SubjectPickerModal({ open, onClose, selectedSubjects = [
       (s) =>
         (s.name || "").toLowerCase().includes(q) ||
         (s.code || "").toLowerCase().includes(q) ||
-        (s.education_level || "").toLowerCase().includes(q)
+        levelName(s).toLowerCase().includes(q)
     );
   }, [subjects, search]);
 
@@ -76,7 +81,7 @@ export default function SubjectPickerModal({ open, onClose, selectedSubjects = [
       cellClassName: "whitespace-nowrap",
       render: (row) => (
         <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-md border border-purple-100">
-          {row.education_level || "SD/SMP/SMA"}
+          {levelName(row) || "SD/SMP/SMA"}
         </span>
       ),
     },

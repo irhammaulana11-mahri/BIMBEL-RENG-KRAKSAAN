@@ -5,9 +5,9 @@ export default function SessionDetailDrawer({
   session, 
   isOpen, 
   onClose, 
-  onStartSession, 
   onContinueSession, 
-  onOpenReschedule 
+  onOpenReschedule,
+  onOpenLocation
 }) {
   if (!isOpen || !session) return null;
 
@@ -74,12 +74,18 @@ export default function SessionDetailDrawer({
                   <Video size={18} /> Gabung Meeting
                 </button>
               )}
-              <button onClick={() => onStartSession(session.id)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 shadow-sm transition-colors">
-                <PlayCircle size={18} /> Mulai Sesi KBM
+              {/* Absen masuk GPS & mulai sesi dilakukan di Ruang Kerja Sesi */}
+              <button onClick={() => onContinueSession(session.id)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 shadow-sm transition-colors">
+                <PlayCircle size={18} /> Buka Ruang Kerja & Absen
               </button>
               <button onClick={onOpenReschedule} className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors">
-                <AlertTriangle size={16} /> Ajukan Reschedule
+                <AlertTriangle size={16} /> Ajukan Pindah Jadwal
               </button>
+              {session.class_type !== 'ONLINE' && onOpenLocation && (
+                <button onClick={onOpenLocation} className="w-full py-3 bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors">
+                  <MapPin size={16} /> Ajukan Lokasi Sementara
+                </button>
+              )}
             </>
           )}
 

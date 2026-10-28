@@ -68,7 +68,8 @@ export default function SessionWeek({ data = [], onSelectSession, pagination, on
 
   const getBadgeStyle = (status) => {
     switch (status) {
-      case "ONGOING": return "bg-blue-500 text-white";
+      case "ONGOING":
+      case "IN_PROGRESS": return "bg-blue-500 text-white";
       case "COMPLETED": return "bg-emerald-500 text-white";
       case "CANCELLED": return "bg-rose-500 text-white";
       case "RESCHEDULED": return "bg-amber-500 text-white";

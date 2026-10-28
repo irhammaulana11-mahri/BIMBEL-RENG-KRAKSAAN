@@ -41,7 +41,7 @@ export default function ClassTable({
   return (
     <div className="border border-gray-200 bg-white shadow-2xs rounded-xl relative">
       <div className="overflow-x-auto min-h-[300px]">
-        <table className="w-full border-collapse text-left">
+        <table className="ui-table w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-[11px] font-black uppercase tracking-wider text-gray-500">
               <th className="px-6 py-3.5 text-left">Kelas</th>

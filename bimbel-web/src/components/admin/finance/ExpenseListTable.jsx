@@ -1,11 +1,16 @@
 import React from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatRupiah } from "@/utils/format";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function ExpenseListTable({ data, loading, onEdit, onDelete }) {
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(data || []);
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm min-w-[680px]">
+      <table className="ui-table w-full text-left text-sm min-w-[680px]">
         <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
           <tr><th className="p-4">Tanggal</th><th className="p-4">Kategori</th><th className="p-4">Keterangan</th><th className="p-4 text-right">Nominal</th><th className="p-4 text-center">Aksi</th></tr>
         </thead>
@@ -14,7 +19,7 @@ export default function ExpenseListTable({ data, loading, onEdit, onDelete }) {
             <tr><td colSpan={5} className="p-6 text-center text-gray-400">Memuat pengeluaran...</td></tr>
           ) : data.length === 0 ? (
             <tr><td colSpan={5} className="p-6 text-center text-gray-400">Belum ada pengeluaran operasional pada periode ini.</td></tr>
-          ) : data.map(item => (
+          ) : pageRows.map(item => (
             <tr key={item.id} className="hover:bg-gray-50/50">
               <td className="p-4 text-gray-600">{item.expense_date}</td>
               <td className="p-4"><span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">{item.category_label}</span></td>
@@ -33,6 +38,7 @@ export default function ExpenseListTable({ data, loading, onEdit, onDelete }) {
           ))}
         </tbody>
       </table>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
     </div>
   );
 }

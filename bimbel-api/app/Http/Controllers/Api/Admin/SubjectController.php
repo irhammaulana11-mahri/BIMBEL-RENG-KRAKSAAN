@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
+use App\Services\Admin\MasterOverviewService;
 use App\Http\Requests\Admin\SubjectRequest;
 use App\Http\Resources\Admin\SubjectResource;
 use App\Models\Admin\User;
@@ -84,6 +85,11 @@ class SubjectController extends Controller {
         SafeDelete::run(fn() => $subject->delete(),
             'Mata pelajaran masih dipakai di kelas, jadwal, kurikulum, atau ujian sehingga tidak dapat dihapus. Nonaktifkan mapel sebagai gantinya.');
         return response()->json(['message' => 'Mata pelajaran berhasil dihapus.']);
+    }
+
+    // GET: Jadwal, ujian & statistik untuk drawer detail mapel
+    public function overview(Subject $subject, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->subject($subject)]);
     }
 
     public function toggleStatus(Subject $subject) {

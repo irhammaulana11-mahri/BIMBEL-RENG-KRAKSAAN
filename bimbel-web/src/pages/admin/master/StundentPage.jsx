@@ -6,7 +6,7 @@ import StudentModal from "../../../components/admin/master/student/StudentModal"
 import StudentPreview from "../../../components/admin/master/student/StudentPreview";
 import StudentTable from "../../../components/admin/master/student/StudentTable";
 import PremiumStatCard from "../../../components/ui/StatCard"
-import {deleteStudent, getStudents, updateStudent,} from "../../../services/admin/studentService";
+import {getStudents, updateStudent, toggleStudentStatus} from "../../../services/admin/studentService";
 import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
 import ConfirmationModal from "../../../components/ui/confirmation/ConfirmationModal";
@@ -14,6 +14,7 @@ import { formatDate } from "../../../components/utils/dateFormatter";
 import useDebounce from "@/hooks/useDebounce";
 import { DEFAULT_LEAD_FILTER } from "../../../components/constants/student.constants";
 import { useConfirm } from "@/components/ui/confirmation";
+import { CONFIRM_PRESETS } from "@/components/ui/confirmation/constants";
 
 
 export default function StudentPage() {
@@ -152,25 +153,30 @@ export default function StudentPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-      const ok = await confirm.delete({
-        title: "Hapus Data Murid",
-        message: "Data Murid akan dihapus permanen."
+  // Murid tidak dihapus permanen agar riwayat absensi, nilai, dan tagihan tetap utuh
+  const handleToggleStatus = async (student) => {
+      const deactivate = student.is_active;
+      const ok = await confirm.confirm({
+        ...(deactivate ? CONFIRM_PRESETS.DEACTIVATE : CONFIRM_PRESETS.ACTIVATE),
+        title: deactivate ? "Nonaktifkan Murid" : "Aktifkan Murid",
+        message: deactivate
+          ? `${student.full_name} tidak akan tampil saat memilih siswa untuk kelas baru. Riwayat belajarnya tetap tersimpan.`
+          : `${student.full_name} akan diaktifkan kembali.`,
       });
-  
+
       if (!ok) return;
-  
+
       try {
         confirm.setLoading(true);
-        const response = await deleteStudent(id);
-        showSuccess("Data Murid berhasil dihapus.");
+        await toggleStudentStatus(student.id);
+        showSuccess(deactivate ? "Murid dinonaktifkan." : "Murid diaktifkan kembali.");
         await loadData();
       } catch (err) {
-        showError(getApiErrorMessage(err, "Gagal menghapus data murid."));
+        showError(getApiErrorMessage(err, "Gagal mengubah status murid."));
       } finally {
         confirm.setLoading(false);
       }
-    };  
+    };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
@@ -181,7 +187,7 @@ export default function StudentPage() {
       {/* Header Standar (text-3xl) + Tombol Tambah yang Sejajar Flex */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Student Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Murid</h1>
           <p className="text-base text-gray-500 mt-1">
             Pengaturan kelas, jadwal belajar dan paket dilakukan melalui modul Akademik.
           </p>
@@ -270,15 +276,16 @@ export default function StudentPage() {
           students={students}
           loading={loading}
           pagination={pagination}
-          onPageChange={(page) =>
+          onPageChange={(page, perPage) =>
               setPagination((prev) => ({
                   ...prev,
                   page,
+                  ...(perPage ? { perPage } : {}),
               }))
           }
           onPreview={handleView}
           onEdit={handleEdit}
-          onDelete={handleDelete}/>
+          onToggleStatus={handleToggleStatus}/>
   
 
       <StudentModal 
@@ -290,7 +297,8 @@ export default function StudentPage() {
 
       <StudentPreview 
           student={previewStudent} 
-          onClose={() => setPreviewStudent(null)} />
+          onClose={() => setPreviewStudent(null)}
+          onChanged={loadData} />
     </div>
   </div>
   );

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Save, Send, Undo2 } from "lucide-react";
 import ReportCardView from "@/components/report/ReportCardView";
 import { getProgressReportDetail, saveGeneralNote, REPORT_STATUS } from "@/services/academic/progressReportService";
+import RecommendationEditor from "./RecommendationEditor";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatPeriod } from "@/utils/format";
 
@@ -14,6 +15,7 @@ export default function ReportDetailModal({ target, period, reloadKey, onClose, 
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
 
   useEffect(() => {
     if (!target) return;
@@ -23,6 +25,7 @@ export default function ReportDetailModal({ target, period, reloadKey, onClose, 
       .then((res) => {
         setReport(res.data.data);
         setNote(res.data.data.general_note || "");
+        setAiEnabled(!!res.data.ai_enabled);
       })
       .catch((err) => setError(getApiErrorMessage(err, "Gagal memuat rapor.")));
   }, [target, period, reloadKey]);
@@ -66,7 +69,17 @@ export default function ReportDetailModal({ target, period, reloadKey, onClose, 
           {report && (
             <>
               {isDraft && <p className="text-xs bg-amber-50 text-amber-800 border border-amber-100 rounded-xl px-3 py-2">Draft: angka dihitung langsung dari absensi & hasil ujian. Saat diterbitkan, angka dibekukan dan rapor terlihat oleh orang tua & siswa.</p>}
-              <ReportCardView report={isDraft ? { ...report, general_note: null } : report} />
+              <ReportCardView report={isDraft ? { ...report, general_note: null, ai_recommendation: null } : report} />
+
+              {isDraft && (
+                <RecommendationEditor
+                  target={target}
+                  period={period}
+                  value={report.ai_recommendation}
+                  aiEnabled={aiEnabled}
+                  onChange={(rec) => setReport((prev) => ({ ...prev, ai_recommendation: rec }))}
+                />
+              )}
 
               {isDraft && (
                 <div className="space-y-2">

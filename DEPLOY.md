@@ -79,6 +79,38 @@ location / {
 
 `VITE_API_URL` dibaca saat build. Setelah mengubahnya, jalankan `npm run build` lagi.
 
+## 4. Penjadwal & Backup
+
+Backup otomatis (menu **Pengaturan → Backup & Pemulihan**) dijalankan oleh penjadwal Laravel.
+Pasang satu baris cron untuk user web server (mis. `www-data`):
+
+```cron
+* * * * * cd /path/ke/bimbel-api && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Halaman Backup menampilkan peringatan bila cron ini belum berjalan.
+
+- **Program PostgreSQL client** (`pg_dump`, `pg_restore`, `psql`) harus terpasang dengan versi
+  sama atau lebih baru dari server database: `sudo apt install postgresql-client-16`.
+  Lokasi lain dapat diatur lewat `BACKUP_PG_DUMP`, `BACKUP_PG_RESTORE`, `BACKUP_PSQL` di `.env`.
+- **Lokasi arsip:** `storage/app/backups` (tidak bisa diakses dari web). Ubah lewat `BACKUP_PATH`,
+  sebaiknya ke disk lain dari database. Unduh salinan secara berkala ke luar server.
+- **Unggah backup** dari server lain dibatasi `upload_max_filesize` dan `post_max_size` PHP
+  (serta `client_max_body_size` Nginx). Naikkan sesuai ukuran arsip, mis. `512M`.
+- **Proses panjang:** backup & pemulihan berjalan setelah respons dikirim. Pastikan
+  `request_terminate_timeout` PHP-FPM tidak terlalu kecil (mis. `0` atau `1800`).
+
+Perintah darurat dari terminal (bila halaman Admin tidak bisa dibuka):
+
+```bash
+php artisan backup:run                 # backup manual (database + berkas)
+php artisan backup:restore --list      # daftar backup
+php artisan backup:restore <nama-berkas.zip>   # pulihkan (minta ketik PULIHKAN)
+```
+
+**Pindah server:** pasang aplikasi seperti langkah 1–3 (`migrate` + `db:seed`), salin berkas
+`.zip` dari server lama lalu jalankan `php artisan backup:restore /path/berkas.zip`, atau unggah lewat menu Backup lalu pulihkan.
+
 ## Memperbarui server yang sudah berjalan
 
 ```bash

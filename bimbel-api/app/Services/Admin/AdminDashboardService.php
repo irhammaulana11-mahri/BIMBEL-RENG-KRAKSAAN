@@ -1,9 +1,11 @@
 <?php
 namespace App\Services\Admin;
 
+use App\Services\Academic\AttendanceLocationService;
 use App\Models\Academic\ClassRoom;
 use App\Models\Academic\ProgressReport;
 use App\Models\Academic\RescheduleRequest;
+use App\Models\Academic\LocationChangeRequest;
 use App\Models\Academic\ScheduleSession;
 use App\Models\Admin\Student;
 use App\Models\Admin\StudentRegistrationRequest;
@@ -50,6 +52,8 @@ class AdminDashboardService {
                 'tentor_name'  => $s->tentor?->user?->name,
                 'status'       => $s->status,
                 'checked_in'   => (bool) $s->tentorAttendance?->checked_in_at,
+                'checkin_time' => LocalTime::format($s->tentorAttendance?->checked_in_at, 'H:i'),
+                'remarks'      => AttendanceLocationService::remarks($s->tentorAttendance),
             ]);
 
         // Rapor bulan lalu: siswa aktif di kelas yang rapornya belum terbit
@@ -80,6 +84,7 @@ class AdminDashboardService {
             'inbox' => [
                 ['key' => 'payments',      'label' => 'Bukti bayar menunggu verifikasi', 'count' => Payment::where('status', 'PENDING')->count(), 'link' => '/admin/finance'],
                 ['key' => 'reschedule',    'label' => 'Pengajuan pindah jadwal', 'count' => RescheduleRequest::where('status', 'PENDING')->count(), 'link' => '/admin/reschedule-requests'],
+                ['key' => 'locations',     'label' => 'Pengajuan lokasi les sementara', 'count' => LocationChangeRequest::where('status', 'PENDING')->count(), 'link' => '/admin/location-requests'],
                 ['key' => 'registrations', 'label' => 'Pendaftaran anak dari orang tua', 'count' => StudentRegistrationRequest::where('status', 'PENDING')->count(), 'link' => '/admin/enrollments'],
                 ['key' => 'leads',         'label' => 'Lead baru belum dihubungi', 'count' => Lead::where('status', 'NEW')->count(), 'link' => '/admin/leads'],
                 ['key' => 'essays',        'label' => 'Jawaban ujian menunggu penilaian', 'count' => ExamResult::where('status', 'SUBMITTED')->count(), 'link' => '/admin/exam'],

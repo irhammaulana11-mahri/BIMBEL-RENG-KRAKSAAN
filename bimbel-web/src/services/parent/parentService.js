@@ -7,6 +7,9 @@ export const getParentSchedules = (params) => api.get("/parent/schedules", { par
 export const requestParentReschedule = (sessionId, data) => api.post(`/parent/sessions/${sessionId}/reschedule-requests`, data);
 export const getParentRescheduleRequests = () => api.get("/parent/reschedule-requests");
 export const cancelParentRescheduleRequest = (id) => api.patch(`/parent/reschedule-requests/${id}/cancel`);
+export const requestParentLocationChange = (sessionId, data) => api.post(`/parent/sessions/${sessionId}/location-requests`, data);
+export const cancelParentLocationRequest = (id) => api.patch(`/parent/location-requests/${id}/cancel`);
+export const getParentLocationRequests = () => api.get("/parent/location-requests");
 
 /* ===================== HASIL UJIAN ===================== */
 

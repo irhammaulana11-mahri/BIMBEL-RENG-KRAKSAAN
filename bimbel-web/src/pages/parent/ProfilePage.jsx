@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import LocationPicker from "../../components/ui/LocationPicker";
 import { User, GraduationCap, Phone, Mail, Plus, Package, MapPin, Briefcase, KeyRound, Pencil, X, School } from "lucide-react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
@@ -196,12 +197,16 @@ function useModalForm(submit, onDone) {
 }
 
 function EditProfileModal({ open, profile, onClose, onDone }) {
-  const [form, setForm] = useState({ phone: "", occupation: "", address: "" });
-  const { saving, error, setError, handle } = useModalForm(() => updateParentProfile(form), onDone);
+  const [form, setForm] = useState({ phone: "", occupation: "", address: "", latitude: "", longitude: "" });
+  const { saving, error, setError, handle } = useModalForm(() => updateParentProfile({
+    ...form,
+    latitude: form.latitude === "" ? null : form.latitude,
+    longitude: form.longitude === "" ? null : form.longitude,
+  }), onDone);
 
   useEffect(() => {
     if (open) {
-      setForm({ phone: profile.phone || "", occupation: profile.occupation || "", address: profile.address || "" });
+      setForm({ phone: profile.phone || "", occupation: profile.occupation || "", address: profile.address || "", latitude: profile.latitude ?? "", longitude: profile.longitude ?? "" });
       setError("");
     }
   }, [open]);
@@ -213,7 +218,15 @@ function EditProfileModal({ open, profile, onClose, onDone }) {
       <form onSubmit={handle} className="space-y-4">
         <div><label className={labelClass}>No. HP / WhatsApp</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="08xxxxxxxxxx" className={inputClass} /></div>
         <div><label className={labelClass}>Pekerjaan</label><input value={form.occupation} maxLength={100} onChange={(e) => setForm({ ...form, occupation: e.target.value })} className={inputClass} /></div>
-        <div><label className={labelClass}>Alamat</label><textarea value={form.address} maxLength={500} onChange={(e) => setForm({ ...form, address: e.target.value })} className={`${inputClass} min-h-[80px]`} /></div>
+        <div><label className={labelClass}>Alamat Rumah</label><textarea value={form.address} maxLength={500} onChange={(e) => setForm({ ...form, address: e.target.value })} className={`${inputClass} min-h-[70px]`} /></div>
+        {/* Titik rumah ikut tersimpan di data anak (tujuan absen tentor les private) */}
+        <LocationPicker
+          label="Titik Rumah"
+          radius={100}
+          height={200}
+          value={{ latitude: form.latitude, longitude: form.longitude }}
+          onChange={({ latitude, longitude }) => setForm({ ...form, latitude, longitude })}
+        />
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
         <button type="submit" disabled={saving} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl">{saving ? "Menyimpan..." : "Simpan"}</button>
       </form>
@@ -222,10 +235,10 @@ function EditProfileModal({ open, profile, onClose, onDone }) {
 }
 
 function RegistrationModal({ open, onClose, onDone }) {
-  const empty = { full_name: "", gender: "", birth_date: "", school_name: "", education_level_id: "", package_id: "", note: "" };
+  const empty = { full_name: "", gender: "", birth_date: "", school_name: "", education_level_id: "", package_id: "", note: "", login_email: "" };
   const [form, setForm] = useState(empty);
   const [options, setOptions] = useState({ education_levels: [], packages: [] });
-  const { saving, error, setError, handle } = useModalForm(() => submitParentRegistration({ ...form, package_id: form.package_id || null }), onDone);
+  const { saving, error, setError, handle } = useModalForm(() => submitParentRegistration({ ...form, package_id: form.package_id || null, login_email: form.login_email || null }), onDone);
 
   useEffect(() => {
     if (!open) return;
@@ -267,6 +280,11 @@ function RegistrationModal({ open, onClose, onDone }) {
             {packages.map((p) => <option key={p.id} value={p.id}>{p.name} ({formatRupiah(p.price)}/bln)</option>)}
           </select>
           {level && packages.length === 0 && <p className="text-xs text-amber-700 mt-1">Belum ada paket untuk jenjang {level.level}. Tulis kebutuhan Anda di catatan.</p>}
+        </div>
+        <div>
+          <label className={labelClass}>Email Login Anak (opsional)</label>
+          <input type="email" maxLength={100} value={form.login_email} onChange={(e) => setForm({ ...form, login_email: e.target.value })} placeholder="Kosongkan = dibuatkan otomatis" className={inputClass} />
+          <p className="text-[11px] text-gray-400 mt-1">Setelah disetujui Admin, email & password sementara dikirim ke notifikasi Anda (ikon lonceng).</p>
         </div>
         <div><label className={labelClass}>Catatan (opsional)</label><textarea maxLength={1000} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Mapel yang ingin difokuskan, jadwal yang diinginkan, dll." className={`${inputClass} min-h-[70px]`} /></div>
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}

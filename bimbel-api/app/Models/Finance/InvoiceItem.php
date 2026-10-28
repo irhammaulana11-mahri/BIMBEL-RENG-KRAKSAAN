@@ -17,10 +17,11 @@ class InvoiceItem extends Model
     protected $fillable = [
         'invoice_id', 'package_id', 'curriculum_id', 'reference_no', 'item_type',
         'item_name', 'description', 'quantity', 'unit_price', 'discount', 'subtotal', 'sort_order',
+        'fee_rule_id', 'calc_method',
     ];
 
     protected $casts = [
-        'quantity'   => 'integer',
+        'quantity'   => 'float',
         'unit_price' => 'decimal:2',
         'discount'   => 'decimal:2',
         'subtotal'   => 'decimal:2',

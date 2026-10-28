@@ -71,9 +71,9 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+    <div className="fixed inset-0 z-[90] flex justify-end bg-black/40 backdrop-blur-2xs animate-in fade-in" onClick={onClose}>
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
-      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col h-[90vh]">
+      <div onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:w-[640px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100 animate-in slide-in-from-right duration-300">
         
         {/* HEADER */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between bg-slate-50 rounded-t-2xl shrink-0">
@@ -108,7 +108,7 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
           {loading ? (
              <div className="text-center py-10 text-gray-500 font-bold animate-pulse">Memuat data siswa...</div>
           ) : (
-            <table className="w-full text-left">
+            <table className="ui-table w-full text-left">
               <thead>
                 <tr className="border-b border-gray-200 text-xs text-gray-500 uppercase">
                   <th className="pb-3 w-1/3">Nama Siswa</th>

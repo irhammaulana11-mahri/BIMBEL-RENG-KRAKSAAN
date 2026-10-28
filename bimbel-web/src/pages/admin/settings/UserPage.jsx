@@ -6,6 +6,8 @@ import { useConfirm } from "@/components/ui/confirmation";
 import UserFormModal from "../../../components/admin/settings/UserFormModal";
 import { getUsers, createUser, updateUser, toggleUserStatus, resetUserPassword, deleteUser, ROLE_BADGE } from "@/services/admin/userService";
 import { getApiErrorMessage } from "@/utils/apiError";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 const PROFILE_LABEL = { tentor: "Profil tentor", orang_tua: "Profil orang tua", siswa: "Siswa" };
 
@@ -102,6 +104,9 @@ export default function UserPage() {
     }
   };
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(rows || []);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
@@ -141,7 +146,7 @@ export default function UserPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[820px]">
+            <table className="ui-table w-full text-left text-sm min-w-[820px]">
               <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
                 <tr><th className="p-4">Nama / Email</th><th className="p-4">Peran</th><th className="p-4">Terhubung ke</th><th className="p-4 text-center">Status</th><th className="p-4 text-center">Aksi</th></tr>
               </thead>
@@ -150,7 +155,7 @@ export default function UserPage() {
                   <tr><td colSpan={5} className="p-6 text-center text-gray-400">Memuat akun...</td></tr>
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={5} className="p-6 text-center text-gray-400">Tidak ada akun pada filter ini.</td></tr>
-                ) : rows.map((u) => (
+                ) : pageRows.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50/50">
                     <td className="p-4">
                       <p className="font-bold text-gray-900 flex items-center gap-1.5">{u.name}{u.is_self && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">Anda</span>}</p>
@@ -180,6 +185,7 @@ export default function UserPage() {
               </tbody>
             </table>
           </div>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
 
           {meta.last_page > 1 && (
             <div className="flex items-center justify-between p-4 border-t border-gray-100 text-xs text-gray-500">

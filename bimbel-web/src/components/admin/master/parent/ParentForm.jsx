@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LocationPicker from "../../../ui/LocationPicker";
 
 export default function ParentForm({initialData,onSubmit,loading, onClose}) {
   const [form, setForm] = useState({
@@ -6,6 +7,8 @@ export default function ParentForm({initialData,onSubmit,loading, onClose}) {
     occupation: "",
     relationship: "",
     address: "",
+    latitude: "",
+    longitude: "",
   });
 
   useEffect(() => {
@@ -15,6 +18,8 @@ export default function ParentForm({initialData,onSubmit,loading, onClose}) {
         occupation: initialData.occupation || "",
         relationship: initialData.relationship || "",
         address: initialData.address || "",
+        latitude: initialData.latitude ?? "",
+        longitude: initialData.longitude ?? "",
       });
     }
   }, [initialData]);
@@ -28,7 +33,11 @@ export default function ParentForm({initialData,onSubmit,loading, onClose}) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    onSubmit({
+      ...form,
+      latitude: form.latitude === "" ? null : form.latitude,
+      longitude: form.longitude === "" ? null : form.longitude,
+    });
   };
 
   return (
@@ -53,9 +62,18 @@ export default function ParentForm({initialData,onSubmit,loading, onClose}) {
       </div>
 
       <div>
-        <label className="block mb-1 text-sm">Alamat</label>
-        <textarea rows={3} name="address" value={form.address} onChange={handleChange} className="w-full border rounded-xl px-3 py-2"/>
+        <label className="block mb-1 text-sm">Alamat Rumah</label>
+        <textarea rows={2} name="address" value={form.address} onChange={handleChange} className="w-full border rounded-xl px-3 py-2"/>
+        <p className="text-[11px] text-gray-400 mt-1">Alamat & titik rumah otomatis sama dengan data anak (dipakai untuk absen GPS tentor les private).</p>
       </div>
+
+      <LocationPicker
+        label="Titik Rumah"
+        radius={100}
+        height={200}
+        value={{ latitude: form.latitude, longitude: form.longitude }}
+        onChange={({ latitude, longitude }) => setForm({ ...form, latitude, longitude })}
+      />
 
           <div className="pt-2 flex gap-3">
             <button type="button" onClick={onClose} className="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">Batal</button>

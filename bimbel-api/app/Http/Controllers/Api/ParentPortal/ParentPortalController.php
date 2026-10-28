@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\ParentPortal;
 
 use App\Http\Controllers\Controller;
+use App\Services\Student\FamilyAddressService;
 use App\Http\Requests\Account\UpdatePasswordRequest;
 use App\Http\Requests\Parent\ParentPortalRequest;
 use App\Services\Account\PasswordService;
@@ -10,6 +11,9 @@ use App\Models\Admin\EducationLevel;
 use App\Models\Admin\StudentRegistrationRequest;
 use App\Models\Website\Package;
 use App\Services\Academic\RescheduleRequestService;
+use App\Services\Academic\LocationChangeRequestService;
+use App\Models\Academic\LocationChangeRequest;
+use App\Http\Requests\Academic\LocationChangeSubmitRequest;
 use App\Services\Parent\ParentPortalService;
 use App\Services\Student\StudentRegistrationRequestService;
 use Carbon\Carbon;
@@ -30,6 +34,7 @@ class ParentPortalController extends Controller {
         protected ParentPortalService $portal,
         protected RescheduleRequestService $rescheduleService,
         protected StudentRegistrationRequestService $registrationService,
+        protected LocationChangeRequestService $locationChangeService,
     ) {}
 
     public function dashboard() {
@@ -89,6 +94,43 @@ class ParentPortalController extends Controller {
 
     /*
     |--------------------------------------------------------------------------
+    | LOKASI LES SEMENTARA
+    |--------------------------------------------------------------------------
+    */
+
+    public function requestLocationChange(LocationChangeSubmitRequest $request, $sessionId) {
+        $parent = $this->portal->currentParent();
+        $session = $this->portal->findChildSession($parent, $sessionId, $request->student_id);
+        $created = $this->locationChangeService->submit($session, 'PARENT', $request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan lokasi les sementara terkirim. Admin akan mengonfirmasi.',
+            'data'    => LocationChangeRequestService::present($created->load(LocationChangeRequestService::relations())),
+        ], 201);
+    }
+
+    public function locationChangeRequests() {
+        $requests = LocationChangeRequest::with(LocationChangeRequestService::relations())
+            ->where('requested_by', Auth::id())
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $requests->map(fn($r) => LocationChangeRequestService::present($r))]);
+    }
+
+    public function cancelLocationChange($id) {
+        abort_unless(Str::isUuid($id), 404, 'Pengajuan tidak ditemukan.');
+        $request = LocationChangeRequest::where('requested_by', Auth::id())->where('id', $id)->first();
+        abort_unless($request, 404, 'Pengajuan tidak ditemukan.');
+        $this->locationChangeService->cancel($request);
+
+        return response()->json(['success' => true, 'message' => 'Pengajuan lokasi dibatalkan.']);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | HASIL UJIAN
     |--------------------------------------------------------------------------
     */
@@ -122,6 +164,8 @@ class ParentPortalController extends Controller {
                 'occupation'   => $parent->occupation,
                 'relationship' => $parent->relationship,
                 'address'      => $parent->address,
+                'latitude'     => $parent->latitude,
+                'longitude'    => $parent->longitude,
                 'children'     => $this->portal->children($parent),
             ],
         ]);
@@ -133,8 +177,14 @@ class ParentPortalController extends Controller {
         $data = $request->validated();
 
         DB::transaction(function () use ($parent, $data) {
-            $parent->update(['occupation' => $data['occupation'] ?? null, 'address' => $data['address'] ?? null]);
+            $parent->update([
+                'occupation' => $data['occupation'] ?? null,
+                'address'    => $data['address'] ?? null,
+                // Titik rumah hanya diganti bila dikirim (Android lama tidak mengirimnya)
+                ...(array_key_exists('latitude', $data) ? ['latitude' => $data['latitude'], 'longitude' => $data['longitude'] ?? null] : []),
+            ]);
             $parent->user->update(['phone' => $data['phone'] ?? null]);
+            if ($parent->wasChanged(['address', 'latitude', 'longitude'])) app(FamilyAddressService::class)->syncFromParent($parent);
         });
 
         return response()->json(['success' => true, 'message' => 'Profil diperbarui.']);

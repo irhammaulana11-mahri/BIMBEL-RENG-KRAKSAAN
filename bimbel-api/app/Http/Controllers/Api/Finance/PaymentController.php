@@ -27,7 +27,10 @@ class PaymentController extends Controller
             $query->where('status', strtoupper($request->status));
         }
 
-        if ($request->filled('period')) {
+        // Filter harian (date=Y-m-d) atau bulanan (period=Y-m) berdasarkan tanggal bayar
+        if ($request->filled('date')) {
+            $query->whereDate('payment_date', $request->date);
+        } elseif ($request->filled('period')) {
             $query->whereYear('payment_date', (int) substr($request->period, 0, 4))
                   ->whereMonth('payment_date', (int) substr($request->period, 5, 2));
         }
@@ -40,6 +43,9 @@ class PaymentController extends Controller
                 ->orWhereHas('student', fn($sq) => $sq->where('full_name', 'ILIKE', $kw)));
         }
 
+        // Rekap sesuai filter aktif (sebelum paginasi)
+        $filtered = ['count' => (clone $query)->count(), 'amount' => (float) (clone $query)->sum('total_amount')];
+
         $perPage = min(max($request->integer('per_page', 15), 1), 100);
         $payments = $query->orderByRaw("CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at')
@@ -47,7 +53,7 @@ class PaymentController extends Controller
             ->withQueryString();
 
         return PaymentResource::collection($payments)->additional([
-            'summary' => ['pending' => Payment::where('status', 'PENDING')->count()],
+            'summary' => ['pending' => Payment::where('status', 'PENDING')->count(), 'filtered' => $filtered],
         ]);
     }
 

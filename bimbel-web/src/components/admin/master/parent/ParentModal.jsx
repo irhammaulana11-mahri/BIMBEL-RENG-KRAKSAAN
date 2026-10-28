@@ -7,7 +7,7 @@ export default function ParentModal({ open, onClose, data, onSubmit, loading }) 
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 transition-all">
-      <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
         
         <button onClick={onClose} className="absolute right-6 top-6 text-gray-400 hover:text-gray-600">
           <X className="w-5 h-5" />
@@ -24,7 +24,7 @@ export default function ParentModal({ open, onClose, data, onSubmit, loading }) 
         </div>
 
         {/* Merendah form isian utama data */}
-        <ParentForm initialData={data} onSubmit={onSubmit} loading={loading} />
+        <ParentForm initialData={data} onSubmit={onSubmit} loading={loading} onClose={onClose} />
       </div>
     </div>
   );

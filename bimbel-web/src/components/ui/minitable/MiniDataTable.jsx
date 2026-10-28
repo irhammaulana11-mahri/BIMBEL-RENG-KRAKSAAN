@@ -12,7 +12,7 @@ export default function MiniDataTable({
     <div className="space-y-3">
       {/* Tabel Container */}
       <div className="overflow-x-auto border border-gray-100 rounded-2xl bg-white shadow-2xs">
-        <table className="w-full text-left border-collapse">
+        <table className="ui-table w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/80 border-b border-gray-100 text-[11px] font-black uppercase tracking-wider text-gray-400">
               {columns.map((col, index) => (

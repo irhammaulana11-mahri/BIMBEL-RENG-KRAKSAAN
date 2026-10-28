@@ -11,6 +11,7 @@ import { router } from "./routes";
 
 import "./index.css";
 import "./styles/dark-theme.css";
+import "./styles/table.css";
 import { ConfirmationProvider } from "./components/ui/confirmation";
 
 

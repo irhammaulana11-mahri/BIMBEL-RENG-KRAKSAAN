@@ -19,8 +19,14 @@ class ClassRequest extends FormRequest
     }
 
     protected function prepareForValidation(): void {
+        $classType = $this->filled('class_type') ? strtoupper(trim($this->class_type)) : 'REGULER';
+        // Lokasi mengikuti jenis kelas: PRIVATE = rumah siswa, ONLINE = di mana saja, REGULER = gedung bimbel
+        if (in_array($classType, ['PRIVATE', 'ONLINE'], true)) {
+            $this->merge(['learning_location_id' => null]);
+        }
+
         $this->merge([
-            'class_type'      => $this->filled('class_type') ? strtoupper(trim($this->class_type)) : 'REGULER',
+            'class_type'      => $classType,
             'education_level' => $this->filled('education_level') ? strtoupper(trim($this->education_level)) : null,
             'status'          => $this->filled('status') ? strtoupper(trim($this->status)) : 'ON_PROGRESS',
         ]);
@@ -46,7 +52,7 @@ class ClassRequest extends FormRequest
                 'nullable', 'integer', 'min:1', 'max:480'
             ],
             
-            'learning_location_id' => ['nullable', 'uuid', Rule::exists(LearningLocation::class, 'id')],
+            'learning_location_id' => ['nullable', 'required_if:class_type,REGULER', 'uuid', Rule::exists(LearningLocation::class, 'id')],
             'max_students'         => ['required', 'integer', 'min:1', 'max:100'],
             'description'          => ['nullable', 'string'],
             'is_active'            => ['required', 'boolean'],

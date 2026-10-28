@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../widgets/common.dart';
+import '../../widgets/location.dart';
 import 'admin_finance.dart' show askReason, runAction;
 
-/// Pengajuan pindah jadwal & pendaftaran anak dari orang tua/tentor.
+/// Pengajuan pindah jadwal, lokasi les sementara & pendaftaran anak dari orang tua/tentor.
 /// Disetujui sesuai usulan; mengubah jam/tentor atau menempatkan kelas tetap lewat web.
 class AdminRequestsTab extends StatefulWidget {
   const AdminRequestsTab({super.key});
@@ -17,7 +18,11 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
   String _type = 'reschedule';
   String _status = 'PENDING';
 
-  String get _path => _type == 'reschedule' ? '/admin/reschedule-requests' : '/admin/student-registrations';
+  String get _path => switch (_type) {
+        'reschedule' => '/admin/reschedule-requests',
+        'location' => '/admin/location-requests',
+        _ => '/admin/student-registrations',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +31,9 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: SegmentedButton<String>(
           segments: const [
-            ButtonSegment(value: 'reschedule', label: Text('Pindah jadwal'), icon: Icon(Icons.event_repeat)),
-            ButtonSegment(value: 'registration', label: Text('Pendaftaran'), icon: Icon(Icons.person_add_alt)),
+            ButtonSegment(value: 'reschedule', label: Text('Jadwal'), icon: Icon(Icons.event_repeat)),
+            ButtonSegment(value: 'location', label: Text('Lokasi'), icon: Icon(Icons.edit_location_alt_outlined)),
+            ButtonSegment(value: 'registration', label: Text('Daftar'), icon: Icon(Icons.person_add_alt)),
           ],
           selected: {_type},
           onSelectionChanged: (v) => setState(() => _type = v.first),
@@ -49,7 +55,11 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
             return ListView(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), children: [
               if (items.isEmpty) const EmptyState('Tidak ada pengajuan.'),
               for (final r in items)
-                _type == 'reschedule' ? _RescheduleCard(r, onChanged: reload) : _RegistrationCard(r, onChanged: reload),
+                switch (_type) {
+                  'reschedule' => _RescheduleCard(r, onChanged: reload),
+                  'location' => _LocationCard(r, onChanged: reload),
+                  _ => _RegistrationCard(r, onChanged: reload),
+                },
             ]);
           },
         ),
@@ -144,13 +154,29 @@ class _RescheduleCard extends StatelessWidget {
           InfoRow('Alasan', text(r['reason'])),
           if (r['review_note'] != null) InfoRow('Catatan admin', text(r['review_note'])),
           if (pending) ...[
-            if (r['can_approve'] == false)
+            // Hasil cek bentrok terkini (tentor, kelas, siswa di kelas lain, ruang)
+            if ((r['conflicts'] as List? ?? []).isNotEmpty)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha: .08), borderRadius: BorderRadius.circular(10)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Jam usulan bentrok. Tolak, atau setujui dengan jam lain lewat versi web.',
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                  for (final c in r['conflicts'] as List) Text('• $c', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ]),
+              )
+            else if (r['can_approve'] == false)
               const Text('Sesi sudah berlangsung/selesai/dibatalkan, pengajuan hanya bisa ditolak.',
-                  style: TextStyle(color: Colors.orange, fontSize: 12)),
+                  style: TextStyle(color: Colors.orange, fontSize: 12))
+            else
+              Text('Tidak bentrok', style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.w600)),
             _ReviewButtons(
               basePath: '/admin/reschedule-requests/${r['id']}',
               approveQuestion: 'Pindahkan sesi ke $proposed?',
-              canApprove: r['can_approve'] != false,
+              // Android menyetujui sesuai usulan apa adanya, jadi usulan yang bentrok tidak bisa disetujui di sini
+              canApprove: r['can_approve'] != false && (r['conflicts'] as List? ?? []).isEmpty,
               onDone: onChanged,
             ),
           ],
@@ -195,6 +221,59 @@ class _RegistrationCard extends StatelessWidget {
               approveQuestion: 'Buat data siswa ${text(r['full_name'])}? Penempatan ke kelas dilakukan lewat menu Kelas di web.',
               onDone: onChanged,
             ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _LocationCard extends StatelessWidget {
+  final Map r;
+  final VoidCallback onChanged;
+  const _LocationCard(this.r, {required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = r['session'] ?? {};
+    final pending = r['status'] == 'PENDING';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+              child: Text('${text(s['subject_name'])} • ${text(s['class_name'])}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            StatusChip(r['status']),
+          ]),
+          const SizedBox(height: 6),
+          InfoRow('Diajukan', '${text(r['requester_name'])} (${r['requester_type'] == 'TENTOR' ? 'tentor' : 'orang tua'})'),
+          if (r['student_name'] != null) InfoRow('Siswa', text(r['student_name'])),
+          InfoRow('Tentor', text(s['tentor_name'])),
+          InfoRow('Sesi', '${tanggal(s['session_date'])}, ${text(s['start_time'])} - ${text(s['end_time'])}'),
+          if (s['current_location'] != null) InfoRow('Lokasi semula', text(s['current_location'])),
+          InfoRow('Lokasi usulan', '${text(r['location_name'])}\n${text(r['address'])}'),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => openUrl(context, mapsUrl(r['latitude'], r['longitude'])),
+              icon: const Icon(Icons.map_outlined, size: 18),
+              label: const Text('Lihat titik di peta'),
+            ),
+          ),
+          InfoRow('Alasan', text(r['reason'])),
+          if (r['review_note'] != null) InfoRow('Catatan admin', text(r['review_note'])),
+          if (pending) ...[
+            if (r['can_approve'] == false)
+              const Text('Sesi sudah dimulai/selesai/dibatalkan, pengajuan hanya bisa ditolak.',
+                  style: TextStyle(color: Colors.orange, fontSize: 12)),
+            _ReviewButtons(
+              basePath: '/admin/location-requests/${r['id']}',
+              approveQuestion: 'Jadikan "${text(r['location_name'])}" titik absen tentor untuk sesi ini?',
+              canApprove: r['can_approve'] != false,
+              onDone: onChanged,
+            ),
+          ],
         ]),
       ),
     );

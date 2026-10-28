@@ -50,7 +50,7 @@ export default function StudentLearningPage() {
     <div className="page-card space-y-6 animate-in fade-in">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Pembelajaran</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Pembelajaran</h1>
           <p className="text-sm text-gray-500 mt-0.5">Jadwal sesi kelas, kehadiran Anda, dan aktivitas yang dibahas di setiap sesi.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

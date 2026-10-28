@@ -5,6 +5,8 @@ import { useToast } from "../../../hooks/useToast";
 import { getRescheduleRequests, approveRescheduleRequest, rejectRescheduleRequest } from "@/services/academic/requestService";
 import { REQUEST_STATUS, formatSessionDate } from "@/services/parent/parentService";
 import { getApiErrorMessage } from "@/utils/apiError";
+import PremiumStatCard from "../../../components/ui/StatCard";
+import { Hourglass, CheckCircle2, XCircle, Users2 } from "lucide-react";
 
 const STATUS_TABS = [
   { value: "PENDING", label: "Menunggu" },
@@ -17,6 +19,7 @@ export default function RescheduleRequestPage() {
   const [status, setStatus] = useState("PENDING");
   const [items, setItems] = useState([]);
   const [pending, setPending] = useState(0);
+  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [decision, setDecision] = useState(null); // { item, mode: 'approve' | 'reject' }
   const { toast, showSuccess, showError, hideToast } = useToast();
@@ -26,6 +29,7 @@ export default function RescheduleRequestPage() {
       const res = await getRescheduleRequests({ status });
       setItems(res.data.data || []);
       setPending(res.data.pending?.reschedule ?? 0);
+      setStats(res.data.stats || {});
     } catch (err) {
       showError(getApiErrorMessage(err, "Gagal memuat pengajuan."));
     } finally {
@@ -42,6 +46,13 @@ export default function RescheduleRequestPage() {
         <div>
           <h1 className="text-3xl font-black text-gray-950 tracking-tight">Pengajuan Pindah Jadwal</h1>
           <p className="text-gray-500">Usulan pindah jadwal sesi dari orang tua dan tentor. Persetujuan memindahkan sesi untuk seluruh siswa kelas.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <PremiumStatCard title="Menunggu" value={stats.PENDING ?? 0} desc="Perlu keputusan Admin" icon={Hourglass} colorClass="text-amber-700" />
+          <PremiumStatCard title="Disetujui" value={stats.APPROVED ?? 0} desc="Sesi sudah dipindahkan" icon={CheckCircle2} colorClass="text-green-700" />
+          <PremiumStatCard title="Ditolak" value={stats.REJECTED ?? 0} desc="Disertai alasan penolakan" icon={XCircle} colorClass="text-red-700" />
+          <PremiumStatCard title="Asal Pengajuan" value={`${stats.by_requester?.PARENT ?? 0} / ${stats.by_requester?.TENTOR ?? 0}`} desc={`Orang tua / Tentor • ${stats.CANCELLED ?? 0} dibatalkan`} icon={Users2} colorClass="text-indigo-700" />
         </div>
 
         <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
@@ -77,6 +88,16 @@ export default function RescheduleRequestPage() {
                     <b className="text-gray-900">{formatSessionDate(r.proposed_date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })} {r.proposed_start_time}-{r.proposed_end_time}</b>
                   </p>
                   <p className="text-xs text-gray-500">Alasan: {r.reason}</p>
+                  {/* Hasil cek bentrok terkini (tentor, kelas, siswa di kelas lain, ruang) */}
+                  {r.status === "PENDING" && (r.conflicts?.length > 0 ? (
+                    <div className="text-xs bg-rose-50 border border-rose-100 text-rose-700 rounded-lg px-2.5 py-1.5 space-y-0.5">
+                      <p className="font-black">⚠️ Jam usulan bentrok</p>
+                      {r.conflicts.map((c, i) => <p key={i}>• {c}</p>)}
+                      <p className="text-rose-600/80">Klik Setujui lalu ganti tanggal/jam ke waktu yang kosong, atau Tolak dengan alasan.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-bold text-emerald-700">✓ Tidak bentrok dengan jadwal tentor, kelas, siswa, maupun ruang</p>
+                  ))}
                   {r.review_note && <p className="text-xs text-gray-500">Catatan: {r.review_note}{r.reviewer_name && ` — ${r.reviewer_name}, ${r.reviewed_at}`}</p>}
                   <p className="text-[11px] text-gray-400">Diajukan {r.created_at}</p>
                 </div>

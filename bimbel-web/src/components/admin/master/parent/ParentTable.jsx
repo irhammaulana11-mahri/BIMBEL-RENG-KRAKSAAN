@@ -71,7 +71,7 @@ export default function ParentTable({
   return (
     <div className="overflow-hidden border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+        <table className="ui-table w-full border-collapse text-left">
           <thead>
             <tr className="whitespace-nowrap border-b border-gray-100 bg-gray-50/70 text-sm font-bold uppercase tracking-wider text-gray-600">
               <th className="px-6 py-4.5">Orang Tua - Wali</th>

@@ -127,7 +127,7 @@ export default function ClassSubjectModal({ open, onClose, classData, onSuccess,
       cellClassName: "py-3 w-28",
       render: (row) => (
         <span className="inline-block px-2.5 py-0.5 bg-slate-100/80 text-slate-600 font-black text-[10px] rounded-md border border-slate-200/60 shadow-2xs">
-          {row.education_level || classData.education_level || "SD"}
+          {row.education_level_name || row.education_level?.display_name || (typeof row.education_level === "string" && row.education_level) || classData.education_level || "SD"}
         </span>
       ),
     },

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Api\ParentPortal;
 
+use App\Support\Pdf;
 use App\Http\Controllers\Api\Finance\PaymentController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\ParentPaymentRequest;
@@ -60,9 +61,19 @@ class ParentBillingController extends Controller {
     public function showInvoice($id) {
         $invoice = Invoice::whereIn('student_id', $this->childIds())
             ->with(['student', 'classroom', 'package', 'items', 'paymentDetails.payment'])
+            ->withCount(['paymentDetails as pending_payments_count' => fn($q) => $q->whereHas('payment', fn($p) => $p->where('status', 'PENDING'))])
             ->findOrFail($id);
 
         return response()->json(['success' => true, 'data' => new InvoiceResource($invoice)]);
+    }
+
+    // GET: Invoice PDF tagihan anak
+    public function invoicePdf($id) {
+        $invoice = Invoice::whereIn('student_id', $this->childIds())
+            ->with(['student.parents', 'classroom', 'items', 'paymentDetails.payment'])
+            ->findOrFail($id);
+
+        return Pdf::download('pdf.invoice', compact('invoice'), "Invoice-{$invoice->invoice_no}.pdf");
     }
 
     // POST: Kirim bukti transfer untuk satu tagihan

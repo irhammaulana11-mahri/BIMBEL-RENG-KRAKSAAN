@@ -2,9 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Wallet, CheckCircle2, Paperclip, Hourglass } from "lucide-react";
 import { getParentInvoices, getParentPayments, getParentPaymentProof, PAYMENT_STATUS } from "@/services/finance/financeService";
 import { formatRupiah } from "@/utils/format";
+import PremiumStatCard from "../../components/ui/StatCard";
+import InvoiceDrawer from "../../components/parent/InvoiceDrawer";
+import { useNavigate } from "react-router-dom";
 
 export default function FinancePage() {
   const [summary, setSummary] = useState({ outstanding: 0 });
+  const [detailId, setDetailId] = useState(null);
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,18 +46,9 @@ export default function FinancePage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Belum Dibayar</p>
-          <p className="text-2xl font-black text-rose-700 mt-1">{formatRupiah(summary.outstanding)}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Total Dibayar</p>
-          <p className="text-2xl font-black text-emerald-700 mt-1">{formatRupiah(totalPaid)}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Hourglass className="w-3.5 h-3.5" /> Menunggu Verifikasi</p>
-          <p className="text-2xl font-black text-amber-700 mt-1">{pending}</p>
-        </div>
+        <PremiumStatCard title="Belum Dibayar" value={formatRupiah(summary.outstanding)} desc="Sisa tagihan aktif" icon={Wallet} colorClass="text-red-700" />
+        <PremiumStatCard title="Total Dibayar" value={formatRupiah(totalPaid)} desc="Pembayaran yang sudah diterima" icon={CheckCircle2} colorClass="text-green-700" />
+        <PremiumStatCard title="Menunggu Verifikasi" value={pending} desc="Bukti transfer sedang dicek Admin" icon={Hourglass} colorClass="text-amber-700" />
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
@@ -68,7 +64,9 @@ export default function FinancePage() {
                 <div>
                   <p className="font-semibold text-gray-800">{p.payment_no} • {p.student_name}</p>
                   <p className="text-xs text-gray-400">
-                    {p.payment_date} • {p.payment_method === "CASH" ? "Tunai di bimbel" : `Transfer ${p.payment_channel || ""}`} • {p.invoices?.map(i => i.invoice_no).join(", ")}
+                    {p.payment_date} • {p.payment_method === "CASH" ? "Tunai di bimbel" : `Transfer ${p.payment_channel || ""}`} • {p.invoices?.map((i, idx) => (
+                      <button key={i.invoice_id || i.id || idx} onClick={() => setDetailId(i.invoice_id || i.id)} className="font-bold text-blue-600 hover:underline mr-1">{i.invoice_no}</button>
+                    ))}
                   </p>
                   {p.status === "REJECTED" && p.reject_reason && <p className="text-xs text-rose-600 mt-0.5">Ditolak: {p.reject_reason}</p>}
                 </div>
@@ -86,6 +84,7 @@ export default function FinancePage() {
           </div>
         )}
       </div>
+      <InvoiceDrawer invoiceId={detailId} onClose={() => setDetailId(null)} onPay={() => { setDetailId(null); navigate("/parent/billing"); }} />
     </div>
   );
 }

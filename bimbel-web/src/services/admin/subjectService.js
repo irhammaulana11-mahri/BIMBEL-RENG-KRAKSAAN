@@ -41,3 +41,6 @@ export const getSubjectSchedules = async (subjectId) => {
   const response = await api.get(`/admin/subjects/${subjectId}/schedules`);
   return response.data.data;
 };
+
+// Jadwal, ujian & statistik untuk drawer detail mapel
+export const getSubjectOverview = (id) => api.get(`/admin/subjects/${id}/overview`);

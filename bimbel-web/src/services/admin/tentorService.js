@@ -42,3 +42,6 @@ export const syncTentorSubjects = (id, subjectIds) => {
     subject_ids: subjectIds,
   });
 };
+
+// Jadwal, sesi mendatang & statistik untuk drawer detail tentor
+export const getTentorOverview = (id) => api.get(`/admin/tentors/${id}/overview`);

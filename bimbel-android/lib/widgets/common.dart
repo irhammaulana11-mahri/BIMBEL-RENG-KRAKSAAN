@@ -124,7 +124,10 @@ class AsyncViewState<T> extends State<AsyncView<T>> {
 
   Future<void> reload() async {
     final f = widget.load();
-    setState(() => _future = f);
+    // Blok {} agar callback tidak mengembalikan Future (setState menolaknya)
+    setState(() {
+      _future = f;
+    });
     try {
       await f;
     } catch (_) {}
@@ -189,6 +192,47 @@ class EmptyState extends StatelessWidget {
       );
 }
 
+/// Warna jenis kelas, sama dengan legenda versi web: reguler biru, private hijau, online ungu.
+Color classTypeColor(dynamic type) => switch ('${type ?? ''}'.toUpperCase()) {
+      'PRIVATE' => const Color(0xFF10B981),
+      'ONLINE' => const Color(0xFF8B5CF6),
+      _ => const Color(0xFF3B82F6),
+    };
+
+/// Banner pembuka beranda tiap portal: gradasi warna merek, sapaan, dan tanggal hari ini.
+class HeroBanner extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final List<Color> colors;
+  const HeroBanner({super.key, required this.title, this.subtitle, this.colors = const [Color(0xFF4338CA), Color(0xFF2563EB)]});
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now());
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        boxShadow: [BoxShadow(color: colors.first.withValues(alpha: .25), blurRadius: 14, offset: const Offset(0, 6))],
+      ),
+      child: Stack(children: [
+        Positioned(right: -20, top: -30, child: CircleAvatar(radius: 46, backgroundColor: Colors.white.withValues(alpha: .10))),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(today.toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: .75), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .8)),
+          const SizedBox(height: 4),
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle!, style: TextStyle(color: Colors.white.withValues(alpha: .85), fontSize: 13)),
+          ],
+        ]),
+      ]),
+    );
+  }
+}
+
 class StatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -196,16 +240,29 @@ class StatCard extends StatelessWidget {
   final Color color;
   const StatCard({super.key, required this.label, required this.value, required this.icon, this.color = Colors.blue});
 
+  // Kartu berwarna lembut: latar gradasi tipis, ikon berlatar warna solid, angka berwarna
   @override
   Widget build(BuildContext context) => Card(
-        child: Padding(
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withValues(alpha: .14), color.withValues(alpha: .04)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
           padding: const EdgeInsets.all(12),
           child: Row(children: [
-            CircleAvatar(backgroundColor: color.withValues(alpha: .12), child: Icon(icon, color: color)),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color), overflow: TextOverflow.ellipsis),
                 Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey), overflow: TextOverflow.ellipsis),
               ]),
             ),
@@ -259,11 +316,13 @@ class SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = session;
     final place = [s['location_name'] ?? s['location'], s['room_name']].where((e) => e != null && '$e'.isNotEmpty).join(' • ');
+    final accent = classTypeColor(s['class_type']);
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(border: Border(left: BorderSide(color: accent, width: 5))),
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [

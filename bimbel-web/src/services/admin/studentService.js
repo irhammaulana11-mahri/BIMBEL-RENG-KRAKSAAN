@@ -34,3 +34,9 @@ export const toggleStudentStatus = (id) => {
 export const deleteStudent = (id) => {
     return api.delete(`/admin/students/${id}`);
 };
+
+// Data drawer detail (wali, kelas, jadwal, kehadiran, nilai, tagihan, akun)
+export const getStudentOverview = (id) => api.get(`/admin/students/${id}/overview`);
+
+// Buat akun login siswa; password kosong = dibuatkan sementara oleh server
+export const createStudentAccount = (id, data) => api.post(`/admin/students/${id}/account`, data);

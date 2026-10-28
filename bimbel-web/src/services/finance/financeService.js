@@ -5,6 +5,7 @@ import api from "@/api/axios";
 export const getInvoices = (params = {}) => api.get("/admin/finance/invoices", { params });
 export const getInvoice = (id) => api.get(`/admin/finance/invoices/${id}`);
 export const createInvoice = (data) => api.post("/admin/finance/invoices", data);
+export const previewInvoices = (data) => api.post("/admin/finance/invoices/preview", data);
 export const generateInvoices = (data) => api.post("/admin/finance/invoices/generate", data);
 export const cancelInvoice = (id, reason) => api.patch(`/admin/finance/invoices/${id}/cancel`, { reason });
 
@@ -26,6 +27,13 @@ export const approvePayroll = (id) => api.patch(`/admin/finance/payrolls/${id}/a
 export const deletePayroll = (id) => api.delete(`/admin/finance/payrolls/${id}`);
 export const transferPayroll = (id, data) => api.post(`/admin/finance/payrolls/${id}/transfers`, data);
 export const getTentorRates = () => api.get("/admin/finance/tentor-rates");
+
+/* ===================== ADMIN: ATURAN TARIF (RULE ENGINE) ===================== */
+
+export const getFeeRules = () => api.get("/admin/finance/fee-rules");
+export const createFeeRule = (data) => api.post("/admin/finance/fee-rules", data);
+export const updateFeeRule = (id, data) => api.put(`/admin/finance/fee-rules/${id}`, data);
+export const deleteFeeRule = (id) => api.delete(`/admin/finance/fee-rules/${id}`);
 export const updateTentorRate = (tentorId, rate) => api.patch(`/admin/finance/tentor-rates/${tentorId}`, { rate_per_session: rate });
 
 /* ===================== ADMIN: PENGELUARAN & ARUS KAS ===================== */

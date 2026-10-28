@@ -1,11 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getLocationOverview } from "@/services/admin/locationService";
+import { MapView } from "../../../ui/LocationPicker";
+import { ScheduleList, StatTiles } from "../../master/shared/OverviewBlocks";
 import { 
-  X, MapPin, Edit3, Calendar, Layers, ExternalLink, Navigation, 
-  CheckCircle2, Users, BookOpen, Clock, ShieldCheck, BarChart3, Info
+  X, MapPin, Edit3, Calendar, Layers, ExternalLink, BookOpen, BarChart3, Info
 } from "lucide-react";
 
 export default function LocationPreview({ location, open, onClose, onEdit }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [overview, setOverview] = useState(null);
+
+  // Kelas (REGULER via classes.learning_location_id), jadwal & statistik dari database
+  useEffect(() => {
+    setOverview(null);
+    if (open && location?.id) getLocationOverview(location.id).then(res => setOverview(res.data.data)).catch(console.error);
+  }, [open, location?.id]);
 
   if (!open || !location) return null;
 
@@ -14,7 +23,8 @@ export default function LocationPreview({ location, open, onClose, onEdit }) {
     ? `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.location_name + " " + location.address)}`;
 
-  const schedules = location.schedules || [];
+  const schedules = overview?.schedules || [];
+  const classes = overview?.classes || [];
 
   return (
     <>
@@ -49,9 +59,9 @@ export default function LocationPreview({ location, open, onClose, onEdit }) {
 
         {/* Navigation Tabs */}
         <div className="border-b border-gray-100 px-6 pt-2 flex items-center gap-2 bg-white shrink-0 overflow-x-auto scrollbar-none">
-          <TabBtn active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={<Info size={14}/>} label="Overview" />
-          <TabBtn active={activeTab === "classes"} onClick={() => setActiveTab("classes")} icon={<Layers size={14}/>} label="Kelas Terikat" count={schedules.length} />
-          <TabBtn active={activeTab === "schedules"} onClick={() => setActiveTab("schedules")} icon={<Calendar size={14}/>} label="Jadwal Sesi" count={schedules.length} />
+          <TabBtn active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={<Info size={14}/>} label="Ringkasan" />
+          <TabBtn active={activeTab === "classes"} onClick={() => setActiveTab("classes")} icon={<Layers size={14}/>} label="Kelas" count={classes.length} />
+          <TabBtn active={activeTab === "schedules"} onClick={() => setActiveTab("schedules")} icon={<Calendar size={14}/>} label="Jadwal" count={schedules.length} />
           <TabBtn active={activeTab === "statistics"} onClick={() => setActiveTab("statistics")} icon={<BarChart3 size={14}/>} label="Statistik" />
         </div>
 
@@ -62,22 +72,9 @@ export default function LocationPreview({ location, open, onClose, onEdit }) {
           {activeTab === "overview" && (
             <div className="space-y-5 animate-in fade-in duration-200">
               
-              {/* Map Geofencing Card */}
-              <div className="w-full h-36 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-white relative overflow-hidden p-4">
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_2px,transparent_2px)] [background-size:16px_16px]" />
-                
-                {/* Visual Circle Geofence */}
-                <div className="absolute w-28 h-28 rounded-full border-2 border-blue-400/40 bg-blue-500/10 animate-ping" />
-                <div className="absolute w-24 h-24 rounded-full border border-blue-400/60 bg-blue-500/20 flex items-center justify-center">
-                  <MapPin size={22} className="text-blue-400 drop-shadow-md" />
-                </div>
-
-                <div className="z-10 mt-auto text-center space-y-0.5">
-                  <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-950/80 px-2 py-0.5 rounded-full border border-blue-800">
-                    📍 Geofence Radius: {location.radius_meter || 100} Meter
-                  </span>
-                </div>
-              </div>
+              {/* Peta titik & radius absen GPS tentor */}
+              <MapView latitude={location.latitude} longitude={location.longitude} radius={location.radius_meter || 100} height={190} />
+              <p className="text-[11px] text-gray-500 -mt-3">Lingkaran = toleransi absen GPS tentor ({location.radius_meter || 100} m).</p>
 
               {/* Quick Action: Open Google Maps */}
               <a
@@ -93,78 +90,59 @@ export default function LocationPreview({ location, open, onClose, onEdit }) {
               <div className="space-y-3 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
                 <InfoRow label="Alamat Lengkap Gedung" value={location.address} />
                 <InfoRow label="Titik Koordinat GPS" value={location.latitude && location.longitude ? `${location.latitude}, ${location.longitude}` : "Belum diset"} isMono />
-                <InfoRow label="Status Absensi GPS" value="GPS Attendance Active (Geofenced)" badge="Verified" />
+                <InfoRow label="Absen GPS Tentor" value={location.latitude && location.longitude ? `Aktif • radius ${location.radius_meter || 100} m` : "Belum aktif (titik belum diatur)"} />
                 <InfoRow label="Catatan / Patokan" value={location.description || "Tidak ada catatan tambahan."} />
               </div>
             </div>
           )}
 
-          {/* TAB 2: KELAS TERIKAT */}
+          {/* TAB 2: KELAS (REGULER di gedung ini, atau kelas dengan jadwal di sini) */}
           {activeTab === "classes" && (
             <div className="space-y-3 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Rombel & Kelas Aktif</h3>
-              {schedules.length > 0 ? (
-                schedules.map((sch, i) => (
-                  <div key={i} className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl flex items-center justify-between">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Kelas di Lokasi Ini</h3>
+              {!overview ? <p className="text-center text-sm text-gray-400 py-8">Memuat kelas...</p>
+                : classes.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
+                    Belum ada kelas REGULER yang memakai gedung ini. Pilih gedung saat membuat kelas.
+                  </div>
+                ) : classes.map((c) => (
+                  <div key={c.id} className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                        <BookOpen size={16} />
-                      </div>
+                      <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><BookOpen size={16} /></div>
                       <div>
-                        <h4 className="font-bold text-gray-950 text-xs">{sch.classroom?.name || "Rombel Kelas"}</h4>
-                        <p className="text-[10px] text-gray-500 mt-0.5">Tentor: <strong>{sch.tentor?.user?.name || sch.tentor?.name || "-"}</strong></p>
+                        <h4 className="font-bold text-gray-950 text-xs">{c.name}</h4>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{c.students_count}{c.max_students ? ` / ${c.max_students}` : ""} siswa • {c.is_active ? "Aktif" : "Nonaktif"}</p>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-lg border border-purple-100">
-                      {sch.subject?.name || "Mata Pelajaran"}
-                    </span>
+                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-lg border border-purple-100">{c.class_type}</span>
                   </div>
-                ))
-              ) : (
-                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
-                  Belum ada kelas terikat pada gedung/lokasi ini.
-                </div>
-              )}
+                ))}
             </div>
           )}
 
-          {/* TAB 3: JADWAL SESI */}
+          {/* TAB 3: JADWAL */}
           {activeTab === "schedules" && (
             <div className="space-y-3 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Jadwal Sesi Belajar Terjadwal</h3>
-              {schedules.length > 0 ? (
-                schedules.map((sch, i) => (
-                  <div key={i} className="p-3.5 bg-white border border-gray-100 rounded-2xl shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-md border border-blue-100">
-                        {sch.day_name || sch.day || "Senin"}
-                      </span>
-                      <span className="text-xs font-mono font-bold text-gray-700 flex items-center gap-1">
-                        <Clock size={12} className="text-gray-400" /> {sch.start_time?.slice(0, 5)} - {sch.end_time?.slice(0, 5)} WIB
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50">
-                      <span className="font-bold text-gray-900">{sch.subject?.name}</span>
-                      <span className="text-gray-500 font-medium">Ruang: <strong className="text-gray-800">{sch.classroom?.name}</strong></span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
-                  Belum ada jadwal sesi belajar terdaftar untuk lokasi ini.
-                </div>
-              )}
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Jadwal Belajar di Lokasi Ini</h3>
+              {!overview ? <p className="text-center text-sm text-gray-400 py-8">Memuat jadwal...</p>
+                : <ScheduleList schedules={schedules} empty="Belum ada jadwal di lokasi ini." />}
             </div>
           )}
 
           {/* TAB 4: STATISTIK */}
           {activeTab === "statistics" && (
             <div className="space-y-3 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Kontribusi Cabang Gedung</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <StatCardMini icon={<Layers size={18} className="text-blue-600" />} label="Total Rombel" value={schedules.length} />
-                <StatCardMini icon={<Users size={18} className="text-purple-600" />} label="Tentor Bertugas" value={schedules.length} />
-              </div>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Pemakaian Lokasi</h3>
+              {!overview ? <p className="text-center text-sm text-gray-400 py-8">Memuat statistik...</p> : (
+                <StatTiles items={[
+                  { label: "Kelas", value: overview.statistics.classes, tone: "indigo" },
+                  { label: "Siswa", value: overview.statistics.students, tone: "blue" },
+                  { label: "Tentor Bertugas", value: overview.statistics.tentors, tone: "purple" },
+                  { label: "Sesi Selesai", value: `${overview.statistics.sessions_done}/${overview.statistics.sessions_total}`, hint: `${overview.statistics.sessions_month} bulan ini`, tone: "emerald" },
+                  { label: "Absen GPS Tentor", value: overview.statistics.gps_checkins, tone: "amber" },
+                  { label: "Di Luar Radius", value: overview.statistics.outside_area, hint: "absen melebihi toleransi", tone: "rose" },
+                ]} />
+              )}
             </div>
           )}
 
@@ -220,12 +198,3 @@ function InfoRow({ label, value, isMono = false, badge }) {
   );
 }
 
-function StatCardMini({ icon, label, value }) {
-  return (
-    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center space-y-1">
-      <div className="mx-auto mb-1 flex justify-center">{icon}</div>
-      <p className="text-xl font-black text-gray-950 font-mono">{value}</p>
-      <p className="text-[10px] font-bold text-gray-400 uppercase">{label}</p>
-    </div>
-  );
-}

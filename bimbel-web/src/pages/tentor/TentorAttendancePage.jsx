@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Clock, Calendar, AlertCircle, Hourglass, PlayCircle } from "lucide-react";
 import { getMyAttendances } from "@/services/tentor/scheduleService";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
+import { CalendarCheck2, ClipboardX } from "lucide-react";
+import PremiumStatCard from "../../components/ui/StatCard";
 
 const formatMinutes = (minutes) => {
   if (!minutes || minutes <= 0) return "0 menit";
@@ -41,11 +45,14 @@ export default function TentorAttendancePage() {
   const lateCount = presentLogs.filter(l => l.late_minutes > 0).length;
   const unfilledCount = logs.filter(l => l.attendance_status === "BELUM ABSEN" && ["COMPLETED", "IN_PROGRESS"].includes(l.session_status)).length;
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(logs || []);
+
   return (
     <div className="page-card space-y-6 animate-in fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Absensi & Kehadiran</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Absensi & Kehadiran</h1>
           <p className="text-sm text-gray-500 mt-0.5">Riwayat kehadiran Anda di setiap sesi KBM. Check-in tercatat saat sesi dimulai, check-out saat sesi diselesaikan.</p>
         </div>
         <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-xl px-3 py-2 shadow-sm">
@@ -75,23 +82,11 @@ export default function TentorAttendancePage() {
       )}
 
       {/* KPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sesi Hadir</p>
-          <h3 className="text-3xl font-black text-gray-900 mt-1">{presentLogs.length}<span className="text-sm text-gray-400"> / {logs.length}</span></h3>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
-          <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1"><Hourglass size={12}/> Total Mengajar</p>
-          <h3 className="text-xl font-black text-indigo-900 mt-2">{formatMinutes(totalTeaching)}</h3>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
-          <p className="text-xs font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1"><AlertCircle size={12}/> Terlambat</p>
-          <h3 className="text-3xl font-black text-rose-900 mt-1">{lateCount} <span className="text-sm text-gray-400">sesi</span></h3>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
-          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Tanpa Log</p>
-          <h3 className="text-3xl font-black text-amber-900 mt-1">{unfilledCount} <span className="text-sm text-gray-400">sesi</span></h3>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <PremiumStatCard title="Sesi Hadir" value={`${presentLogs.length}/${logs.length}`} desc="Sesi yang Anda hadiri bulan ini" icon={CalendarCheck2} colorClass="text-green-700" />
+        <PremiumStatCard title="Total Mengajar" value={formatMinutes(totalTeaching)} desc="Durasi absen masuk s/d pulang" icon={Hourglass} colorClass="text-indigo-700" />
+        <PremiumStatCard title="Terlambat" value={lateCount} desc="Sesi dengan absen masuk terlambat" icon={AlertCircle} colorClass="text-red-700" />
+        <PremiumStatCard title="Tanpa Log" value={unfilledCount} desc="Sesi belum ada absen tentor" icon={ClipboardX} colorClass="text-amber-700" />
       </div>
 
       {/* RIWAYAT */}
@@ -101,19 +96,19 @@ export default function TentorAttendancePage() {
         <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-sm font-bold text-gray-400">Tidak ada sesi KBM pada bulan ini.</div>
       ) : (
         <div className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
-          <table className="w-full text-left min-w-[720px]">
+          <table className="ui-table w-full text-left min-w-[720px]">
             <thead className="bg-slate-50 border-b border-gray-200">
               <tr className="text-[11px] font-black text-gray-500 uppercase tracking-wider">
                 <th className="p-4">Tanggal & Jam</th>
                 <th className="p-4">Kelas & Mapel</th>
                 <th className="p-4 text-center">Status</th>
                 <th className="p-4 text-center">Masuk / Keluar</th>
-                <th className="p-4 text-center">Terlambat</th>
+                <th className="p-4 text-center">Terlambat & Keterangan</th>
                 <th className="p-4 text-right">Durasi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {logs.map(item => (
+              {pageRows.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="p-4">
                     <p className="text-xs font-bold text-gray-900">{item.session_date}</p>
@@ -131,6 +126,9 @@ export default function TentorAttendancePage() {
                     {item.attendance_status !== "HADIR" ? <span className="text-gray-400">-</span>
                       : item.late_minutes > 0 ? <span className="text-rose-600">{item.late_minutes} menit</span>
                       : <span className="text-emerald-600">Tepat waktu</span>}
+                    {(item.remarks || []).filter(r => !r.startsWith('Terlambat')).map(r => (
+                      <span key={r} className="block mt-1 text-[10px] font-bold text-amber-700">{r}</span>
+                    ))}
                   </td>
                   <td className="p-4 text-right text-xs font-black text-indigo-700">
                     {item.teaching_minutes > 0 ? formatMinutes(item.teaching_minutes) : "-"}
@@ -139,7 +137,8 @@ export default function TentorAttendancePage() {
               ))}
             </tbody>
           </table>
-        </div>
+          <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
+    </div>
       )}
     </div>
   );

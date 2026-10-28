@@ -11,6 +11,10 @@ use App\Http\Resources\Academic\TentorAttendanceResource;
 use App\Services\Academic\AttendanceService;
 use App\Services\Academic\SessionActivityService;
 use App\Services\Academic\RescheduleRequestService;
+use App\Services\Academic\AttendanceLocationService;
+use App\Services\Academic\LocationChangeRequestService;
+use App\Models\Academic\LocationChangeRequest;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -21,6 +25,8 @@ class TentorScheduleService {
         protected AttendanceService $attendanceService,
         protected SessionActivityService $activityService,
         protected RescheduleRequestService $rescheduleService,
+        protected AttendanceLocationService $locationService,
+        protected LocationChangeRequestService $locationChangeService,
     ) {}
     
     // 1. Ambil Data Jadwal (Tanpa detail aktivitas & murid)
@@ -29,7 +35,7 @@ class TentorScheduleService {
         $tentor = Tentor::where('user_id', $user->id)->first();
         if (!$tentor) return collect(); 
 
-        $query = ScheduleSession::with(['subject', 'schedule.classroom', 'location'])
+        $query = ScheduleSession::with(array_merge(['subject'], AttendanceLocationService::RELATIONS))
             ->where('tentor_id', $tentor->id);
 
         $mode = $filters['filter_mode'] ?? 'hari_ini';
@@ -85,21 +91,52 @@ class TentorScheduleService {
         return $session;
     }
 
-    // 3. Mulai Sesi (sekaligus check-in tentor)
-    public function startSession(string $sessionId) {
+    // 3. Mulai Sesi (sekaligus absen masuk GPS tentor)
+    public function startSession(string $sessionId, array $position = []) {
         $session = $this->findOwnedSession($sessionId);
 
-        DB::transaction(function () use ($session) {
+        if (in_array($session->status, ['COMPLETED', 'CANCELLED'], true)) {
+            throw ValidationException::withMessages(['session' => 'Sesi sudah selesai atau dibatalkan.']);
+        }
+        $this->ensurePosition($session, $position);
+
+        DB::transaction(function () use ($session, $position) {
             if (in_array($session->status, ['SCHEDULED', 'PREPARING', 'RESCHEDULED'])) {
                 $session->update(['status' => 'IN_PROGRESS']);
             }
 
             if ($session->status === 'IN_PROGRESS') {
-                $this->attendanceService->checkInTentor($session);
+                $this->attendanceService->checkInTentor($session, $position, $position['source'] ?? null);
             }
         });
 
         return $session;
+    }
+
+    // Kelas tatap muka wajib mengirim posisi GPS; jarak di luar radius tetap diterima (diberi keterangan)
+    private function ensurePosition(ScheduleSession $session, array $position): void {
+        $target = $this->locationService->resolveTarget($session);
+        if ($target['requires_gps'] && (!isset($position['latitude'], $position['longitude']))) {
+            throw ValidationException::withMessages(['latitude' => 'Lokasi GPS belum didapat. Aktifkan GPS dan izinkan akses lokasi, lalu coba lagi.']);
+        }
+    }
+
+    // Titik sasaran absen + pengajuan lokasi sementara untuk sesi (tampilan Workspace)
+    public function attendanceContext(ScheduleSession $session): array {
+        $request = LocationChangeRequest::where('session_id', $session->id)
+            ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+            ->latest()
+            ->first();
+
+        return [
+            'attendance_target'        => $this->locationService->resolveTarget($session),
+            'attendance_rules'         => [
+                'early_checkin_minutes' => AttendanceLocationService::EARLY_CHECKIN_MINUTES,
+                'late_checkout_minutes' => AttendanceLocationService::LATE_CHECKOUT_MINUTES,
+            ],
+            'location_change_request'  => $request ? LocationChangeRequestService::present($request->load(LocationChangeRequestService::relations())) : null,
+            'can_request_location'     => LocationChangeRequestService::canRequest($session),
+        ];
     }
 
     // 3a. Simpan Absensi Siswa dari Workspace
@@ -113,13 +150,14 @@ class TentorScheduleService {
         return $this->attendanceService->saveBulkStudentAttendance($session, $data);
     }
 
-    // 3b. Selesaikan Sesi (sekaligus check-out tentor)
-    public function endSession(string $sessionId): array {
+    // 3b. Selesaikan Sesi (sekaligus absen pulang GPS tentor)
+    public function endSession(string $sessionId, array $position = []): array {
         $session = $this->findOwnedSession($sessionId);
 
         if ($session->status !== 'IN_PROGRESS') {
             return ['success' => false, 'code' => 422, 'message' => 'Hanya sesi yang sedang berlangsung yang dapat diselesaikan.'];
         }
+        $this->ensurePosition($session, $position);
 
         $session->load(['schedule.classroom.students', 'studentAttendances']);
         $unfilled = $this->attendanceService->mapStudentsWithAttendance($session)
@@ -134,9 +172,9 @@ class TentorScheduleService {
             return ['success' => false, 'code' => 422, 'message' => 'Masih ada aktivitas yang sedang berjalan. Selesaikan terlebih dahulu.'];
         }
 
-        DB::transaction(function () use ($session) {
+        DB::transaction(function () use ($session, $position) {
             $session->update(['status' => 'COMPLETED']);
-            $this->attendanceService->checkOutTentor($session);
+            $this->attendanceService->checkOutTentor($session, $position, $position['source'] ?? null);
         });
 
         return ['success' => true, 'message' => 'Sesi KBM berhasil diselesaikan.'];
@@ -181,6 +219,11 @@ class TentorScheduleService {
             'proposed_start_time' => $data['proposed_time'] ?? null,
             'reason'              => $data['reason'],
         ]);
+    }
+
+    // 4a. Ajukan lokasi les sementara (disetujui Admin)
+    public function requestLocationChange(string $sessionId, array $data): LocationChangeRequest {
+        return $this->locationChangeService->submit($this->findOwnedSession($sessionId), 'TENTOR', $data);
     }
 
     public function getReferenceData($sessionId) {

@@ -3,6 +3,8 @@ import { Search, Calendar, CheckCircle2, AlertCircle, LayoutGrid, Table as Table
 import TentorAttendanceDetailModal from "./TentorAttendanceDetailModal";
 import AttendanceSessionGrid from "./AttendanceSessionGrid";
 import { getTentorAttendances } from "@/services/academic/attendanceService";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
 export default function TentorAttendanceTab() {
   const [loading, setLoading] = useState(false);
@@ -65,6 +67,9 @@ export default function TentorAttendanceTab() {
     setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a));
     setSelectedLog(updated);
   };
+
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(attendances || []);
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -164,19 +169,19 @@ export default function TentorAttendanceTab() {
         
         /* 1. VIEW TABLE */
         <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-          <table className="w-full text-left">
+          <table className="ui-table w-full text-left">
             <thead className="bg-slate-50 border-b border-gray-200">
               <tr className="text-[11px] font-black text-gray-500 uppercase tracking-wider">
                 <th className="p-4 w-40">Tanggal & Jam</th>
                 <th className="p-4">Kelas & Mapel</th>
                 <th className="p-4">Tentor</th>
                 <th className="p-4 text-center">Status</th>
-                <th className="p-4 text-center">Keterlambatan</th>
+                <th className="p-4 text-center">Keterlambatan & Keterangan</th>
                 <th className="p-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {attendances.map((item) => (
+              {pageRows.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="p-4">
                     <p className="text-xs font-bold text-gray-900">{item.session_date}</p>
@@ -188,7 +193,13 @@ export default function TentorAttendanceTab() {
                   </td>
                   <td className="p-4 text-sm font-bold text-indigo-700">{item.tentor_name}</td>
                   <td className="p-4 text-center">{getStatusBadge(item.attendance_status)}</td>
-                  <td className="p-4 text-center">{getLateBadge(item)}</td>
+                  <td className="p-4 text-center">
+                    {getLateBadge(item)}
+                    {/* Keterangan GPS & jam (selain terlambat, sudah tampil di badge) */}
+                    {(item.remarks || []).filter(r => !r.startsWith('Terlambat')).map(r => (
+                      <span key={r} className="block mt-1 text-[10px] font-bold text-amber-700">{r}</span>
+                    ))}
+                  </td>
                   <td className="p-4 text-right">
                     <button onClick={() => setSelectedLog(item)} className="px-3 py-1.5 bg-white border border-gray-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg text-xs font-bold shadow-sm transition-colors">
                       Lihat Detail
@@ -198,7 +209,8 @@ export default function TentorAttendanceTab() {
               ))}
             </tbody>
           </table>
-        </div>
+          <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
+    </div>
       ) : (
 
         /* 2. VIEW GRID (Ringkasan Sesi) */

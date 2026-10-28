@@ -10,17 +10,10 @@ import {
   getMaterials, getSubjectOptions, createMaterial, updateMaterial, toggleMaterialStatus, deleteMaterial, openMaterialProtectedPreview,
 } from "@/services/academic/materialService";
 import { getApiErrorMessage } from "@/utils/apiError";
+import StatCard from "../../../components/ui/StatCard";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
 
-const StatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-    <div className="space-y-1.5">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-gray-500 font-medium">{desc}</p>
-    </div>
-    <div className={`p-4 rounded-2xl ${colorClass}`}><Icon className="w-6 h-6" /></div>
-  </div>
-);
 
 export default function LearningMaterialPage() {
   const { user } = useAuth();
@@ -98,6 +91,9 @@ export default function LearningMaterialPage() {
 
   const byType = summary?.by_type || {};
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(rows || []);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow">
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
@@ -142,7 +138,7 @@ export default function LearningMaterialPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[860px]">
+            <table className="ui-table w-full text-left text-sm min-w-[860px]">
               <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
                 <tr><th className="p-4">Materi</th><th className="p-4">Mapel / Bab</th><th className="p-4">Jenis</th><th className="p-4 text-center">Dipakai</th><th className="p-4 text-center">Status</th><th className="p-4 text-center">Aksi</th></tr>
               </thead>
@@ -151,7 +147,7 @@ export default function LearningMaterialPage() {
                   <tr><td colSpan={6} className="p-6 text-center text-gray-400">Memuat materi...</td></tr>
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={6} className="p-6 text-center text-gray-400">Belum ada materi pada filter ini.</td></tr>
-                ) : rows.map((m) => {
+                ) : pageRows.map((m) => {
                   const type = MATERIAL_TYPES[m.material_type];
                   const openable = m.file_path || m.video_url || m.external_url;
                   return (
@@ -183,6 +179,7 @@ export default function LearningMaterialPage() {
               </tbody>
             </table>
           </div>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
 
           {meta.last_page > 1 && (
             <div className="flex items-center justify-between p-4 border-t border-gray-100 text-xs text-gray-500">

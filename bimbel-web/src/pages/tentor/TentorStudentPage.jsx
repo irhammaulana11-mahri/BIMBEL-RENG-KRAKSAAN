@@ -4,6 +4,9 @@ import { getTentorStudents } from "@/services/tentor/profileService";
 import { formatScore, formatPercent } from "@/services/academic/progressReportService";
 import { PredicateBadge } from "@/components/report/ReportCardView";
 import { getApiErrorMessage } from "@/utils/apiError";
+import TablePagination from "@/components/ui/table/TablePagination";
+import useClientPagination from "@/hooks/useClientPagination";
+import PremiumStatCard from "../../components/ui/StatCard";
 
 export default function TentorStudentPage() {
   const [rows, setRows] = useState([]);
@@ -29,27 +32,21 @@ export default function TentorStudentPage() {
     return () => clearTimeout(timer);
   }, [filters]);
 
+  // Paginasi tabel di sisi browser (data dimuat sekaligus)
+  const { pageRows, pagination, onPageChange } = useClientPagination(rows || []);
+
   return (
     <div className="page-card space-y-6 animate-in fade-in">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Siswa Saya</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Siswa Saya</h1>
         <p className="text-sm text-gray-500 mt-0.5">Siswa di kelas yang Anda ajar. Kehadiran dihitung dari sesi yang Anda ajar; nilai dari ujian mapel Anda yang sudah dinilai.</p>
       </div>
 
       {summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-5">
-            <p className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1"><Users size={13} /> Jumlah Siswa</p>
-            <p className="text-3xl font-black text-gray-900 mt-1">{summary.students}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-2xl p-5">
-            <p className="text-xs font-bold text-emerald-600 uppercase flex items-center gap-1"><CheckCircle2 size={13} /> Rata-rata Kehadiran</p>
-            <p className="text-3xl font-black text-emerald-900 mt-1">{formatPercent(summary.average_attendance)}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-2xl p-5">
-            <p className="text-xs font-bold text-indigo-600 uppercase flex items-center gap-1"><TrendingUp size={13} /> Rata-rata Nilai</p>
-            <p className="text-3xl font-black text-indigo-900 mt-1">{formatScore(summary.average_exam)}</p>
-          </div>
+          <PremiumStatCard title="Jumlah Siswa" value={summary.students} desc="Di kelas yang Anda ajar" icon={Users} colorClass="text-blue-700" />
+          <PremiumStatCard title="Rata-rata Kehadiran" value={formatPercent(summary.average_attendance)} desc="Sesi yang sudah selesai" icon={CheckCircle2} colorClass="text-green-700" />
+          <PremiumStatCard title="Rata-rata Nilai" value={formatScore(summary.average_exam)} desc="Ujian yang sudah dinilai" icon={TrendingUp} colorClass="text-indigo-700" />
         </div>
       )}
 
@@ -69,7 +66,7 @@ export default function TentorStudentPage() {
       {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
       <div className="bg-white border border-gray-200 rounded-2xl overflow-x-auto shadow-sm">
-        <table className="w-full text-left min-w-[760px]">
+        <table className="ui-table w-full text-left min-w-[760px]">
           <thead className="bg-slate-50 border-b border-gray-200 text-[11px] font-black text-gray-500 uppercase">
             <tr>
               <th className="p-4">Nama Siswa</th>
@@ -84,7 +81,7 @@ export default function TentorStudentPage() {
               <tr><td colSpan={5} className="p-6 text-center text-gray-400">Memuat siswa...</td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={5} className="p-6 text-center text-gray-400">{filters.keyword || filters.class_id ? "Tidak ada siswa yang cocok." : "Belum ada siswa di kelas yang Anda ajar."}</td></tr>
-            ) : rows.map((st) => (
+            ) : pageRows.map((st) => (
               <tr key={`${st.class_id}-${st.student_id}`} className="hover:bg-slate-50">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -118,6 +115,7 @@ export default function TentorStudentPage() {
           </tbody>
         </table>
       </div>
+      <TablePagination pagination={pagination} onPageChange={onPageChange} label="data" />
     </div>
   );
 }

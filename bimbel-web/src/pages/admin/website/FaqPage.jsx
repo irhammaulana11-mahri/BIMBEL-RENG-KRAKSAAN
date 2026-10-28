@@ -7,19 +7,8 @@ import { Plus, Layers, CheckCircle, XCircle } from "lucide-react";
 import { getFaqs, deleteFaq } from "@/services/admin/website/faqService";
 import FaqTable from "../../../components/admin/website/faq/FaqTable";
 import FaqModal from "../../../components/admin/website/faq/FaqModal";
+import PremiumStatCard from "../../../components/ui/StatCard";
 
-const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
-    <div className="space-y-1.5">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-gray-500 font-medium">{desc}</p>
-    </div>
-    <div className={`p-4 rounded-2xl transition-transform group-hover:scale-105 duration-300 ${colorClass}`}>
-      <Icon className="w-6 h-6" />
-    </div>
-  </div>
-);
 
 export default function FaqPage() {
   const confirm = useConfirm();
@@ -77,7 +66,7 @@ export default function FaqPage() {
       {/* Header Halaman (text-3xl) + Tombol Sejajar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">FAQ Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen FAQ</h1>
           <p className="text-base text-gray-500 mt-1">
             Kelola daftar pertanyaan umum (Frequently Asked Questions) untuk mempermudah calon wali murid mendapatkan informasi.
           </p>

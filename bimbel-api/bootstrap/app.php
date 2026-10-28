@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(HandleCors::class);
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        // Kunci API selama pemulihan backup berjalan
+        $middleware->api(append: [\App\Http\Middleware\BlockDuringRestore::class]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);

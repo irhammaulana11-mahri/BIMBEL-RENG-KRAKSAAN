@@ -1,225 +1,260 @@
-import React from "react";
-import { X,User,Phone,Mail,MapPin,GraduationCap,BookOpen,Calendar,Clock,CheckCircle2,Award,PlusCircle,CalendarPlus, 
-  Printer,UserX,UserCheck } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  X, User, Phone, Mail, MapPin, School, BookOpen, Clock, CheckCircle2, Award, KeyRound, Wallet, Users, ExternalLink,
+} from "lucide-react";
+import { getStudentOverview, createStudentAccount } from "@/services/admin/studentService";
+import { resetUserPassword } from "@/services/admin/userService";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { formatRupiah } from "@/utils/format";
+import { mapsLink } from "@/utils/geo";
 
-export default function StudentPreview({student,onClose,onPlotSubject,onManageSchedule,onPrintCard,onToggleStatus}) {
+// "2015-05-01" -> "1 Mei 2015 (11 tahun)"; kosong -> petunjuk untuk diisi
+const formatBirthDate = (value) => {
+  if (!value) return "Tanggal lahir belum diisi";
+  const date = new Date(`${value}T00:00:00`);
+  const now = new Date();
+  let age = now.getFullYear() - date.getFullYear();
+  if (now < new Date(now.getFullYear(), date.getMonth(), date.getDate())) age--;
+  return `${date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} (${age} tahun)`;
+};
+
+const RELATIONSHIP = { orang_tua: "Orang Tua", ayah: "Ayah", ibu: "Ibu", wali: "Wali" };
+
+/**
+ * Drawer detail siswa. Semua data dari relasi database (GET /admin/students/{id}/overview).
+ */
+export default function StudentPreview({ student, onClose, onChanged }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = () => {
+    if (!student?.id) return;
+    setLoading(true);
+    setError("");
+    getStudentOverview(student.id)
+      .then((res) => setData(res.data.data))
+      .catch((err) => setError(getApiErrorMessage(err, "Gagal memuat detail murid.")))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    setData(null);
+    load();
+  }, [student?.id]);
+
   if (!student) return null;
 
-  const isActive = student.user?.is_active ?? student.is_active ?? false;
+  const d = data;
+  const isActive = d?.is_active ?? student.is_active;
 
   return (
     <>
-      {/* Backdrop */}
-      <div onClick={onClose} 
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-2xs transition-opacity animate-in fade-in duration-200" 
-      />
+      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-200" />
 
-      {/* Sheet Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[500px] bg-white shadow-2xl overflow-y-auto flex flex-col border-l border-gray-100 animate-in slide-in-from-right duration-300">
-        
-        {/* Header Sheet */}
-        <div className="p-6 border-b border-gray-100 bg-slate-50/70 relative">
-          <button 
-            onClick={onClose} 
-            className="absolute right-5 top-5 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
-          >
-            <X size={20} />
-          </button>
-          
-          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-md">
-            Student Academic Sheet
-          </span>
-          
-          <h2 className="text-2xl font-black text-gray-950 tracking-tight mt-2">
-            {student.student_name || student.full_name}
-          </h2>
-          
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs font-mono font-bold text-gray-500 bg-gray-200/60 px-2.5 py-0.5 rounded-md">
-              NIS: {student.nis || "-"}
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[520px] bg-white shadow-2xl overflow-y-auto flex flex-col border-l border-gray-100 animate-in slide-in-from-right duration-300">
+        <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-blue-50 to-indigo-50/60 relative">
+          <button onClick={onClose} className="absolute right-5 top-5 p-2 text-gray-400 hover:text-gray-700 hover:bg-white/70 rounded-xl"><X size={20} /></button>
+          <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider bg-white/80 px-2.5 py-1 rounded-md">Detail Murid</span>
+          <h2 className="text-2xl font-black text-gray-950 tracking-tight mt-2">{d?.full_name || student.full_name}</h2>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="text-xs font-mono font-bold text-gray-600 bg-white/80 px-2.5 py-0.5 rounded-md">NIS: {d?.nis || student.nis || "-"}</span>
+            <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${isActive ? "bg-green-50 text-green-700 border-green-200/60" : "bg-red-50 text-red-700 border-red-200/60"}`}>
+              {isActive ? "Aktif" : "Nonaktif"}
             </span>
-            <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${
-              isActive 
-                ? 'bg-green-50 text-green-700 border-green-200/60' 
-                : 'bg-red-50 text-red-700 border-red-200/60'
-            }`}>
-              {isActive ? 'Aktif' : 'Nonaktif'}
-            </span>
-            <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/60">
-              {student.education_level || 'SD'} {student.grade ? `• Kelas ${student.grade}` : ''}
-            </span>
+            {d?.level && <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/60">{d.level}</span>}
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-          
-          {/* ================= 1. KELOMPOK: WALI MURID ================= */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-              Orang Tua / Wali Murid
-            </h3>
-            <div className="space-y-3 bg-slate-50/60 p-4 rounded-2xl border border-slate-100">
-              <InfoRow 
-                icon={<User size={16} />} 
-                label="Nama Wali" 
-                value={student.parent?.full_name || student.parent?.parent_name || '-'} 
-              />
-              <InfoRow 
-                icon={<Phone size={16} />} 
-                label="No WhatsApp" 
-                value={student.parent?.phone || student.parent?.user?.phone || '-'} 
-                isMono
-              />
-              <InfoRow 
-                icon={<Mail size={16} />} 
-                label="Email" 
-                value={student.parent?.user?.email || '-'} 
-              />
-              <InfoRow 
-                icon={<MapPin size={16} />} 
-                label="Alamat Domisili" 
-                value={student.parent?.address || student.address || '-'} 
-              />
-            </div>
-          </div>
+        <div className="p-6 space-y-6 flex-1">
+          {loading && !d && <p className="text-center text-sm text-gray-400 py-10">Memuat detail murid...</p>}
+          {error && <p className="text-center text-sm font-semibold text-rose-600 py-4">{error}</p>}
 
-          {/* ================= 2. KELOMPOK: AKADEMIK ================= */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-              Informasi Akademik & Bimbingan
-            </h3>
-            <div className="space-y-3 bg-slate-50/60 p-4 rounded-2xl border border-slate-100">
-              <InfoRow 
-                icon={<GraduationCap size={16} />} 
-                label="Paket Bimbingan" 
-                value={student.package?.package_name || student.package_name || 'Reguler Paket'} 
-              />
-              
-              {/* Mata Pelajaran (List / Badges) */}
-              <div className="flex gap-3 items-start text-sm pt-1">
-                <div className="text-blue-600 bg-blue-50 p-2 rounded-xl shrink-0 mt-0.5">
-                  <BookOpen size={16} />
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Mata Pelajaran</div>
-                  {student.subjects && student.subjects.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {student.subjects.map((sub, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-white border border-gray-200 text-gray-800 text-xs font-bold rounded-lg shadow-2xs">
-                          {sub}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 italic">Belum di-plotting mata pelajaran</p>
+          {d && (
+            <>
+              {/* Ringkasan angka */}
+              <div className="grid grid-cols-3 gap-3">
+                <MiniStat icon={<CheckCircle2 size={16} />} tone="emerald" label="Kehadiran" value={d.attendance.rate != null ? `${d.attendance.rate}%` : "-"} hint={`${d.attendance.hadir}/${d.attendance.total} sesi`} />
+                <MiniStat icon={<Award size={16} />} tone="blue" label="Rata-rata Ujian" value={d.exams.average ?? "-"} hint={`${d.exams.count} ujian dinilai`} />
+                <MiniStat icon={<Wallet size={16} />} tone={d.billing.outstanding > 0 ? "rose" : "slate"} label="Sisa Tagihan" value={d.billing.outstanding > 0 ? formatRupiah(d.billing.outstanding) : "Lunas"} hint={`${d.billing.open_count} tagihan terbuka`} small />
+              </div>
+
+              <Section title="Data Pribadi & Rumah">
+                <InfoRow icon={<School size={16} />} label="Sekolah" value={d.school_name} />
+                <InfoRow icon={<User size={16} />} label="Jenis Kelamin / Tgl Lahir" value={`${d.gender === "P" ? "Perempuan" : d.gender === "L" ? "Laki-laki" : "-"} • ${formatBirthDate(d.birth_date)}`} />
+                <InfoRow
+                  icon={<MapPin size={16} />}
+                  label="Alamat Rumah (titik absen les private)"
+                  value={d.home.address}
+                  extra={d.home.latitude != null && (
+                    <a href={mapsLink(d.home.latitude, d.home.longitude)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center gap-1">
+                      Lihat titik di peta <ExternalLink size={10} />
+                    </a>
                   )}
+                />
+              </Section>
+
+              <Section title={`Orang Tua / Wali (${d.parents.length})`}>
+                {d.parents.length === 0 && <p className="text-xs text-gray-400 italic">Belum terhubung dengan orang tua.</p>}
+                {d.parents.map((p) => (
+                  <div key={p.id} className="space-y-2">
+                    <InfoRow icon={<Users size={16} />} label={RELATIONSHIP[p.relationship] || p.relationship || "Wali"} value={`${p.full_name}${p.occupation ? ` • ${p.occupation}` : ""}`} />
+                    <InfoRow icon={<Phone size={16} />} label="No. WhatsApp" value={p.phone} isMono />
+                    <InfoRow icon={<Mail size={16} />} label="Email" value={p.email} />
+                  </div>
+                ))}
+              </Section>
+
+              <Section title={`Kelas & Jadwal (${d.classes.length} kelas)`}>
+                {d.classes.length === 0 && <p className="text-xs text-gray-400 italic">Belum ditempatkan di kelas mana pun.</p>}
+                {d.classes.map((c) => (
+                  <div key={c.id} className="p-3 bg-white rounded-xl border border-gray-100">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-gray-900 text-sm">{c.name}</p>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">{c.class_type}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{c.package_name || "Tanpa paket"}</p>
+                    <p className="text-xs text-gray-600 mt-1 flex items-center gap-1"><BookOpen size={12} className="text-blue-500" /> {c.subjects.join(", ") || "-"}</p>
+                    <p className="text-xs text-gray-600 flex items-center gap-1"><User size={12} className="text-amber-500" /> {c.tentors.join(", ") || "Tentor belum ditentukan"}</p>
+                  </div>
+                ))}
+                {d.schedules.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between text-xs bg-white rounded-xl border border-gray-100 px-3 py-2">
+                    <span className="flex items-center gap-1.5 font-bold text-gray-800"><Clock size={12} className="text-blue-500" /> {s.day_name}, {s.start_time}-{s.end_time}</span>
+                    <span className="text-gray-500 truncate ml-2">{s.subject_name} • {s.location}{s.next_date ? ` • berikutnya ${s.next_date}` : ""}</span>
+                  </div>
+                ))}
+              </Section>
+
+              <Section title="Kehadiran (sesi selesai)">
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[["Hadir", d.attendance.hadir, "text-emerald-700 bg-emerald-50"], ["Izin", d.attendance.izin, "text-blue-700 bg-blue-50"], ["Sakit", d.attendance.sakit, "text-amber-700 bg-amber-50"], ["Alpa", d.attendance.alpa, "text-rose-700 bg-rose-50"]].map(([label, value, cls]) => (
+                    <div key={label} className={`rounded-xl py-2 ${cls}`}>
+                      <p className="text-lg font-black">{value}</p>
+                      <p className="text-[10px] font-bold uppercase">{label}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </Section>
 
-              <InfoRow 
-                icon={<User size={16} />} 
-                label="Tentor Pembimbing Utama" 
-                value={student.tentor?.name || student.tentor_name || 'Belum Ditentukan'} 
-              />
-              <InfoRow 
-                icon={<Clock size={16} />} 
-                label="Jadwal Kelas Rutin" 
-                value={student.schedule_info || 'Selasa & Kamis (15:30 WIB)'} 
-              />
-            </div>
-          </div>
+              {d.exams.recent.length > 0 && (
+                <Section title="Nilai Ujian Terakhir">
+                  {d.exams.recent.map((r, i) => (
+                    <div key={i} className="flex justify-between text-xs bg-white rounded-xl border border-gray-100 px-3 py-2">
+                      <span><b className="text-gray-800">{r.title}</b> <span className="text-gray-400">• {r.subject_name} • {r.submitted_at}</span></span>
+                      <span className="font-black text-blue-700">{r.score}</span>
+                    </div>
+                  ))}
+                </Section>
+              )}
 
-          {/* ================= 3. KELOMPOK: HISTORI ================= */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-              Histori Performa & Kehadiran
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase">
-                  <CheckCircle2 size={14} className="text-emerald-500" /> Kehadiran
-                </div>
-                <p className="text-xl font-black text-gray-950 font-mono">
-                  {student.attendance_rate || "95%"}
-                </p>
-                <p className="text-[10px] text-gray-400 font-medium">Sangat Baik</p>
-              </div>
-
-              <div className="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase">
-                  <Award size={14} className="text-blue-500" /> Rata-Rata Ujian
-                </div>
-                <p className="text-xl font-black text-gray-950 font-mono">
-                  {student.average_score || "88.5"}
-                </p>
-                <p className="text-[10px] text-gray-400 font-medium">Hasil Evaluasi Try Out</p>
-              </div>
-            </div>
-          </div>
-
+              <AccountSection data={d} onChanged={() => { load(); onChanged?.(); }} />
+            </>
+          )}
         </div>
-
-        {/* Footer Action Buttons */}
-        <div className="p-5 border-t border-gray-100 bg-white space-y-2 sticky bottom-0">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onPlotSubject && onPlotSubject(student)}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-all border border-blue-100 cursor-pointer"
-            >
-              <PlusCircle size={15} />
-              Plot Mata Pelajaran
-            </button>
-
-            <button
-              onClick={() => onManageSchedule && onManageSchedule(student)}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl transition-all border border-purple-100 cursor-pointer"
-            >
-              <CalendarPlus size={15} />
-              Atur Jadwal
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onPrintCard && onPrintCard(student)}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all border border-slate-200 cursor-pointer"
-            >
-              <Printer size={15} />
-              Cetak Kartu Siswa
-            </button>
-
-            <button
-              onClick={() => onToggleStatus && onToggleStatus(student)}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 font-bold text-xs rounded-xl transition-all border cursor-pointer ${
-                isActive
-                  ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
-                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-              }`}
-            >
-              {isActive ? <UserX size={15} /> : <UserCheck size={15} />}
-              {isActive ? 'Nonaktifkan Murid' : 'Aktifkan Murid'}
-            </button>
-          </div>
-        </div>
-
       </div>
     </>
   );
 }
 
-// Sub-komponen Baris Informasi
-function InfoRow({ icon, label, value, isMono = false }) {
+// Akun login siswa (portal siswa: ujian, materi, rapor)
+function AccountSection({ data, onChanged }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const create = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      const res = await createStudentAccount(data.id, { email, password: password || null });
+      setMessage(res.data.temporary_password
+        ? `Akun dibuat. Password sementara: ${res.data.temporary_password} (sampaikan ke siswa).`
+        : "Akun dibuat dengan password yang Anda isi.");
+      onChanged();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal membuat akun."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await resetUserPassword(data.account.user_id);
+      setMessage(`Password direset. Password sementara: ${res.data.temporary_password}`);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Gagal mereset password."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Section title="Akun Login Siswa">
+      {data.account ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <InfoRow icon={<KeyRound size={16} />} label={data.account.is_active ? "Aktif" : "Nonaktif"} value={data.account.email} />
+          <button type="button" onClick={reset} disabled={saving} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+            Reset Password
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={create} className="space-y-2">
+          <p className="text-xs text-gray-500">Siswa belum memiliki akun. Akun dipakai untuk mengerjakan ujian online, melihat materi, dan rapor.</p>
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email login siswa" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
+          <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (kosongkan = dibuatkan otomatis)" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
+          <button type="submit" disabled={saving} className="w-full py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
+            {saving ? "Memproses..." : "Buat Akun Login"}
+          </button>
+        </form>
+      )}
+      {message && <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg p-2 mt-2 break-all">{message}</p>}
+      {error && <p className="text-xs font-semibold text-rose-600 mt-2">{error}</p>}
+    </Section>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">{title}</h3>
+      <div className="space-y-3 bg-slate-50/60 p-4 rounded-2xl border border-slate-100">{children}</div>
+    </div>
+  );
+}
+
+const TONES = {
+  emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  blue: "bg-blue-50 text-blue-700 border-blue-100",
+  rose: "bg-rose-50 text-rose-700 border-rose-100",
+  slate: "bg-slate-50 text-slate-700 border-slate-100",
+};
+
+function MiniStat({ icon, label, value, hint, tone, small }) {
+  return (
+    <div className={`rounded-2xl border p-3 ${TONES[tone]}`}>
+      <div className="flex items-center gap-1 text-[10px] font-bold uppercase opacity-80">{icon} {label}</div>
+      <p className={`${small ? "text-sm" : "text-xl"} font-black mt-1`}>{value}</p>
+      <p className="text-[10px] opacity-70">{hint}</p>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, value, isMono = false, extra }) {
   return (
     <div className="flex gap-3 items-start text-sm">
-      <div className="text-blue-600 bg-white p-1.5 rounded-lg border border-gray-100 shadow-2xs shrink-0 mt-0.5">
-        {icon}
-      </div>
+      <div className="text-blue-600 bg-white p-1.5 rounded-lg border border-gray-100 shrink-0 mt-0.5">{icon}</div>
       <div className="space-y-0.5 overflow-hidden">
         <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{label}</div>
-        <div className={`text-gray-900 font-bold text-sm truncate ${isMono ? 'font-mono' : ''}`}>
-          {value || '-'}
-        </div>
+        <div className={`text-gray-900 font-bold text-sm ${isMono ? "font-mono" : ""}`}>{value || "-"}</div>
+        {extra}
       </div>
     </div>
   );

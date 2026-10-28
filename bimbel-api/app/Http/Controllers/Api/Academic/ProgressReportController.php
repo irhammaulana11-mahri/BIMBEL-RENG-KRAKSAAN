@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\Academic;
 
 use App\Http\Controllers\Controller;
+use App\Services\Academic\ProgressRecommendationService;
 use App\Http\Requests\Academic\ProgressReportRequest;
 use App\Models\Academic\ClassRoom;
 use App\Models\Academic\ProgressReport;
@@ -34,6 +35,8 @@ class ProgressReportController extends Controller {
                 ClassRoom::findOrFail($request->class_id),
                 $year, $month
             ),
+            // Tombol "Buat dengan AI" hanya aktif bila API key terpasang
+            'ai_enabled' => ProgressRecommendationService::enabled(),
         ]);
     }
 
@@ -48,6 +51,22 @@ class ProgressReportController extends Controller {
         );
 
         return response()->json(['success' => true, 'message' => 'Catatan umum disimpan.']);
+    }
+
+    // POST: Susun rekomendasi perkembangan dengan AI (draf, ditinjau Admin sebelum terbit)
+    public function generateRecommendation(ProgressReportRequest $request, ProgressRecommendationService $ai) {
+        [$year, $month] = $request->period();
+        $report = $ai->generate(Student::findOrFail($request->student_id), ClassRoom::findOrFail($request->class_id), $year, $month);
+
+        return response()->json(['success' => true, 'message' => 'Rekomendasi AI disusun. Tinjau dan sunting bila perlu sebelum menerbitkan rapor.', 'data' => $report->ai_recommendation]);
+    }
+
+    // PUT: Simpan suntingan Admin atas rekomendasi
+    public function saveRecommendation(ProgressReportRequest $request, ProgressRecommendationService $ai) {
+        [$year, $month] = $request->period();
+        $report = $ai->update(Student::findOrFail($request->student_id), ClassRoom::findOrFail($request->class_id), $year, $month, $request->recommendation);
+
+        return response()->json(['success' => true, 'message' => 'Rekomendasi disimpan.', 'data' => $report->ai_recommendation]);
     }
 
     // POST: Terbitkan rapor (satu, beberapa, atau seluruh siswa kelas)

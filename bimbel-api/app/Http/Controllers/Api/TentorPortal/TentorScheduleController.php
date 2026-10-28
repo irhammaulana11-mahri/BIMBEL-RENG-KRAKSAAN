@@ -8,6 +8,10 @@ use App\Http\Requests\Academic\BulkStudentAttendanceRequest;
 use App\Http\Resources\Tentor\TentorScheduleResource;
 use App\Models\Academic\RescheduleRequest;
 use App\Services\Academic\RescheduleRequestService;
+use App\Services\Academic\AttendanceLocationService;
+use App\Services\Academic\LocationChangeRequestService;
+use App\Models\Academic\LocationChangeRequest;
+use App\Http\Requests\Academic\LocationChangeSubmitRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -25,18 +29,22 @@ class TentorScheduleController extends Controller {
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    // POST: Memulai Sesi
-    public function startSession($id) {
-        try {
-            $session = $this->scheduleService->startSession($id);
-            return response()->json([
-                'success' => true, 
-                'message' => 'Sesi berhasil dimulai.', 
-                'data' => new TentorScheduleResource($session)
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+    // POST: Memulai Sesi + absen masuk GPS
+    // Kesalahan validasi (GPS kosong, sesi selesai) dikembalikan apa adanya (422)
+    public function startSession(TentorScheduleRequest $request, $id) {
+        $this->scheduleService->startSession($id, $request->validated());
+        $session = $this->scheduleService->getWorkspaceData($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => $this->checkInMessage($session->tentorAttendance),
+            'data'    => new TentorScheduleResource($session),
+        ]);
+    }
+
+    private function checkInMessage($log): string {
+        $remarks = AttendanceLocationService::remarks($log);
+        return 'Absen masuk tercatat, sesi dimulai.' . ($remarks ? ' Keterangan: ' . implode(', ', $remarks) . '.' : '');
     }
 
     // POST: Mengajukan Reschedule
@@ -72,8 +80,8 @@ class TentorScheduleController extends Controller {
             $session = $this->scheduleService->getWorkspaceData($id);
             return response()->json([
                 'success' => true,
-                // 🟢 Menggunakan Resource yang sudah digabung
-                'data'    => new TentorScheduleResource($session)
+                // 🟢 Menggunakan Resource yang sudah digabung, plus titik sasaran absen GPS
+                'data'    => (new TentorScheduleResource($session))->resolve() + $this->scheduleService->attendanceContext($session),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Sesi tidak ditemukan atau akses ditolak.'], 404);
@@ -90,14 +98,42 @@ class TentorScheduleController extends Controller {
         }
     }
 
-    // POST: Menyelesaikan Sesi
-    public function endSession($id) {
-        try {
-            $result = $this->scheduleService->endSession($id);
-            return response()->json($result, $result['success'] ? 200 : $result['code']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+    // POST: Menyelesaikan Sesi + absen pulang GPS
+    public function endSession(TentorScheduleRequest $request, $id) {
+        $result = $this->scheduleService->endSession($id, $request->validated());
+        return response()->json($result, $result['success'] ? 200 : $result['code']);
+    }
+
+    // POST: Ajukan lokasi les sementara untuk sesi
+    public function requestLocationChange(LocationChangeSubmitRequest $request, $id) {
+        $data = collect($request->validated())->except('student_id')->all();
+        $created = $this->scheduleService->requestLocationChange($id, $data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan lokasi sementara terkirim. Admin akan mengonfirmasi.',
+            'data'    => LocationChangeRequestService::present($created->load(LocationChangeRequestService::relations())),
+        ], 201);
+    }
+
+    // GET: Riwayat pengajuan lokasi milik tentor
+    public function locationChangeRequests() {
+        $requests = LocationChangeRequest::with(LocationChangeRequestService::relations())
+            ->where('requested_by', Auth::id())
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $requests->map(fn($r) => LocationChangeRequestService::present($r))]);
+    }
+
+    public function cancelLocationChange($id, LocationChangeRequestService $service) {
+        abort_unless(Str::isUuid($id), 404, 'Pengajuan tidak ditemukan.');
+        $request = LocationChangeRequest::where('requested_by', Auth::id())->where('id', $id)->first();
+        abort_unless($request, 404, 'Pengajuan tidak ditemukan.');
+        $service->cancel($request);
+
+        return response()->json(['success' => true, 'message' => 'Pengajuan lokasi dibatalkan.']);
     }
 
     // GET: Riwayat Kehadiran Tentor

@@ -90,3 +90,7 @@ export const updateSchedulePattern = (id, data) => {
 export const toggleScheduleStatus = (id, isActive) => {
     return api.put(`/admin/schedules/${id}/toggle-status`, { is_active: isActive });
 };
+
+// Detail drawer sesi (absensi nyata, absen tentor, aktivitas, riwayat) & rekap pola jadwal
+export const getSessionOverview = (sessionId) => api.get(`/admin/schedules/sessions/${sessionId}/overview`);
+export const getPatternOverview = (scheduleId) => api.get(`/admin/schedules/${scheduleId}/overview`);

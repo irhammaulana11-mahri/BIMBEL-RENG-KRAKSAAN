@@ -11,7 +11,12 @@ class ParentModel extends Model {
     protected $table = 'master.parents';
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = ['user_id','full_name','occupation','relationship','address'];
+    protected $fillable = ['user_id','full_name','occupation','relationship','address','latitude','longitude'];
+
+    protected $casts = [
+        'latitude'  => 'float',
+        'longitude' => 'float',
+    ];
 
      /**
      * Default eager loading

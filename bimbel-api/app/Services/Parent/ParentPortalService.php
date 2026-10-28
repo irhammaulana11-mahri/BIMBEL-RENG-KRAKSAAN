@@ -12,6 +12,9 @@ use App\Models\Exam\ExamResult;
 use App\Models\Finance\Invoice;
 use App\Services\Academic\ProgressReportService;
 use App\Services\Academic\RescheduleRequestService;
+use App\Services\Academic\LocationChangeRequestService;
+use App\Services\Academic\AttendanceLocationService;
+use App\Models\Academic\LocationChangeRequest;
 use App\Support\LocalTime;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -46,7 +49,7 @@ class ParentPortalService {
                 'name'            => $s->full_name,
                 'nis'             => $s->nis,
                 'gender'          => $s->gender,
-                'birth_date'      => $s->birth_date,
+                'birth_date'      => $s->birth_date?->format('Y-m-d'),
                 'school_name'     => $s->school_name,
                 'education_level' => $s->education_level,
                 'grade'           => $s->grade,
@@ -84,7 +87,7 @@ class ParentPortalService {
 
         $sessions = ScheduleSession::query()
             ->with([
-                'schedule.classroom', 'subject', 'tentor.user', 'location',
+                ...AttendanceLocationService::RELATIONS, 'subject', 'tentor.user',
                 'studentAttendances' => fn($q) => $q->whereIn('student_id', $childIds),
             ])
             ->whereHas('schedule', fn($q) => $q->whereIn('class_id', $membership->keys()))
@@ -100,7 +103,15 @@ class ParentPortalService {
             ->unique('session_id')
             ->keyBy('session_id');
 
-        return $sessions->map(function (ScheduleSession $session) use ($membership, $names, $requests) {
+        // Pengajuan lokasi sementara milik orang tua ini (terbaru per sesi)
+        $locationRequests = LocationChangeRequest::whereIn('session_id', $sessions->pluck('id'))
+            ->where('requested_by', Auth::id())
+            ->orderByDesc('created_at')
+            ->get()
+            ->unique('session_id')
+            ->keyBy('session_id');
+
+        return $sessions->map(function (ScheduleSession $session) use ($membership, $names, $requests, $locationRequests) {
             $attendance = $session->studentAttendances->keyBy('student_id');
             $children = ($membership->get($session->schedule->class_id) ?? collect())
                 ->map(fn($m) => [
@@ -109,6 +120,7 @@ class ParentPortalService {
                     'attendance_status' => $attendance->get($m->student_id)?->attendance_status,
                 ])->values();
             $request = $requests->get($session->id);
+            $locationRequest = $locationRequests->get($session->id);
 
             return [
                 'id'            => $session->id,
@@ -121,7 +133,10 @@ class ParentPortalService {
                 'class_type'    => $session->schedule->classroom?->class_type,
                 'subject_name'  => $session->subject?->name,
                 'tentor_name'   => $session->tentor?->user?->name,
-                'location_name' => $session->location?->location_name,
+                // Lokasi mengikuti jenis kelas / lokasi sementara yang disetujui
+                'location_name' => strtoupper($session->schedule->classroom?->class_type ?? '') === 'ONLINE'
+                    ? null
+                    : app(AttendanceLocationService::class)->resolveTarget($session)['label'],
                 'room_name'     => $session->room_name,
                 'meeting_url'   => $session->meeting_url,
                 'note'          => $session->status === 'RESCHEDULED' ? $session->reason : null,
@@ -133,6 +148,14 @@ class ParentPortalService {
                     'proposed_date'       => $request->proposed_date,
                     'proposed_start_time' => substr($request->proposed_start_time, 0, 5),
                     'review_note'         => $request->review_note,
+                ] : null,
+                'can_request_location' => LocationChangeRequestService::canRequest($session) && $locationRequest?->status !== 'PENDING',
+                'my_location_request'  => $locationRequest ? [
+                    'id'            => $locationRequest->id,
+                    'status'        => $locationRequest->status,
+                    'location_name' => $locationRequest->location_name,
+                    'address'       => $locationRequest->address,
+                    'review_note'   => $locationRequest->review_note,
                 ] : null,
             ];
         });

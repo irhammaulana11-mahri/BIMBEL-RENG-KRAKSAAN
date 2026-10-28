@@ -98,7 +98,8 @@ class ProgressReportService {
         $reports = ProgressReport::where('class_id', $class->id)
             ->where('period_year', $year)->where('period_month', $month)
             ->whereIn('student_id', $studentIds)
-            ->pluck('general_note', 'student_id');
+            ->get(['student_id', 'general_note', 'ai_recommendation'])
+            ->keyBy('student_id');
 
         $subjects = $this->subjectsOf($class, $sessions, $results, $notes->flatten());
         $students = Student::whereIn('id', $studentIds)->get(['id', 'full_name', 'nis'])->keyBy('id');
@@ -166,7 +167,9 @@ class ProgressReportService {
                 'exams'        => $current->map(fn($r) => collect($r)->except(['period_key', 'student_id'])->all())->values()->all(),
                 'subjects'     => $subjectRows->all(),
                 'notes_filled' => $subjectRows->whereNotNull('note')->count(),
-                'general_note' => $reports->get($studentId),
+                'general_note' => $reports->get($studentId)?->general_note,
+                // Rekomendasi AI yang sudah ditinjau Admin (dibekukan bersama rapor saat terbit)
+                'ai_recommendation' => $reports->get($studentId)?->ai_recommendation,
             ];
         }
 
@@ -349,6 +352,22 @@ class ProgressReportService {
             'status'       => 'DRAFT',
             'published_at' => null,
         ]);
+    }
+
+    // Simpan rekomendasi AI (hasil generate atau suntingan Admin) pada rapor DRAFT
+    public function saveRecommendation(Student $student, ClassRoom $class, int $year, int $month, array $recommendation, bool $edited): ProgressReport {
+        $this->ensureEnrolled($student->id, $class->id);
+
+        return DB::transaction(function () use ($student, $class, $year, $month, $recommendation, $edited) {
+            $report = $this->lockOrCreate($student->id, $class->id, $year, $month);
+            $this->ensureEditable($report);
+            $report->update([
+                'ai_recommendation' => $recommendation,
+                'ai_edited'         => $edited,
+                'ai_generated_at'   => $edited ? $report->ai_generated_at : now(),
+            ]);
+            return $report;
+        });
     }
 
     public function saveGeneralNote(Student $student, ClassRoom $class, int $year, int $month, ?string $note): ProgressReport {

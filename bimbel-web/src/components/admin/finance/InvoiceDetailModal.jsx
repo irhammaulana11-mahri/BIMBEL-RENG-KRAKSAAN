@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { X, Banknote, Ban, AlertTriangle } from "lucide-react";
+import { X, Banknote, Ban, AlertTriangle, FileDown } from "lucide-react";
+import { downloadFile } from "@/utils/download";
 import { getInvoice, cancelInvoice, INVOICE_STATUS, PAYMENT_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
@@ -69,9 +70,10 @@ export default function InvoiceDetailModal({ open, invoiceId, onClose, onRecordP
               <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${status?.className}`}>{status?.label}</span>
               {invoice.is_overdue && <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Lewat jatuh tempo</span>}
               <span className="text-xs text-gray-500">Terbit {invoice.issue_date} • Jatuh tempo {invoice.due_date}</span>
+              <button onClick={() => downloadFile(`/admin/finance/invoices/${invoice.id}/pdf`, `Invoice-${invoice.invoice_no}.pdf`)} className="ml-auto px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1"><FileDown className="w-3.5 h-3.5" /> PDF</button>
             </div>
 
-            <table className="w-full text-sm">
+            <table className="ui-table w-full text-sm">
               <thead><tr className="text-xs text-gray-400 uppercase border-b"><th className="py-2 text-left">Rincian</th><th className="py-2 text-right">Qty</th><th className="py-2 text-right">Harga</th><th className="py-2 text-right">Subtotal</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {invoice.items?.map(item => (

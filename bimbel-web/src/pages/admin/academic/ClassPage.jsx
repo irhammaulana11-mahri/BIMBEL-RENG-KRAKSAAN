@@ -226,7 +226,7 @@ export default function ClassPage() {
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Class Management</h1>
+            <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Kelas</h1>
             <p className="text-base text-gray-500 mt-1">Kelola rombel belajar, tipe kelas, penugasan tentor, dan geotagging absensi.</p>
           </div>
           <button onClick={() => { setSelectedClass(null); setModalOpen(true); }} className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-xs cursor-pointer">
@@ -235,7 +235,7 @@ export default function ClassPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <PremiumStatCard title="Total Class" value={summary.total} desc="Terdaftar di Sistem" icon={Layers} colorClass="bg-slate-50 text-slate-600" />
+          <PremiumStatCard title="Total Kelas" value={summary.total} desc="Terdaftar di Sistem" icon={Layers} colorClass="bg-slate-50 text-slate-600" />
           <PremiumStatCard title="Private" value={summary.private} desc="Privat Datang ke Rumah" icon={Home} colorClass="bg-blue-50 text-blue-600" />
           <PremiumStatCard title="Online" value={summary.online} desc="Kelas Daring / Zoom" icon={Laptop} colorClass="bg-purple-50 text-purple-600" />
           <PremiumStatCard title="Reguler" value={summary.reguler} desc="Tatap Muka di Gedung Bimbel" icon={Building2} colorClass="bg-emerald-50 text-emerald-600" />
@@ -270,7 +270,7 @@ export default function ClassPage() {
           classes={classes}
           loading={loading}
           pagination={pagination}
-          onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+          onPageChange={(page, perPage) => setPagination((prev) => ({ ...prev, page, ...(perPage ? { perPage } : {}) }))}
           onPreview={(item) => setPreviewClass(item)}
           onEdit={(item) => { setSelectedClass(item); setModalOpen(true); }}
           onToggleStatus={handleToggleStatus}

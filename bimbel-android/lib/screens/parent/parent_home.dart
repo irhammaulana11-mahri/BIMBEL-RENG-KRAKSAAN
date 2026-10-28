@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../widgets/common.dart';
+import '../../widgets/location.dart';
 import '../../widgets/portal_shell.dart';
 import '../reports_screen.dart';
 import 'parent_billing.dart';
+import 'parent_registration.dart';
+import '../../widgets/requests.dart';
 
 class ParentHome extends StatelessWidget {
   const ParentHome({super.key});
@@ -38,7 +41,7 @@ class _DashboardTab extends StatelessWidget {
         final invoices = d['open_invoices'] as List? ?? [];
         final results = d['recent_results'] as List? ?? [];
         return ListView(padding: const EdgeInsets.all(12), children: [
-          Text('Halo, ${text(d['parent']?['name'])}', style: Theme.of(context).textTheme.titleLarge),
+          HeroBanner(title: 'Halo, ${text(d['parent']?['name'])}', subtitle: 'Pantau jadwal, nilai & tagihan anak.', colors: const [Color(0xFF047857), Color(0xFF0D9488)]),
           const SizedBox(height: 12),
           StatGrid([
             StatCard(label: 'Anak terdaftar', value: '${sum['children_count'] ?? 0}', icon: Icons.family_restroom),
@@ -178,6 +181,54 @@ class _ScheduleTabState extends State<_ScheduleTab> {
                           label: const Text('Ajukan pindah jadwal'),
                           onPressed: () async {
                             if (await _requestReschedule(context, s) == true) reload();
+                          },
+                        ),
+                      ),
+                    if (s['my_location_request'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(children: [
+                          Expanded(
+                            child: Text('Lokasi sementara: ${text(s['my_location_request']['location_name'])}'
+                                '${s['my_location_request']['review_note'] != null ? ' • ${s['my_location_request']['review_note']}' : ''}',
+                                style: const TextStyle(fontSize: 13)),
+                          ),
+                          StatusChip(s['my_location_request']['status']),
+                        ]),
+                      ),
+                    if (s['my_location_request']?['status'] == 'PENDING')
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          onPressed: () async {
+                            try {
+                              final res = await api.patch('/parent/location-requests/${s['my_location_request']['id']}/cancel');
+                              if (context.mounted) showSnack(context, text(res['message'], 'Pengajuan dibatalkan.'));
+                              reload();
+                            } catch (e) {
+                              if (context.mounted) showSnack(context, '$e', error: true);
+                            }
+                          },
+                          child: const Text('Batalkan pengajuan lokasi'),
+                        ),
+                      ),
+                    if (s['can_request_location'] == true)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
+                          label: const Text('Ajukan lokasi les sementara'),
+                          onPressed: () async {
+                            final children = s['children'] as List? ?? [];
+                            final ok = await showLocationRequestDialog(
+                                context,
+                                s,
+                                (body) async => (await api.post('/parent/sessions/${s['id']}/location-requests', {
+                                      ...body,
+                                      if (children.isNotEmpty) 'student_id': children.first['id'],
+                                    }))['message']);
+                            if (ok == true) reload();
                           },
                         ),
                       ),
@@ -363,6 +414,20 @@ class _ProfileTab extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(
                     context, MaterialPageRoute(builder: (_) => const ReportsScreen(basePath: '/parent/progress-reports'))),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_add_alt),
+                title: const Text('Daftarkan anak baru'),
+                subtitle: const Text('Disetujui Admin, akun login anak dikirim ke notifikasi'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParentRegistrationScreen())),
+              ),
+              ListTile(
+                leading: const Icon(Icons.assignment_outlined),
+                title: const Text('Pengajuan saya'),
+                subtitle: const Text('Pindah jadwal & lokasi les sementara'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyRequestsScreen('/parent'))),
               ),
               ListTile(
                 leading: const Icon(Icons.lock_outline),

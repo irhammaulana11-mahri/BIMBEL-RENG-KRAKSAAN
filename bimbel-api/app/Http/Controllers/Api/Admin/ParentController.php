@@ -6,6 +6,7 @@ use App\Models\Admin\ParentModel;
 use App\Models\Admin\User;
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
+use App\Services\Student\FamilyAddressService;
 use App\Http\Requests\Admin\ParentRequest;
 use App\Http\Resources\Admin\ParentResource;
 use Illuminate\Support\Facades\DB;
@@ -68,8 +69,9 @@ class ParentController extends Controller {
         return new ParentResource($parent);
     }
 
-    public function update(ParentRequest $request,ParentModel $parent) {
+    public function update(ParentRequest $request,ParentModel $parent, FamilyAddressService $family) {
         $parent->update($request->validated());
+        if ($parent->wasChanged(['address', 'latitude', 'longitude'])) $family->syncFromParent($parent);
 
         return new ParentResource(
             $parent->fresh()

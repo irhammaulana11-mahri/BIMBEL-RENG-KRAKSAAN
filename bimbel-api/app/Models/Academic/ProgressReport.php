@@ -18,12 +18,16 @@ class ProgressReport extends Model
     protected $fillable = [
         'student_id', 'class_id', 'period_year', 'period_month', 'status',
         'general_note', 'snapshot', 'published_at', 'published_by', 'created_by',
+        'ai_recommendation', 'ai_generated_at', 'ai_edited',
     ];
 
     protected $casts = [
         'period_year'  => 'integer',
         'period_month' => 'integer',
         'snapshot'     => 'array',
+        'ai_recommendation' => 'array',
+        'ai_generated_at'   => 'datetime',
+        'ai_edited'         => 'boolean',
         'published_at' => 'datetime',
     ];
 

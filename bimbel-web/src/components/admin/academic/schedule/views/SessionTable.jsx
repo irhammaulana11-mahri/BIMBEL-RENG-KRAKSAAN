@@ -7,7 +7,8 @@ import { TableLoading, TableEmpty, TablePagination } from "@/components/ui/table
 export default function SessionTable({ data, dataSource, onSelectSession, pagination = null, onPageChange }) {
   const getStatusColor = (status) => {
     switch (status) {
-      case "ONGOING": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "ONGOING":
+      case "IN_PROGRESS": return "bg-blue-100 text-blue-800 border-blue-200";
       case "COMPLETED": return "bg-emerald-100 text-emerald-800 border-emerald-200";
       case "CANCELLED": return "bg-rose-100 text-rose-800 border-rose-200";
       case "RESCHEDULED": return "bg-amber-100 text-amber-800 border-amber-200";
@@ -32,7 +33,7 @@ export default function SessionTable({ data, dataSource, onSelectSession, pagina
   return (
     <div className="overflow-hidden border border-gray-200 bg-white shadow-sm rounded-xl">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="ui-table w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
               <th className="p-4 w-32">{dataSource === "session" ? "Tanggal" : "Hari Master"}</th>

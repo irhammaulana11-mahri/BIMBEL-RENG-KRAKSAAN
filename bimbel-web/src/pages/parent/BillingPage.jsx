@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { FileText, CheckCircle, Clock, Upload, AlertTriangle, X, Hourglass } from "lucide-react";
+import { FileText, CheckCircle, Clock, Upload, AlertTriangle, X, Hourglass, Eye, FileDown, Wallet, Receipt } from "lucide-react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import { getParentInvoices, submitParentPayment, INVOICE_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod, todayDate } from "@/utils/format";
+import PremiumStatCard from "../../components/ui/StatCard";
+import InvoiceDrawer from "../../components/parent/InvoiceDrawer";
+import { downloadFile } from "@/utils/download";
 
 const MAX_PROOF_SIZE = 5 * 1024 * 1024;
 
@@ -15,6 +18,19 @@ export default function ParentBillingPage() {
   const [childFilter, setChildFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
+  const [detailId, setDetailId] = useState(null);
+  const [downloading, setDownloading] = useState(null);
+
+  const downloadPdf = async (inv) => {
+    setDownloading(inv.id);
+    try {
+      await downloadFile(`/parent/invoices/${inv.id}/pdf`, `Invoice-${inv.invoice_no}.pdf`);
+    } catch (err) {
+      showError(getApiErrorMessage(err, "Gagal mengunduh invoice."));
+    } finally {
+      setDownloading(null);
+    }
+  };
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   const loadInvoices = async () => {
@@ -52,18 +68,9 @@ export default function ParentBillingPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase">Total Belum Dibayar</p>
-          <p className="text-2xl font-black text-rose-700 mt-1">{formatRupiah(summary.outstanding)}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase">Tagihan Aktif</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{summary.open_count}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase">Lewat Jatuh Tempo</p>
-          <p className={`text-2xl font-black mt-1 ${summary.overdue_count > 0 ? "text-rose-600" : "text-gray-900"}`}>{summary.overdue_count}</p>
-        </div>
+        <PremiumStatCard title="Total Belum Dibayar" value={formatRupiah(summary.outstanding)} desc="Sisa seluruh tagihan aktif" icon={Wallet} colorClass="text-red-700" />
+        <PremiumStatCard title="Tagihan Aktif" value={summary.open_count ?? 0} desc="Belum lunas / dibayar sebagian" icon={Receipt} colorClass="text-blue-700" />
+        <PremiumStatCard title="Lewat Jatuh Tempo" value={summary.overdue_count ?? 0} desc={summary.overdue_count > 0 ? "Segera lakukan pembayaran" : "Tidak ada tunggakan"} icon={AlertTriangle} colorClass={summary.overdue_count > 0 ? "text-amber-700" : "text-green-700"} />
       </div>
 
       {loading ? (
@@ -106,6 +113,9 @@ export default function ParentBillingPage() {
                     <p className="text-xs text-rose-600 w-full sm:w-auto">Bukti terakhir ditolak: {last.reject_reason}</p>
                   )}
 
+                  <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={() => setDetailId(inv.id)} className="px-3 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold flex items-center gap-1.5"><Eye className="w-4 h-4" /> Detail</button>
+                  <button onClick={() => downloadPdf(inv)} disabled={downloading === inv.id} className="px-3 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"><FileDown className="w-4 h-4" /> {downloading === inv.id ? "Mengunduh..." : "PDF"}</button>
                   {inv.has_pending_payment ? (
                     <span className="px-3 py-2 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold flex items-center gap-1.5"><Hourglass className="w-4 h-4" /> Bukti sedang diverifikasi</span>
                   ) : isOpen && (
@@ -113,6 +123,7 @@ export default function ParentBillingPage() {
                       <Upload className="w-4 h-4" /> Konfirmasi Pembayaran
                     </button>
                   )}
+                  </div>
                 </div>
               </div>
             );
@@ -120,6 +131,7 @@ export default function ParentBillingPage() {
         </div>
       )}
 
+      <InvoiceDrawer invoiceId={detailId} onClose={() => setDetailId(null)} onPay={(inv) => { setDetailId(null); setPaying(inv); }} />
       <PaymentProofModal
         invoice={paying}
         onClose={() => setPaying(null)}

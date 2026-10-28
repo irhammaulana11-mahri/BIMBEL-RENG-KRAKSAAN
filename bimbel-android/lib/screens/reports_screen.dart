@@ -79,6 +79,7 @@ class _ReportDetailScreen extends StatelessWidget {
                 child: Text('Izin ${att['izin'] ?? 0} • Sakit ${att['sakit'] ?? 0} • Alpa ${att['alpa'] ?? 0}'),
               ),
             ),
+            if (r['ai_recommendation'] is Map) ..._recommendation(r['ai_recommendation'] as Map),
             if (general != null && '$general'.isNotEmpty) ...[
               const SectionTitle('Catatan umum'),
               Card(child: Padding(padding: const EdgeInsets.all(14), child: Text('$general'))),
@@ -104,4 +105,39 @@ class _ReportDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// Rekomendasi perkembangan (disusun AI, ditinjau bimbel) pada rapor terbit
+List<Widget> _recommendation(Map r) {
+  const sections = [
+    ('strengths', 'Kekuatan Ananda', Icons.star_outline),
+    ('growth_areas', 'Area untuk dikembangkan', Icons.spa_outlined),
+    ('learning_recommendations', 'Rekomendasi belajar', Icons.menu_book_outlined),
+    ('parent_tips', 'Saran pendampingan di rumah', Icons.home_outlined),
+  ];
+  return [
+    const SectionTitle('Rekomendasi perkembangan'),
+    Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if ('${r['summary'] ?? ''}'.isNotEmpty) Text('${r['summary']}'),
+          for (final s in sections)
+            if ((r[s.$1] as List? ?? []).isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(children: [Icon(s.$3, size: 16), const SizedBox(width: 6), Text(s.$2, style: const TextStyle(fontWeight: FontWeight.bold))]),
+              for (final item in r[s.$1] as List) Padding(padding: const EdgeInsets.only(left: 22, top: 2), child: Text('• $item')),
+            ],
+          if ('${r['developmental_note'] ?? ''}'.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text('Catatan tumbuh kembang', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('${r['developmental_note']}'),
+          ],
+          const SizedBox(height: 8),
+          const Text('Disusun dengan bantuan AI dan ditinjau pihak bimbel. Bukan diagnosis psikologis.',
+              style: TextStyle(fontSize: 11, color: Colors.grey)),
+        ]),
+      ),
+    ),
+  ];
 }

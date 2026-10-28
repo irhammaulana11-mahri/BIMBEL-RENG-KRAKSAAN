@@ -7,6 +7,7 @@ import RecordPaymentModal from "./RecordPaymentModal";
 import { getInvoices, INVOICE_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
+import TablePagination from "@/components/ui/table/TablePagination";
 
 export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
   const [invoices, setInvoices] = useState([]);
@@ -15,6 +16,7 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: "", keyword: "", overdue: false });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [modal, setModal] = useState(null); // generate | manual
   const [detailId, setDetailId] = useState(null);
   const [payingInvoice, setPayingInvoice] = useState(null);
@@ -27,7 +29,7 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
         keyword: filters.keyword,
         overdue: filters.overdue ? 1 : "",
         page,
-        per_page: 15,
+        per_page: perPage,
       });
       setInvoices(res.data.data || []);
       setSummary(res.data.summary || {});
@@ -42,7 +44,7 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
   useEffect(() => {
     const timer = setTimeout(fetchInvoices, 300);
     return () => clearTimeout(timer);
-  }, [period, filters, page]);
+  }, [period, filters, page, perPage]);
 
   const handleDone = (message, newPeriod) => {
     setModal(null);
@@ -95,7 +97,7 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
       </div>
 
       <div className="overflow-x-auto border border-gray-200 rounded-2xl">
-        <table className="w-full text-left text-sm min-w-[820px]">
+        <table className="ui-table w-full text-left text-sm min-w-[820px]">
           <thead className="bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
             <tr><th className="p-4">Tagihan</th><th className="p-4">Siswa / Wali</th><th className="p-4">Kelas</th><th className="p-4 text-right">Total</th><th className="p-4 text-right">Sisa</th><th className="p-4 text-center">Status</th></tr>
           </thead>
@@ -128,13 +130,11 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
         </table>
       </div>
 
-      {meta.last_page > 1 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Sebelumnya</button>
-          <span className="text-gray-500">Hal {meta.current_page} / {meta.last_page}</span>
-          <button disabled={page >= meta.last_page} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-lg border disabled:opacity-40">Berikutnya</button>
-        </div>
-      )}
+      <TablePagination
+        pagination={{ page: meta.current_page || 1, lastPage: meta.last_page || 1, perPage, total: meta.total || 0, from: meta.from || 0, to: meta.to || 0 }}
+        onPageChange={(target, newPerPage) => { if (newPerPage) setPerPage(newPerPage); setPage(target); }}
+        label="data"
+      />
 
       <InvoiceGenerateModal open={modal === "generate"} period={period} onClose={() => setModal(null)} onDone={handleDone} />
       <InvoiceFormModal open={modal === "manual"} onClose={() => setModal(null)} onDone={handleDone} />

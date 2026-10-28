@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Academic;
 
+use App\Services\Academic\AttendanceLocationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,8 +25,9 @@ class ScheduleSessionResource extends JsonResource {
             'subject_name'  => $this->subject?->name ?? '-',
             'tentor_name'   => $this->tentor?->user?->name ?? $this->tentor?->name ?? 'Belum Diplot',
             
-            // Lokasi
+            // Lokasi mengikuti jenis kelas: online / rumah siswa (private) / gedung bimbel (reguler) / lokasi sementara
             'location_name' => $this->location?->location_name ?? '-',
+            'location_label'=> $this->locationLabel(strtoupper($classType)),
             'room_name'     => $this->room_name,
             'meeting_url'   => $this->meeting_url,
             
@@ -34,9 +36,14 @@ class ScheduleSessionResource extends JsonResource {
             'reason'        => $this->reason,
             'note'          => $this->note,
             
-            // Dummy Attendance (Disiapkan untuk relasi attendance nanti)
-            'attendance_count' => 0,
+            'attendance_count' => (int) ($this->present_count ?? 0),
             'total_students'   => $this->schedule?->classroom?->students_count ?? 0,
         ];
+    }
+
+    private function locationLabel(string $classType): string {
+        if ($classType === 'ONLINE') return 'Online';
+        $label = app(AttendanceLocationService::class)->resolveTarget($this->resource)['label'];
+        return $label . ($classType === 'REGULER' && $this->room_name ? " • {$this->room_name}" : '');
     }
 }

@@ -36,3 +36,5 @@ export const toggleLocationStatus = async (id) => {
 export const deleteLocation = async (id) => {
   return await api.delete(`/admin/locations/${id}`);
 };
+// Kelas, jadwal & statistik untuk drawer detail lokasi
+export const getLocationOverview = (id) => api.get(`/admin/locations/${id}/overview`);

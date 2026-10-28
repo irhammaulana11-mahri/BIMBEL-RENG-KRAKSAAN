@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Support\SafeDelete;
 use App\Http\Controllers\Controller;
+use App\Services\Admin\MasterOverviewService;
 use App\Models\Admin\Role;
 use App\Models\Admin\Tentor;
 use App\Models\Admin\User;
@@ -194,5 +195,10 @@ class TentorController extends Controller {
             'success' => true,
             'message' => 'Plotting mata pelajaran berhasil diperbarui.'
         ]);
+    }
+
+    // GET: Jadwal, sesi mendatang & statistik untuk drawer detail tentor
+    public function overview(Tentor $tentor, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->tentor($tentor)]);
     }
 }

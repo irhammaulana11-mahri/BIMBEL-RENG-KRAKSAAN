@@ -76,7 +76,7 @@ export default function SubjectTable({
                   ? "bg-red-50 text-red-600 hover:bg-red-100"
                   : "bg-green-50 text-green-600 hover:bg-green-100"
               }`}
-              title={subject.is_active ? "Nonaktifkan Subject" : "Aktifkan Subject"}
+              title={subject.is_active ? "Nonaktifkan Mapel" : "Aktifkan Mapel"}
             >
               <Power size={16} />
             </button>
@@ -92,7 +92,7 @@ export default function SubjectTable({
   return (
     <div className="overflow-hidden border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+        <table className="ui-table w-full border-collapse text-left">
           <thead>
             <tr className="whitespace-nowrap border-b border-gray-100 bg-gray-50/70 text-sm font-bold uppercase tracking-wider text-gray-600">
               <th className="px-6 py-4.5 w-72">Mata Pelajaran</th>

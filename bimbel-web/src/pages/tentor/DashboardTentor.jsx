@@ -4,6 +4,8 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Clock, PlayCircle, Clipboard
 import { getTentorDashboard } from "@/services/tentor/dashboardService";
 import { SESSION_STATUS } from "@/services/parent/parentService";
 import { APP_ROUTES } from "../../components/constants/routes";
+import { CalendarDays, CheckCircle2 as CheckDone, Clock3, CalendarRange } from "lucide-react";
+import PremiumStatCard from "../../components/ui/StatCard";
 
 const greeting = () => {
   const hour = new Date().getHours();
@@ -41,10 +43,10 @@ export default function TentorDashboard() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow min-h-screen">
+    <div className="page-card min-h-screen">
       <div className="bg-gradient-to-r from-indigo-900 to-indigo-700 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black mb-1">{greeting()}, {data.tentor_name} 👋</h1>
+          <h1 className="text-3xl font-black tracking-tight mb-1">{greeting()}, {data.tentor_name} 👋</h1>
           {data.next_session ? (
             <div className="mt-4">
               <p className="text-xs text-indigo-200 uppercase tracking-widest font-bold mb-1">{data.next_session.status === "IN_PROGRESS" ? "Sesi sedang berlangsung" : "Sesi berikutnya"}</p>
@@ -64,18 +66,11 @@ export default function TentorDashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[
-          { value: data.summary.total, label: "Sesi Hari Ini", color: "text-gray-900" },
-          { value: data.summary.completed, label: "Selesai", color: "text-emerald-600" },
-          { value: data.summary.upcoming + data.summary.in_progress, label: "Belum Selesai", color: "text-amber-600" },
-          { value: data.summary.week_total, label: "Sesi Minggu Ini", color: "text-indigo-600" },
-        ].map((card) => (
-          <div key={card.label} className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-            <h3 className={`text-3xl font-black ${card.color}`}>{card.value}</h3>
-            <p className="text-xs font-bold text-gray-500 mt-1 uppercase">{card.label}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <PremiumStatCard title="Sesi Hari Ini" value={data.summary.total} desc="Terjadwal untuk Anda" icon={CalendarDays} colorClass="text-blue-700" />
+        <PremiumStatCard title="Selesai" value={data.summary.completed} desc="Sudah diakhiri hari ini" icon={CheckDone} colorClass="text-green-700" />
+        <PremiumStatCard title="Belum Selesai" value={data.summary.upcoming + data.summary.in_progress} desc={`${data.summary.in_progress} sedang berlangsung`} icon={Clock3} colorClass="text-amber-700" />
+        <PremiumStatCard title="Sesi Minggu Ini" value={data.summary.week_total} desc="Senin s/d Minggu" icon={CalendarRange} colorClass="text-indigo-700" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

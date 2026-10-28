@@ -2,6 +2,9 @@
 
 return [
     'name' => env('APP_NAME', 'Bimbel Reng Kraksaan'),
+
+    // Domain email login siswa yang dibuat otomatis dari NIS (hanya identitas login, tidak menerima email)
+    'student_email_domain' => env('STUDENT_EMAIL_DOMAIN', 'siswa.bimbelreng.id'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://127.0.0.1:8001'),

@@ -49,6 +49,17 @@ class ScheduleSession extends Model {
         return $this->hasOne(TentorAttendance::class, 'session_id', 'id');
     }
 
+    public function locationChangeRequests() {
+        return $this->hasMany(LocationChangeRequest::class, 'session_id');
+    }
+
+    // Lokasi les sementara yang berlaku untuk sesi ini (persetujuan terakhir)
+    public function approvedLocationChange() {
+        return $this->hasOne(LocationChangeRequest::class, 'session_id')
+                    ->where('status', 'APPROVED')
+                    ->latest('reviewed_at');
+    }
+
     public function activities() {
         return $this->hasMany(SessionActivity::class, 'schedule_session_id')
                     ->orderBy('display_order', 'asc');

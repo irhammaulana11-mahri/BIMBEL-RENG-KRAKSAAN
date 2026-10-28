@@ -8,7 +8,7 @@ export default function AttendancePage() {
   return (
     <div className="bg-white p-6 rounded-xl shadow min-h-screen">
       <div className="mb-6">
-        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Attendance Management</h1>
+        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Absensi</h1>
         <p className="text-sm text-gray-500 mt-1">Monitor kehadiran siswa & tentor berdasarkan sesi KBM aktual.</p>
       </div>
 

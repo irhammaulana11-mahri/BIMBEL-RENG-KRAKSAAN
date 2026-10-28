@@ -176,7 +176,7 @@ export default function ParentPage() {
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Parent Management</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Manajemen Wali Murid</h1>
           <p className="text-base text-gray-500 mt-1">
             Basis data resmi orang tua / wali murid yang akunnya telah aktif dari hasil peninjauan Page Lead.
           </p>
@@ -256,10 +256,11 @@ export default function ParentPage() {
           parents={parents}
           loading={loading}
           pagination={pagination}
-          onPageChange={(page) =>
+          onPageChange={(page, perPage) =>
               setPagination((prev) => ({
                   ...prev,
                   page,
+                  ...(perPage ? { perPage } : {}),
               }))
           }
           onPreview={handleView}

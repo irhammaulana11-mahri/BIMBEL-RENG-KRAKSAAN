@@ -68,7 +68,7 @@ export default function TentorProgressNotePage() {
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Perkembangan Nilai</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Perkembangan Nilai</h1>
           <p className="text-sm text-gray-500 mt-0.5">Tulis catatan perkembangan tiap siswa di mapel yang Anda ajar. Catatan masuk ke rapor bulanan yang diterbitkan Admin.</p>
         </div>
         <input type="month" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm bg-white font-semibold text-gray-700" />

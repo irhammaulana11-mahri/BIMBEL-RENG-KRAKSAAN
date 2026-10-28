@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Auth & Core
+use App\Http\Controllers\Api\Finance\FeeRuleController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Common\UploadController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\Common\MaterialFileController;
 
 // Admin Master
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\BackupController;
 use App\Http\Controllers\Api\Admin\ParentController;
 use App\Http\Controllers\Api\Admin\StudentController;
 use App\Http\Controllers\Api\Admin\TentorController;
@@ -156,9 +158,24 @@ Route::prefix('admin')
         Route::patch('users/{user}/toggle', [UserController::class, 'toggleStatus']);
         Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword']);
         Route::apiResource('users', UserController::class);
+
+        // --- BACKUP & PEMULIHAN ---
+        Route::prefix('backups')->controller(BackupController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::get('status', 'status');
+            Route::put('settings', 'updateSettings');
+            Route::post('upload', 'upload');
+            Route::get('{backup}/verify', 'verify');
+            Route::get('{backup}/download', 'download');
+            Route::post('{backup}/restore', 'restore');
+            Route::delete('{backup}', 'destroy');
+        });
         Route::apiResource('parents', ParentController::class);
 
         Route::patch('students/{student}/toggle', [StudentController::class, 'toggleStatus']);
+        Route::get('students/{student}/overview', [StudentController::class, 'overview']);
+        Route::post('students/{student}/account', [StudentController::class, 'createAccount']);
         Route::apiResource('students', StudentController::class);
 
         // --- MASTER JENJANG EDUCATION LEVEL ---
@@ -168,6 +185,7 @@ Route::prefix('admin')
         // --- MASTER TENTOR ---
         Route::get('tentors/summary', [TentorController::class, 'summary']);
         Route::patch('tentors/{tentor}/toggle', [TentorController::class, 'toggleStatus']);
+        Route::get('tentors/{tentor}/overview', [TentorController::class, 'overview']);
         Route::post('tentors/{tentor}/assign', [TentorController::class, 'assign']);
         Route::apiResource('tentors', TentorController::class);
 
@@ -182,6 +200,7 @@ Route::prefix('admin')
         Route::get('subjects/statistics', [SubjectController::class, 'statistics']);
         Route::get('subjects/{subject}/schedules', [SubjectController::class, 'schedules']);
         Route::patch('subjects/{subject}/toggle', [SubjectController::class, 'toggleStatus']);
+        Route::get('subjects/{subject}/overview', [SubjectController::class, 'overview']);
         Route::apiResource('subjects', SubjectController::class);
 
         // --- AKADEMIK: KURIKULUM & MATERI ---
@@ -205,6 +224,7 @@ Route::prefix('admin')
             Route::put('{class}/tentors', [ClassController::class, 'updateTentors']);
             Route::put('{class}/students', [ClassController::class, 'syncStudents']);
             Route::patch('{class}/toggle-status', [ClassController::class, 'toggleStatus']);
+            Route::get('{class}/overview', [ClassController::class, 'overview']);
             Route::patch('{class}/progress-status', [ClassController::class, 'updateProgressStatus']);
             Route::post('{class}/duplicate', [ClassController::class, 'duplicate']);
 
@@ -219,6 +239,7 @@ Route::prefix('admin')
 
         // --- AKADEMIK: LOKASI, JADWAL & EXAM ---
         Route::get('locations/summary', [LearningLocationController::class, 'summary']);
+        Route::get('locations/{location}/overview', [LearningLocationController::class, 'overview']);
         Route::patch('locations/{location}/toggle', [LearningLocationController::class, 'toggleStatus']);
         Route::apiResource('locations', LearningLocationController::class);
         
@@ -229,6 +250,8 @@ Route::prefix('admin')
             Route::post('/wizard/validate', [ScheduleController::class, 'validateWizard']);
             Route::post('/sessions/validate-reschedule', [ScheduleController::class, 'validateReschedule']);
             Route::put('/sessions/{session}/cancel', [ScheduleController::class, 'cancelSession']);
+            Route::get('/sessions/{session}/overview', [ScheduleController::class, 'sessionOverview']);
+            Route::get('/{schedule}/overview', [ScheduleController::class, 'patternOverview']);
             Route::put('/sessions/{session}/details', [ScheduleController::class, 'updateSessionDetails']);
             Route::put('/{schedule}/pattern', [ScheduleController::class, 'updatePattern']);
             Route::put('/{schedule}/toggle-status', [ScheduleController::class, 'toggleStatus']);
@@ -267,12 +290,17 @@ Route::prefix('admin')
         Route::get('/student-registrations', [ParentRequestController::class, 'index'])->defaults('type', 'registration');
         Route::patch('/student-registrations/{registration}/approve', [ParentRequestController::class, 'approveRegistration']);
         Route::patch('/student-registrations/{registration}/reject', [ParentRequestController::class, 'rejectRegistration']);
+        Route::get('/location-requests', [ParentRequestController::class, 'index'])->defaults('type', 'location');
+        Route::patch('/location-requests/{locationRequest}/approve', [ParentRequestController::class, 'approveLocation']);
+        Route::patch('/location-requests/{locationRequest}/reject', [ParentRequestController::class, 'rejectLocation']);
 
         // --- RAPOR PERKEMBANGAN SISWA ---
         Route::prefix('progress-reports')->group(function () {
             Route::get('/', [ProgressReportController::class, 'index']);
             Route::get('/detail', [ProgressReportController::class, 'show']);
             Route::put('/general-note', [ProgressReportController::class, 'saveGeneralNote']);
+            Route::post('/ai-recommendation', [ProgressReportController::class, 'generateRecommendation']);
+            Route::put('/ai-recommendation', [ProgressReportController::class, 'saveRecommendation']);
             Route::post('/publish', [ProgressReportController::class, 'publish']);
             Route::post('/{report}/unpublish', [ProgressReportController::class, 'unpublish']);
             Route::get('/semester', [ProgressReportController::class, 'semester']);
@@ -283,8 +311,10 @@ Route::prefix('admin')
         Route::prefix('finance')->group(function () {
             Route::get('/invoices', [InvoiceController::class, 'index']);
             Route::post('/invoices', [InvoiceController::class, 'store']);
+            Route::post('/invoices/preview', [InvoiceController::class, 'preview']);
             Route::post('/invoices/generate', [InvoiceController::class, 'generate']);
             Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+            Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
             Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel']);
 
             Route::get('/payments', [PaymentController::class, 'index']);
@@ -302,6 +332,10 @@ Route::prefix('admin')
             Route::post('/payrolls/{payroll}/transfers', [PayrollController::class, 'transfer']);
             Route::delete('/payrolls/{payroll}', [PayrollController::class, 'destroy']);
             Route::get('/tentor-rates', [PayrollController::class, 'rates']);
+            Route::get('/fee-rules', [FeeRuleController::class, 'index']);
+            Route::post('/fee-rules', [FeeRuleController::class, 'store']);
+            Route::put('/fee-rules/{feeRule}', [FeeRuleController::class, 'update']);
+            Route::delete('/fee-rules/{feeRule}', [FeeRuleController::class, 'destroy']);
             Route::patch('/tentor-rates/{tentor}', [PayrollController::class, 'updateRate']);
 
             Route::get('/cashflow', [OperationalExpenseController::class, 'cashflow']);
@@ -328,12 +362,20 @@ Route::prefix('admin')
 |--------------------------------------------------------------------------
 */
 
+// Notifikasi dalam aplikasi (semua role)
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::patch('/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
+    Route::patch('/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markRead']);
+});
+
 Route::prefix('parent')
     ->middleware(['auth:sanctum', 'role:orang_tua'])
     ->group(function () {
         // Tagihan & pembayaran anak
         Route::get('/invoices', [ParentBillingController::class, 'invoices']);
         Route::get('/invoices/{id}', [ParentBillingController::class, 'showInvoice']);
+        Route::get('/invoices/{id}/pdf', [ParentBillingController::class, 'invoicePdf']);
         Route::post('/invoices/{id}/payments', [ParentBillingController::class, 'submitPayment']);
         Route::get('/payments', [ParentBillingController::class, 'payments']);
         Route::get('/payments/{id}/proof', [ParentBillingController::class, 'proof']);
@@ -344,6 +386,9 @@ Route::prefix('parent')
         Route::post('/sessions/{session}/reschedule-requests', [ParentPortalController::class, 'requestReschedule']);
         Route::get('/reschedule-requests', [ParentPortalController::class, 'rescheduleRequests']);
         Route::patch('/reschedule-requests/{id}/cancel', [ParentPortalController::class, 'cancelReschedule']);
+        Route::post('/sessions/{session}/location-requests', [ParentPortalController::class, 'requestLocationChange']);
+        Route::get('/location-requests', [ParentPortalController::class, 'locationChangeRequests']);
+        Route::patch('/location-requests/{id}/cancel', [ParentPortalController::class, 'cancelLocationChange']);
         Route::get('/exam-results', [ParentPortalController::class, 'examResults']);
 
         // Profil & pendaftaran anak
@@ -384,6 +429,9 @@ Route::prefix('tentor')
         Route::post('/sessions/{id}/reschedule-request', [TentorScheduleController::class, 'requestReschedule']);
         Route::get('/reschedule-requests', [TentorScheduleController::class, 'rescheduleRequests']);
         Route::patch('/reschedule-requests/{id}/cancel', [TentorScheduleController::class, 'cancelReschedule']);
+        Route::post('/sessions/{id}/location-request', [TentorScheduleController::class, 'requestLocationChange']);
+        Route::get('/location-requests', [TentorScheduleController::class, 'locationChangeRequests']);
+        Route::patch('/location-requests/{id}/cancel', [TentorScheduleController::class, 'cancelLocationChange']);
         Route::get('/sessions/{id}/workspace', [TentorScheduleController::class, 'showWorkspace']);
         Route::get('/sessions/{id}/reference-data', [TentorScheduleController::class, 'getReferenceData']);
         Route::post('/sessions/{id}/activities', [TentorScheduleController::class, 'storeActivity']);
@@ -395,9 +443,11 @@ Route::prefix('tentor')
 
         // Riwayat honor
         Route::get('/honor', [TentorHonorController::class, 'index']);
+        Route::get('/honor/{payroll}/slip', [TentorHonorController::class, 'slip']);
 
         // Hasil ujian & penilaian essay
         Route::get('/exam-results', [TentorExamResultController::class, 'index']);
+        Route::get('/exam-results/export', [TentorExamResultController::class, 'export']);
         Route::get('/exam-results/{id}', [TentorExamResultController::class, 'show']);
         Route::put('/exam-results/{id}/grade', [TentorExamResultController::class, 'grade']);
 

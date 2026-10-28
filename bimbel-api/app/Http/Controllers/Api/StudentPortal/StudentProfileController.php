@@ -25,7 +25,7 @@ class StudentProfileController extends Controller {
                 'email'           => $student->user?->email,
                 'phone'           => $student->user?->phone,
                 'gender'          => $student->gender,
-                'birth_date'      => $student->birth_date,
+                'birth_date'      => $student->birth_date?->format('Y-m-d'),
                 'school_name'     => $student->school_name,
                 'education_level' => $student->educationLevel?->display_name ?? trim("{$student->education_level} {$student->grade}"),
                 'classes'         => $student->classes->map(fn($c) => [

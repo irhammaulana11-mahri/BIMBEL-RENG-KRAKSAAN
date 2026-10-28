@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Carbon\Carbon;
 use App\Services\Academic\AttendanceService;
+use App\Services\Academic\AttendanceLocationService;
 
 
 class TentorScheduleResource extends JsonResource {
@@ -15,10 +16,11 @@ class TentorScheduleResource extends JsonResource {
         // Format Tanggal
         $formattedDate = Carbon::parse($this->session_date)->translatedFormat('l, d F Y');
 
-        // Mapping Lokasi
-        $locationLabel = $classType === 'ONLINE' 
-            ? 'Online' 
-            : ($this->room_name ?? $this->location->location_name ?? 'Tempat Bimbel');
+        // Lokasi mengikuti jenis kelas (sama dengan titik absen GPS): online / rumah siswa / gedung bimbel
+        $target = app(AttendanceLocationService::class)->resolveTarget($this->resource);
+        $locationLabel = $classType === 'ONLINE'
+            ? 'Online'
+            : $target['label'] . ($classType === 'REGULER' && $this->room_name ? " • {$this->room_name}" : '');
 
         return [
             // 🟢 ATRIBUT DASAR (Selalu Muncul)
@@ -87,6 +89,8 @@ class TentorScheduleResource extends JsonResource {
                     'checkout_time'     => $formatTime($log->checked_out_at),
                     'late_minutes'      => (int) $log->late_minutes,
                     'teaching_minutes'  => (int) $log->teaching_minutes,
+                    'remarks'           => AttendanceLocationService::remarks($log),
+                    'location'          => AttendanceLocationService::presentLocation($log),
                 ];
             }),
         ];

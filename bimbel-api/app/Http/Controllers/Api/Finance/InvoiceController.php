@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Finance;
 
+use App\Support\Pdf;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\GenerateInvoiceRequest;
 use App\Http\Requests\Finance\InvoiceRequest;
@@ -72,6 +73,12 @@ class InvoiceController extends Controller
         return InvoiceResource::collection($invoices)->additional(['summary' => $summary]);
     }
 
+    public function pdf(Invoice $invoice)
+    {
+        $invoice->load(['student.parents', 'classroom', 'items', 'paymentDetails.payment']);
+        return Pdf::download('pdf.invoice', compact('invoice'), "Invoice-{$invoice->invoice_no}.pdf");
+    }
+
     public function show(Invoice $invoice)
     {
         return new InvoiceResource($invoice->load(['student.parents', 'classroom', 'package', 'items', 'paymentDetails.payment']));
@@ -97,9 +104,21 @@ class InvoiceController extends Controller
 
         $message = "{$result['created']} tagihan dibuat";
         if ($result['skipped'] > 0) $message .= ", {$result['skipped']} sudah ada sebelumnya";
-        if ($result['without_package']) $message .= '. Kelas tanpa paket dilewati: ' . implode(', ', $result['without_package']);
+        if ($result['without_items']) $message .= '. Tanpa pertemuan/tarif yang ditagihkan: ' . implode(', ', $result['without_items']);
 
         return response()->json(['message' => $message . '.', 'data' => $result]);
+    }
+
+    // POST: Pratinjau tagihan bulanan dari absensi + aturan tarif (tidak menyimpan)
+    public function preview(GenerateInvoiceRequest $request)
+    {
+        $data = $request->validated();
+
+        return response()->json(['data' => $this->invoiceService->previewMonthly(
+            (int) substr($data['period'], 0, 4),
+            (int) substr($data['period'], 5, 2),
+            $data['class_ids'] ?? null,
+        )]);
     }
 
     public function cancel(Request $request, Invoice $invoice)

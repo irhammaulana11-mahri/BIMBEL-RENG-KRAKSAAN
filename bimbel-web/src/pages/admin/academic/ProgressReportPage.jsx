@@ -13,17 +13,8 @@ import {
 } from "@/services/academic/progressReportService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatPeriod, currentPeriod } from "@/utils/format";
+import PremiumStatCard from "../../../components/ui/StatCard";
 
-const PremiumStatCard = ({ title, value, desc, icon: Icon, colorClass }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-    <div className="space-y-1.5">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</p>
-      <p className="text-4xl font-black text-gray-950 font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-gray-500 font-medium">{desc}</p>
-    </div>
-    <div className={`p-4 rounded-2xl ${colorClass}`}><Icon className="w-6 h-6" /></div>
-  </div>
-);
 
 export default function ProgressReportPage() {
   const [periodType, setPeriodType] = useState("monthly");
@@ -129,7 +120,7 @@ export default function ProgressReportPage() {
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Student Progress Report</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Rapor Perkembangan Siswa</h1>
           <p className="text-gray-500">Rapor bulanan otomatis dari kehadiran & nilai ujian, dilengkapi catatan tentor per mapel. Orang tua & siswa melihat rapor setelah diterbitkan.</p>
         </div>
 
@@ -220,7 +211,7 @@ export default function ProgressReportPage() {
 function SemesterTable({ rows, loading, onOpen }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm min-w-[720px]">
+      <table className="ui-table w-full text-left text-sm min-w-[720px]">
         <thead className="border-b border-gray-100 bg-gray-50/50 text-xs font-semibold uppercase tracking-wider text-gray-600">
           <tr><th className="p-4">Siswa / Kelas</th><th className="p-4 text-center">Rapor Terbit</th><th className="p-4 text-center">Kehadiran</th><th className="p-4 text-center">Rerata Nilai</th><th className="p-4 text-center">Aksi</th></tr>
         </thead>

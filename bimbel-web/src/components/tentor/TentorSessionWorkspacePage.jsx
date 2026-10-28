@@ -13,8 +13,12 @@ import { useToast } from "../../hooks/useToast";
 import {
   getSessionWorkspace, saveSessionAttendance, endTentorSession, addSessionActivity,
   changeSessionActivityStatus, deleteSessionActivity, reorderSessionActivities,
+  startTentorSession, requestLocationChange, cancelTentorLocationRequest,
 } from "@/services/tentor/scheduleService";
+import { getCurrentPosition } from "@/utils/geo";
 import ActivityManagerModal from "./ActivityManagerModal"; // Komponen form terpisah
+import TentorCheckInPanel from "./TentorCheckInPanel";
+import LocationChangeModal from "../shared/LocationChangeModal";
 
 export default function TentorSessionWorkspacePage() {
   const { id } = useParams();
@@ -26,6 +30,7 @@ export default function TentorSessionWorkspacePage() {
   
   // State Modals
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: "", message: "", onConfirm: null });
   
   // State Data
@@ -73,6 +78,8 @@ export default function TentorSessionWorkspacePage() {
   // Sesi selesai/dibatalkan terkunci: aktivitas & absensi tidak bisa diubah
   const isSessionCompleted = ['COMPLETED', 'CANCELLED'].includes(session.status);
   const canFillAttendance = session.status === 'IN_PROGRESS';
+  const isNotStarted = ['SCHEDULED', 'PREPARING', 'RESCHEDULED'].includes(session.status);
+  const needsGps = session.attendance_target?.requires_gps;
 
   // --- Helpers ---
   const getActivityIcon = (type) => {
@@ -127,15 +134,63 @@ export default function TentorSessionWorkspacePage() {
     }
   };
 
+  // Absen masuk GPS sekaligus memulai sesi; error dilempar ulang agar panel berhenti memproses
+  const handleCheckIn = async (position) => {
+    try {
+      const res = await startTentorSession(id, position);
+      await fetchWorkspace();
+      toast.success(res.data.message || "Absen masuk tercatat, sesi dimulai.");
+      setActiveTab('attendance');
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Gagal absen masuk."));
+    }
+  };
+
+  const handleSubmitLocationRequest = async (form) => {
+    await requestLocationChange(id, form);
+    setIsLocationModalOpen(false);
+    await fetchWorkspace();
+    toast.success("Pengajuan lokasi sementara terkirim. Menunggu persetujuan Admin.");
+  };
+
+  const handleCancelLocationRequest = (requestId) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Batalkan Pengajuan Lokasi?",
+      message: "Pengajuan lokasi sementara untuk sesi ini akan dibatalkan.",
+      onConfirm: async () => {
+        setConfirmConfig({ isOpen: false });
+        try {
+          await cancelTentorLocationRequest(requestId);
+          await fetchWorkspace();
+          toast.success("Pengajuan lokasi dibatalkan.");
+        } catch (error) {
+          toast.error(getErrorMessage(error, "Gagal membatalkan pengajuan."));
+        }
+      }
+    });
+  };
+
   const handleEndSession = () => {
     setConfirmConfig({
       isOpen: true,
       title: "Selesaikan Sesi KBM?",
-      message: "Pastikan absensi dan seluruh aktivitas telah selesai. Sesi yang diakhiri tidak dapat diubah kembali.",
+      message: needsGps
+        ? "Pastikan absensi dan seluruh aktivitas telah selesai. Lokasi GPS Anda akan dicatat sebagai absen pulang. Sesi yang diakhiri tidak dapat diubah kembali."
+        : "Pastikan absensi dan seluruh aktivitas telah selesai. Sesi yang diakhiri tidak dapat diubah kembali.",
       onConfirm: async () => {
         setConfirmConfig({ isOpen: false });
+        let position = {};
+        if (needsGps) {
+          try {
+            position = await getCurrentPosition();
+          } catch (gpsError) {
+            toast.error(gpsError.message);
+            return;
+          }
+        }
         try {
-          const res = await endTentorSession(id);
+          const res = await endTentorSession(id, position);
           await fetchWorkspace();
           toast.success(res.data.message || "Sesi KBM berhasil diselesaikan.");
         } catch (error) {
@@ -226,6 +281,24 @@ export default function TentorSessionWorkspacePage() {
           </span>
         </div>
       </div>
+
+      {/* ABSEN MASUK (sebelum sesi dimulai) */}
+      {isNotStarted && (
+        <TentorCheckInPanel
+          session={session}
+          onCheckIn={handleCheckIn}
+          onRequestLocation={() => setIsLocationModalOpen(true)}
+          onCancelLocationRequest={handleCancelLocationRequest}
+        />
+      )}
+
+      {/* Keterangan absensi tentor (di luar lokasi / jam) */}
+      {tentorLog?.remarks?.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 text-sm">
+          <span className="font-black text-amber-800">Keterangan absensi Anda: </span>
+          <span className="font-semibold text-amber-800">{tentorLog.remarks.join(' • ')}</span>
+        </div>
+      )}
 
       {/* TABS */}
       <div className="bg-white rounded-2xl shadow-sm px-6 pt-2 border border-gray-100 flex overflow-x-auto">
@@ -321,6 +394,17 @@ export default function TentorSessionWorkspacePage() {
             <h2 className="text-xl font-black text-gray-900">Ringkasan Sesi</h2>
             <p className="text-sm text-gray-500 mt-1">Kehadiran Anda dan rekap siswa pada sesi ini.</p>
           </div>
+          <div className="p-4 rounded-xl border border-gray-200 bg-slate-50 text-sm">
+            <p className="text-[10px] font-bold text-gray-400 uppercase">Lokasi absen</p>
+            <p className="font-black text-gray-900">{tentorLog?.location?.target_label || session.attendance_target?.label || '-'}</p>
+            {tentorLog?.location?.checkin_distance_meter != null && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                Jarak saat masuk ±{tentorLog.location.checkin_distance_meter} m
+                {tentorLog.location.checkout_distance_meter != null && ` • saat pulang ±${tentorLog.location.checkout_distance_meter} m`}
+                {tentorLog.location.target_radius_meter && ` (toleransi ${tentorLog.location.target_radius_meter} m)`}
+              </p>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-slate-50 p-4 rounded-xl border border-gray-200">
               <p className="text-[10px] font-bold text-gray-400 uppercase">Check-in</p>
@@ -382,7 +466,7 @@ export default function TentorSessionWorkspacePage() {
                   ? `${totalUnfilled} siswa belum diabsen.`
                   : isSessionCompleted
                     ? 'Sesi telah selesai, absensi terkunci.'
-                    : 'Mulai sesi terlebih dahulu untuk mengisi absensi.'}
+                    : 'Absen masuk terlebih dahulu untuk mengisi absensi siswa.'}
               </p>
             </div>
             {canFillAttendance && totalStudents > 0 && (
@@ -462,6 +546,13 @@ export default function TentorSessionWorkspacePage() {
         onClose={() => setIsActivityModalOpen(false)} 
         onSave={handleAddNewActivity}
         sessionInfo={session} 
+      />
+
+      <LocationChangeModal
+        open={isLocationModalOpen}
+        session={session}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSubmit={handleSubmitLocationRequest}
       />
 
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} onClose={hideToast} />

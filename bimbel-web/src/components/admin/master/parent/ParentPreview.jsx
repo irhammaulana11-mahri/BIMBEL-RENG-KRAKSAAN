@@ -1,4 +1,5 @@
 import React from "react";
+import { mapsLink } from "@/utils/geo";
 import { X, Mail, Phone, Briefcase, Users, MapPin, Plus, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +42,9 @@ export default function ParentPreview({ parent, onClose }) {
           <InfoRow icon={<Briefcase size={18} />} label="Mata Pencaharian / Pekerjaan" value={parent.occupation || "-"} />
           <InfoRow icon={<Users size={18} />} label="Hubungan Keluarga" value={parent.relationship || "Orang Tua Kandung"} />
           <InfoRow icon={<MapPin size={18} />} label="Alamat Domisili Rumah" value={parent.address || "-"} />
+          {parent.latitude != null && (
+            <a href={mapsLink(parent.latitude, parent.longitude)} target="_blank" rel="noreferrer" className="-mt-4 ml-12 block text-xs font-bold text-blue-600 hover:underline">Lihat titik rumah di peta</a>
+          )}
 
           <hr className="border-gray-100" />
 

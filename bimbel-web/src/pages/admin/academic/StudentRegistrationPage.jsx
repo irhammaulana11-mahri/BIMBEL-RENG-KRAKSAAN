@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Check, X, Phone, Mail } from "lucide-react";
+import { Check, X, Phone, Mail, Hourglass, UserCheck, UserX, XCircle } from "lucide-react";
+import PremiumStatCard from "../../../components/ui/StatCard";
 import api from "@/api/axios";
 import Toast from "../../../components/ui/Toast";
 import { useToast } from "../../../hooks/useToast";
@@ -19,6 +20,7 @@ export default function StudentRegistrationPage() {
   const [status, setStatus] = useState("PENDING");
   const [items, setItems] = useState([]);
   const [pending, setPending] = useState(0);
+  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [decision, setDecision] = useState(null);
   const { toast, showSuccess, showError, hideToast } = useToast();
@@ -28,6 +30,7 @@ export default function StudentRegistrationPage() {
       const res = await getStudentRegistrations({ status });
       setItems(res.data.data || []);
       setPending(res.data.pending?.registration ?? 0);
+      setStats(res.data.stats || {});
     } catch (err) {
       showError(getApiErrorMessage(err, "Gagal memuat pendaftaran."));
     } finally {
@@ -44,6 +47,13 @@ export default function StudentRegistrationPage() {
         <div>
           <h1 className="text-3xl font-black text-gray-950 tracking-tight">Pendaftaran Anak</h1>
           <p className="text-gray-500">Pendaftaran anak baru yang diajukan orang tua dari portal. Persetujuan membuat data siswa (NIS otomatis) dan bisa langsung menempatkan ke kelas.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <PremiumStatCard title="Menunggu" value={stats.PENDING ?? 0} desc="Pendaftaran perlu ditinjau" icon={Hourglass} colorClass="text-amber-700" />
+          <PremiumStatCard title="Disetujui" value={stats.APPROVED ?? 0} desc="Data siswa sudah dibuat" icon={UserCheck} colorClass="text-green-700" />
+          <PremiumStatCard title="Ditolak" value={stats.REJECTED ?? 0} desc="Disertai alasan penolakan" icon={UserX} colorClass="text-red-700" />
+          <PremiumStatCard title="Dibatalkan" value={stats.CANCELLED ?? 0} desc="Dibatalkan oleh orang tua" icon={XCircle} colorClass="text-indigo-700" />
         </div>
 
         <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
@@ -99,7 +109,8 @@ export default function StudentRegistrationPage() {
 }
 
 function DecisionModal({ decision, onClose, onDone }) {
-  const [form, setForm] = useState({ full_name: "", school_name: "", class_id: "", review_note: "" });
+  const [form, setForm] = useState({ full_name: "", school_name: "", class_id: "", review_note: "", login_email: "" });
+  const [issued, setIssued] = useState(null); // data login yang baru dibuat
   const [classes, setClasses] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -107,8 +118,9 @@ function DecisionModal({ decision, onClose, onDone }) {
   useEffect(() => {
     if (!decision) return;
     const r = decision.item;
-    setForm({ full_name: r.full_name, school_name: r.school_name || "", class_id: "", review_note: "" });
+    setForm({ full_name: r.full_name, school_name: r.school_name || "", class_id: "", review_note: "", login_email: r.login_email || "" });
     setError("");
+    setIssued(null);
     if (decision.mode === "approve") {
       api.get("/admin/classes", { params: { status_active: "true", perPage: 200 } })
         .then((res) => setClasses(res.data.data || []))
@@ -128,9 +140,11 @@ function DecisionModal({ decision, onClose, onDone }) {
     setError("");
     try {
       const res = isApprove
-        ? await approveStudentRegistration(r.id, { ...form, class_id: form.class_id || null })
+        ? await approveStudentRegistration(r.id, { ...form, class_id: form.class_id || null, login_email: form.login_email || null })
         : await rejectStudentRegistration(r.id, form.review_note);
-      onDone(res.data.message);
+      // Setelah disetujui tampilkan data login sebelum modal ditutup
+      if (isApprove && res.data.credentials) setIssued({ ...res.data.credentials, message: res.data.message });
+      else onDone(res.data.message);
     } catch (err) {
       setError(getApiErrorMessage(err, "Gagal memproses pendaftaran."));
     } finally {
@@ -145,6 +159,17 @@ function DecisionModal({ decision, onClose, onDone }) {
           <h3 className="text-lg font-black text-gray-950">{isApprove ? "Setujui Pendaftaran" : "Tolak Pendaftaran"}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={20} /></button>
         </div>
+        {issued ? (
+          <div className="space-y-4">
+            <p className="text-sm text-emerald-700 font-semibold">{issued.message}</p>
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-1 text-sm">
+              <p><span className="text-gray-500">Email login:</span> <b className="font-mono select-all">{issued.email}</b></p>
+              <p><span className="text-gray-500">Password sementara:</span> <b className="font-mono select-all">{issued.password}</b></p>
+            </div>
+            <p className="text-xs text-gray-500">Data ini sudah dikirim ke notifikasi orang tua. Minta siswa mengganti password setelah login pertama.</p>
+            <button onClick={() => onDone(issued.message)} className="w-full py-2.5 bg-slate-800 text-white font-bold text-sm rounded-xl">Selesai</button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {isApprove && (
             <>
@@ -167,7 +192,11 @@ function DecisionModal({ decision, onClose, onDone }) {
                   ))}
                 </select>
               </div>
-              <p className="text-xs text-gray-500">Akun login siswa (untuk ujian online) dapat dibuat kemudian di menu Siswa. Tagihan bulanan otomatis ikut saat Generate Tagihan bila siswa sudah di kelas.</p>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase">Email Login Anak</label>
+                <input type="email" maxLength={100} value={form.login_email} onChange={(e) => setForm({ ...form, login_email: e.target.value })} placeholder="Kosongkan = dibuat otomatis dari NIS" className="w-full border border-gray-200 rounded-xl p-3 mt-1.5 text-sm" />
+              </div>
+              <p className="text-xs text-gray-500">Akun login siswa dibuat otomatis dengan password sementara dan dikirim ke notifikasi orang tua. Tagihan bulanan ikut saat Generate Tagihan bila siswa sudah di kelas.</p>
             </>
           )}
           <div>
@@ -176,9 +205,10 @@ function DecisionModal({ decision, onClose, onDone }) {
           </div>
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}
           <button type="submit" disabled={saving} className={`w-full py-2.5 text-white font-bold text-sm rounded-xl disabled:opacity-50 ${isApprove ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}>
-            {saving ? "Memproses..." : isApprove ? "Setujui & Buat Data Siswa" : "Tolak Pendaftaran"}
+            {saving ? "Memproses..." : isApprove ? "Setujui & Buat Akun Siswa" : "Tolak Pendaftaran"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

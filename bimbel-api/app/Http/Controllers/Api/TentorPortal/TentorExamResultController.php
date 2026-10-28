@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Api\TentorPortal;
 
+use App\Support\Pdf;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Exam\GradeExamRequest;
 use App\Http\Resources\Exam\ExamResultDetailResource;
@@ -22,6 +23,44 @@ class TentorExamResultController extends Controller {
 
     // GET: Daftar hasil ujian (filter status / aktivitas sesi)
     public function index(Request $request) {
+        $results = $this->filtered($request)->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => ExamResultResource::collection($results),
+            'summary' => $this->summarize($results),
+        ]);
+    }
+
+    // GET: Rekap hasil sesuai filter yang sama dengan daftar, dalam PDF
+    public function export(Request $request) {
+        $results = $this->filtered($request)->get();
+        $filterLabel = collect([
+            $request->status === 'SUBMITTED' ? 'Perlu dinilai' : ($request->status === 'GRADED' ? 'Sudah dinilai' : 'Semua status'),
+            $request->filled('keyword') ? "Pencarian \"{$request->keyword}\"" : null,
+        ])->filter()->join(' • ');
+
+        return Pdf::download('pdf.exam-results', [
+            'results'     => $results,
+            'summary'     => $this->summarize($results),
+            'tentorName'  => Auth::user()->name,
+            'filterLabel' => $filterLabel,
+        ], 'Rekap-Evaluasi-' . now('Asia/Jakarta')->format('Y-m-d') . '.pdf', 'landscape');
+    }
+
+    private function summarize($results): array {
+        $graded = $results->where('status', 'GRADED');
+        return [
+            'total'   => $results->count(),
+            'pending' => $results->where('status', 'SUBMITTED')->count(),
+            'graded'  => $graded->count(),
+            'average' => $graded->count() ? round($graded->avg(fn($r) => (float) $r->score), 1) : null,
+            'highest' => $graded->count() ? (float) $graded->max('score') : null,
+            'students' => $results->pluck('student_id')->unique()->count(),
+        ];
+    }
+
+    private function filtered(Request $request): Builder {
         $query = $this->ownedResults()->with(self::RELATIONS)->where('status', '!=', 'IN_PROGRESS');
 
         if ($request->filled('status')) {
@@ -39,18 +78,8 @@ class TentorExamResultController extends Controller {
                 ->orWhereHas('exam', fn($sq) => $sq->where('title', 'ILIKE', $kw)));
         }
 
-        $results = $query->orderByRaw("CASE WHEN status = 'SUBMITTED' THEN 0 ELSE 1 END")
-            ->orderByDesc('submitted_at')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data'    => ExamResultResource::collection($results),
-            'summary' => [
-                'pending' => $results->where('status', 'SUBMITTED')->count(),
-                'graded'  => $results->where('status', 'GRADED')->count(),
-            ],
-        ]);
+        return $query->orderByRaw("CASE WHEN status = 'SUBMITTED' THEN 0 ELSE 1 END")
+            ->orderByDesc('submitted_at');
     }
 
     // GET: Detail jawaban siswa

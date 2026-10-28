@@ -1,6 +1,7 @@
 import React from "react";
 import { CheckCircle, TrendingUp, TrendingDown, Minus, MessageSquare, BookOpen, ClipboardList } from "lucide-react";
 import { formatScore, formatPercent, scorePredicate } from "@/services/academic/progressReportService";
+import RecommendationView from "./RecommendationView";
 
 export function TrendBadge({ trend }) {
   if (trend === "up") return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs font-bold"><TrendingUp className="w-3 h-3" /> Naik</span>;
@@ -28,7 +29,7 @@ export function AttendanceBar({ percentage }) {
  * Isi rapor bulanan (data dari API rapor: live/draft maupun snapshot terbit).
  */
 export default function ReportCardView({ report }) {
-  const { attendance, exam, exams = [], subjects = [], general_note } = report;
+  const { attendance, exam, exams = [], subjects = [], general_note, ai_recommendation } = report;
 
   return (
     <div className="space-y-5">
@@ -106,7 +107,7 @@ export default function ReportCardView({ report }) {
                 </div>
               ))}
             </div>
-            <table className="w-full text-xs mt-3">
+            <table className="ui-table w-full text-xs mt-3">
               <thead><tr className="text-gray-400 uppercase"><th className="py-1.5 text-left">Tanggal</th><th className="py-1.5 text-left">Ujian</th><th className="py-1.5 text-right">Skor</th><th className="py-1.5 text-right">Nilai (0-100)</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {exams.map((e, i) => (
@@ -122,6 +123,8 @@ export default function ReportCardView({ report }) {
           </div>
         )}
       </div>
+
+      <RecommendationView recommendation={ai_recommendation} />
 
       {general_note && (
         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">

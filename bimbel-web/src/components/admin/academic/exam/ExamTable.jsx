@@ -12,7 +12,7 @@ const STATUS_LABEL = { DRAFT: "Draft", PUBLISHED: "Terbit", ARCHIVED: "Arsip" };
 export default function ExamTable({ data, onEdit, onDelete, onManageQuestions, onViewResults, onChangeStatus }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[900px]">
+      <table className="ui-table w-full text-left border-collapse min-w-[900px]">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/50 text-sm font-semibold text-gray-600">
             <th className="p-6">Detail Ujian</th>

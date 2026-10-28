@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Academic;
 
 use App\Services\Academic\AttendanceService;
+use App\Services\Academic\AttendanceLocationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -48,6 +49,8 @@ class TentorAttendanceResource extends JsonResource
             'teaching_minutes'     => $log ? (int) $log->teaching_minutes : 0,
             'is_payroll_processed' => $log ? (bool) $log->is_payroll_processed : false,
             'note'                 => $log ? $log->note : null,
+            'remarks'              => AttendanceLocationService::remarks($log),
+            'location'             => AttendanceLocationService::presentLocation($log),
 
             // Ringkasan Murid (Untuk Card Ringkasan Sesi)
             'total_students'    => (int) ($classroom->students_count ?? 0),

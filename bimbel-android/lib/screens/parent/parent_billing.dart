@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../widgets/common.dart';
+import '../../widgets/file_opener.dart';
 
 class ParentBillingTab extends StatefulWidget {
   const ParentBillingTab({super.key});
@@ -45,6 +46,11 @@ class _ParentBillingTabState extends State<ParentBillingTab> {
                     value: rupiah(summary['outstanding']),
                     icon: Icons.account_balance_wallet_outlined,
                     color: Colors.red),
+                StatCard(
+                    label: 'Tagihan aktif',
+                    value: '${summary['open_count'] ?? 0}',
+                    icon: Icons.receipt_long_outlined,
+                    color: Colors.blue),
                 StatCard(
                     label: 'Jatuh tempo lewat',
                     value: '${summary['overdue_count'] ?? 0}',
@@ -97,7 +103,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Tagihan')),
+      appBar: AppBar(title: const Text('Detail Tagihan'), actions: [
+        IconButton(
+          tooltip: 'Unduh invoice PDF',
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+          onPressed: () => openPrivateFile(context, '/parent/invoices/${widget.invoiceId}/pdf', 'Invoice'),
+        ),
+      ]),
       body: AsyncView<Map>(
         key: _key,
         load: () async => (await api.get('/parent/invoices/${widget.invoiceId}'))['data'],
@@ -151,6 +163,15 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   ),
                 ),
             ],
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Unduh invoice PDF'),
+                onPressed: () => openPrivateFile(context, '/parent/invoices/${widget.invoiceId}/pdf', 'Invoice ${text(inv['invoice_no'])}'),
+              ),
+            ),
             if (pending)
               const Padding(
                 padding: EdgeInsets.all(12),

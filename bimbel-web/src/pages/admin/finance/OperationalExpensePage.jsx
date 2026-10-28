@@ -79,7 +79,7 @@ export default function OperationalExpensePage() {
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Operational Expense & Cashflow</h1>
+          <h1 className="text-3xl font-black text-gray-950 tracking-tight">Pengeluaran Operasional & Arus Kas</h1>
           <p className="text-base text-gray-500 mt-1">Pencatatan kas keluar operasional dan rekap arus kas bulanan dari pembayaran siswa, honor tentor, dan biaya operasional.</p>
         </div>
         <div className="flex items-center gap-2 self-start md:self-auto shrink-0">

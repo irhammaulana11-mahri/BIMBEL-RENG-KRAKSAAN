@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Academic;
 
 use App\Http\Controllers\Controller;
+use App\Services\Admin\MasterOverviewService;
 use App\Models\Academic\Schedule;
 use App\Models\Academic\ScheduleSession;
 use App\Http\Resources\Academic\ScheduleResource;
@@ -165,7 +166,7 @@ class ScheduleController extends Controller {
 
     public function cancelSession(ScheduleSessionRequest $request, ScheduleSession $session) {
         $result = $this->scheduleService->cancelSession($session, $request->validated());
-        return response()->json($result, $result['success'] ? 200 : 500);
+        return response()->json($result, $result['success'] ? 200 : ($result['code'] ?? 500));
     }
 
     public function updateSessionDetails(ScheduleSessionRequest $request, ScheduleSession $session) {
@@ -191,5 +192,15 @@ class ScheduleController extends Controller {
     public function toggleStatus(ScheduleRequest $request, Schedule $schedule) {
         $result = $this->scheduleService->toggleScheduleStatus($schedule, $request->validated()['is_active']);
         return response()->json($result, 200);
+    }
+
+    // GET: Detail sesi untuk drawer (absensi nyata, absen tentor, aktivitas, riwayat)
+    public function sessionOverview(ScheduleSession $session, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->session($session)]);
+    }
+
+    // GET: Rekap sesi per status untuk drawer pola jadwal (master)
+    public function patternOverview(Schedule $schedule, MasterOverviewService $overview) {
+        return response()->json(['data' => $overview->schedulePattern($schedule)]);
     }
 }

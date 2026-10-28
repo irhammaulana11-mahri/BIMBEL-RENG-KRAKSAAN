@@ -16,6 +16,8 @@ class AttendanceService {
     // Jam sesi (session_date + start_time) ditulis dalam waktu lokal bimbel
     public const TIMEZONE = LocalTime::TIMEZONE;
 
+    public function __construct(protected AttendanceLocationService $locationService) {}
+
     /**
      * Mengambil daftar siswa kelas beserta status absennya di sesi ini
      */
@@ -119,9 +121,10 @@ class AttendanceService {
     }
 
     /**
-     * Check-in tentor otomatis saat sesi dimulai. Tidak menimpa check-in yang sudah ada.
+     * Absen masuk tentor saat sesi dimulai, dengan posisi GPS. Tidak menimpa check-in yang sudah ada.
+     * $position: latitude, longitude, accuracy (kosong untuk kelas online / pemanggilan tanpa GPS).
      */
-    public function checkInTentor(ScheduleSession $session): TentorAttendance {
+    public function checkInTentor(ScheduleSession $session, array $position = [], ?string $source = null): TentorAttendance {
         $attendance = TentorAttendance::firstOrNew([
             'session_id' => $session->id,
             'tentor_id'  => $session->tentor_id,
@@ -129,10 +132,24 @@ class AttendanceService {
 
         if (!$attendance->exists || !$attendance->checked_in_at) {
             $now = now();
+            $target = $this->locationService->resolveTarget($session);
+            $measured = $this->locationService->measure($target, $position);
+
             $attendance->fill([
-                'attendance_status' => 'HADIR',
-                'checked_in_at'     => $now,
-                'late_minutes'      => $this->calculateLateMinutes($session, $now),
+                'attendance_status'      => 'HADIR',
+                'checked_in_at'          => $now,
+                'late_minutes'           => $this->calculateLateMinutes($session, $now),
+                'target_label'           => $target['label'],
+                'target_latitude'        => $target['latitude'],
+                'target_longitude'       => $target['longitude'],
+                'target_radius_meter'    => $target['radius_meter'],
+                'checkin_latitude'       => $measured['latitude'],
+                'checkin_longitude'      => $measured['longitude'],
+                'checkin_accuracy_meter' => $measured['accuracy_meter'],
+                'checkin_distance_meter' => $measured['distance_meter'],
+                'checkin_outside_area'   => $measured['outside_area'],
+                'checkin_outside_time'   => $this->isOutsideCheckinWindow($session, $now),
+                'checkin_source'         => $source,
             ])->save();
         }
 
@@ -140,16 +157,30 @@ class AttendanceService {
     }
 
     /**
-     * Check-out tentor saat sesi diselesaikan dan hitung durasi mengajar.
+     * Absen pulang tentor saat sesi diselesaikan: posisi GPS, durasi mengajar, pulang awal / di luar jam.
      */
-    public function checkOutTentor(ScheduleSession $session): TentorAttendance {
-        $attendance = $this->checkInTentor($session);
+    public function checkOutTentor(ScheduleSession $session, array $position = [], ?string $source = null): TentorAttendance {
+        $attendance = $this->checkInTentor($session, $position, $source);
 
         if (!$attendance->checked_out_at) {
             $now = now();
+            // Bandingkan dengan titik sasaran yang dibekukan saat absen masuk
+            $measured = $this->locationService->measure([
+                'latitude'     => $attendance->target_latitude,
+                'longitude'    => $attendance->target_longitude,
+                'radius_meter' => $attendance->target_radius_meter,
+            ], $position);
+
             $attendance->update([
-                'checked_out_at'   => $now,
-                'teaching_minutes' => $this->calculateTeachingMinutes($attendance->checked_in_at, $now),
+                'checked_out_at'          => $now,
+                'teaching_minutes'        => $this->calculateTeachingMinutes($attendance->checked_in_at, $now),
+                'checkout_latitude'       => $measured['latitude'],
+                'checkout_longitude'      => $measured['longitude'],
+                'checkout_accuracy_meter' => $measured['accuracy_meter'],
+                'checkout_distance_meter' => $measured['distance_meter'],
+                'checkout_outside_area'   => $measured['outside_area'],
+                'early_leave_minutes'     => $this->calculateEarlyLeaveMinutes($session, $now),
+                'checkout_outside_time'   => $this->isOutsideCheckoutWindow($session, $now),
             ]);
         }
 
@@ -186,6 +217,11 @@ class AttendanceService {
             'late_minutes'      => $checkedInAt ? $this->calculateLateMinutes($session, $checkedInAt) : 0,
             'teaching_minutes'  => $checkedOutAt ? $this->calculateTeachingMinutes($checkedInAt, $checkedOutAt) : 0,
             'note'              => $data['note'] ?? null,
+            'checkin_source'    => 'ADMIN',
+            // Keterangan jam mengikuti jam koreksi; keterangan lokasi GPS tentor (jika ada) dipertahankan
+            'checkin_outside_time'  => $checkedInAt ? $this->isOutsideCheckinWindow($session, $checkedInAt) : false,
+            'early_leave_minutes'   => $checkedOutAt ? $this->calculateEarlyLeaveMinutes($session, $checkedOutAt) : 0,
+            'checkout_outside_time' => $checkedOutAt ? $this->isOutsideCheckoutWindow($session, $checkedOutAt) : false,
         ])->save();
 
         $session->setRelation('tentorAttendance', $attendance);
@@ -276,6 +312,24 @@ class AttendanceService {
         return $checkedInAt->greaterThan($scheduledStart)
             ? (int) $scheduledStart->diffInMinutes($checkedInAt)
             : 0;
+    }
+
+    // Di luar jendela absen masuk: lebih awal dari 30 menit sebelum mulai, atau setelah jam selesai
+    private function isOutsideCheckinWindow(ScheduleSession $session, Carbon $at): bool {
+        $windowStart = $this->sessionDateTime($session, $session->start_time)
+            ->subMinutes(AttendanceLocationService::EARLY_CHECKIN_MINUTES);
+        return $at->lessThan($windowStart) || $at->greaterThan($this->sessionDateTime($session, $session->end_time));
+    }
+
+    private function isOutsideCheckoutWindow(ScheduleSession $session, Carbon $at): bool {
+        $windowEnd = $this->sessionDateTime($session, $session->end_time)
+            ->addMinutes(AttendanceLocationService::LATE_CHECKOUT_MINUTES);
+        return $at->greaterThan($windowEnd);
+    }
+
+    private function calculateEarlyLeaveMinutes(ScheduleSession $session, Carbon $checkedOutAt): int {
+        $scheduledEnd = $this->sessionDateTime($session, $session->end_time);
+        return $checkedOutAt->lessThan($scheduledEnd) ? (int) $checkedOutAt->diffInMinutes($scheduledEnd) : 0;
     }
 
     private function calculateTeachingMinutes(?Carbon $checkedInAt, Carbon $checkedOutAt): int {

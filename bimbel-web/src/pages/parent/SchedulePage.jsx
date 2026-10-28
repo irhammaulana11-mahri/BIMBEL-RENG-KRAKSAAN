@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, Clock, User, ArrowRightLeft, AlertCircle, Video, MapPin, X } from "lucide-react";
+import { Calendar, Clock, User, ArrowRightLeft, AlertCircle, Video, MapPin, MapPinned, X } from "lucide-react";
+import LocationChangeModal from "../../components/shared/LocationChangeModal";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import ConfirmationModal from "../../components/ui/confirmation/ConfirmationModal";
 import {
   getParentSchedules, requestParentReschedule, getParentRescheduleRequests, cancelParentRescheduleRequest,
-  SESSION_STATUS, ATTENDANCE_LABEL, REQUEST_STATUS, formatSessionDate, dateOffset,
+  requestParentLocationChange, cancelParentLocationRequest, getParentLocationRequests, SESSION_STATUS, ATTENDANCE_LABEL, REQUEST_STATUS, formatSessionDate, dateOffset,
 } from "@/services/parent/parentService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { currentPeriod } from "@/utils/format";
+import LocationRequestList from "../../components/shared/LocationRequestList";
 
 const RANGES = [
   { value: "week", label: "7 Hari" },
@@ -33,15 +35,19 @@ export default function ParentSchedulePage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(null);
+  const [locating, setLocating] = useState(null);
+  const [locationRequests, setLocationRequests] = useState([]);
   const [confirm, setConfirm] = useState({ open: false });
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   const load = async () => {
     try {
-      const [sched, reqs] = await Promise.all([
+      const [sched, reqs, locs] = await Promise.all([
         getParentSchedules({ ...rangeDates(range, month), student_id: childFilter || undefined }),
         getParentRescheduleRequests(),
+        getParentLocationRequests(),
       ]);
+      setLocationRequests(locs.data.data || []);
       setSessions(sched.data.data || []);
       setChildren(sched.data.children || []);
       setRequests(reqs.data.data || []);
@@ -69,6 +75,31 @@ export default function ParentSchedulePage() {
       setConfirm({ open: false });
       try {
         const res = await cancelParentRescheduleRequest(req.id);
+        showSuccess(res.data.message);
+        load();
+      } catch (err) {
+        showError(getApiErrorMessage(err, "Gagal membatalkan pengajuan."));
+      }
+    },
+  });
+
+  // Anak pertama di sesi dipakai sebagai acuan kepemilikan sesi
+  const submitLocation = async (form) => {
+    const res = await requestParentLocationChange(locating.id, { ...form, student_id: locating.children[0]?.id });
+    setLocating(null);
+    showSuccess(res.data.message);
+    load();
+  };
+
+  const handleCancelLocation = (session) => setConfirm({
+    open: true,
+    title: "Batalkan Pengajuan Lokasi?",
+    message: `Pengajuan lokasi "${session.my_location_request.location_name}" untuk sesi ${session.subject_name} akan dibatalkan.`,
+    variant: "warning",
+    onConfirm: async () => {
+      setConfirm({ open: false });
+      try {
+        const res = await cancelParentLocationRequest(session.my_location_request.id);
         showSuccess(res.data.message);
         load();
       } catch (err) {
@@ -112,7 +143,7 @@ export default function ParentSchedulePage() {
               <div key={date}>
                 <p className="text-sm font-black text-gray-700 mb-2 flex items-center gap-2"><Calendar size={16} className="text-gray-400" /> {formatSessionDate(date)}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {items.map((s) => <SessionCard key={s.id} session={s} onRequest={() => setRequesting(s)} />)}
+                  {items.map((s) => <SessionCard key={s.id} session={s} onRequest={() => setRequesting(s)} onRequestLocation={() => setLocating(s)} onCancelLocation={() => handleCancelLocation(s)} />)}
                 </div>
               </div>
             ))}
@@ -151,13 +182,16 @@ export default function ParentSchedulePage() {
         onClose={() => setRequesting(null)}
         onDone={(message) => { setRequesting(null); showSuccess(message); load(); }}
       />
+      <div className="px-6 pb-6"><LocationRequestList requests={locationRequests} onCancel={(r) => handleCancelLocation({ subject_name: r.session?.subject_name, my_location_request: r })} /></div>
+      <LocationChangeModal open={!!locating} session={locating} onClose={() => setLocating(null)} onSubmit={submitLocation} />
       <ConfirmationModal open={confirm.open} title={confirm.title} message={confirm.message} variant={confirm.variant} onConfirm={confirm.onConfirm} onClose={() => setConfirm({ open: false })} />
     </div>
   );
 }
 
-function SessionCard({ session, onRequest }) {
+function SessionCard({ session, onRequest, onRequestLocation, onCancelLocation }) {
   const pending = session.my_request?.status === "PENDING";
+  const locationRequest = session.my_location_request;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex flex-col justify-between">
@@ -193,6 +227,20 @@ function SessionCard({ session, onRequest }) {
       ) : session.can_request && (
         <button onClick={onRequest} className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-gray-700 font-bold text-xs rounded-xl">
           <ArrowRightLeft size={14} /> Ajukan Pindah Jadwal
+        </button>
+      )}
+
+      {locationRequest && (
+        <div className="mt-2 text-xs flex flex-wrap items-center gap-1.5">
+          <span className="font-bold text-gray-600">Lokasi sementara "{locationRequest.location_name}":</span>
+          <span className={`px-1.5 py-0.5 rounded font-bold ${REQUEST_STATUS[locationRequest.status]?.className}`}>{REQUEST_STATUS[locationRequest.status]?.label}</span>
+          {locationRequest.review_note && <span className="text-gray-500">{locationRequest.review_note}</span>}
+          {locationRequest.status === "PENDING" && <button onClick={onCancelLocation} className="font-bold text-gray-500 hover:text-rose-600">Batalkan</button>}
+        </div>
+      )}
+      {session.can_request_location && (
+        <button onClick={onRequestLocation} className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-bold text-xs rounded-xl">
+          <MapPinned size={14} /> Ajukan Lokasi Les Sementara
         </button>
       )}
     </div>
