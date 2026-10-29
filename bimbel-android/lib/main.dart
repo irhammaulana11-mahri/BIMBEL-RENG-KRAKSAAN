@@ -70,7 +70,7 @@ class BimbelApp extends StatelessWidget {
         listenable: auth,
         builder: (context, _) {
           if (auth.initializing) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const _SplashScreen();
           }
           return switch (auth.role) {
             'siswa' => const StudentHome(),
@@ -80,6 +80,28 @@ class BimbelApp extends StatelessWidget {
             _ => const LoginScreen(),
           };
         },
+      ),
+    );
+  }
+}
+
+/// Layar memuat saat sesi login diperiksa: logo lembaga di latar putih, menyambung splash sistem.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/logo.png', width: 220, semanticLabel: 'Bimbel Reng Kraksaan'),
+            const SizedBox(height: 32),
+            const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 3)),
+          ],
+        ),
       ),
     );
   }

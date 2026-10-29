@@ -49,12 +49,15 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Form(
               key: _form,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Icon(Icons.school_rounded, size: 72, color: scheme.primary),
-                const SizedBox(height: 12),
-                Text('Bimbel Reng Kraksaan',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
+                // Logo sudah memuat nama lembaga; latar putih agar tetap jelas di mode gelap
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                    child: Image.asset('assets/images/logo.png', width: 180, semanticLabel: 'Bimbel Reng Kraksaan'),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text('Masuk sebagai Siswa, Orang Tua, atau Tentor', textAlign: TextAlign.center),
                 const SizedBox(height: 32),
                 if (_error != null)
