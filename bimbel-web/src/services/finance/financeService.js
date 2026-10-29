@@ -39,6 +39,11 @@ export const getTransferProof = (payrollId, transferId) => api.get(`/admin/finan
 export const getPayrollExceptions = (params = {}) => api.get("/admin/finance/payroll-exceptions", { params });
 export const approvePayrollException = (id, data) => api.patch(`/admin/finance/payroll-exceptions/${id}/approve`, data);
 export const rejectPayrollException = (id, note) => api.patch(`/admin/finance/payroll-exceptions/${id}/reject`, { note });
+
+// Penyesuaian honor dari koreksi absensi
+export const getPayrollAdjustments = (params = {}) => api.get("/admin/finance/payroll-adjustments", { params });
+export const settlePayrollAdjustment = (id, data) => api.patch(`/admin/finance/payroll-adjustments/${id}/settle`, data);
+export const convertPayrollAdjustment = (id, data) => api.patch(`/admin/finance/payroll-adjustments/${id}/convert`, data);
 export const getTentorRates = () => api.get("/admin/finance/tentor-rates");
 
 /* ===================== ADMIN: ATURAN TARIF (RULE ENGINE) ===================== */

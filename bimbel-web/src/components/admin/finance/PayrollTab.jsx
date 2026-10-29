@@ -3,6 +3,7 @@ import { Settings2, RefreshCw, CheckCircle2, Trash2, Send, ChevronDown, ChevronU
 import TutorPaymentModal from "./TutorPaymentModal";
 import PayrollApproveModal from "./PayrollApproveModal";
 import PayrollExceptionsPanel from "./PayrollExceptionsPanel";
+import PayrollAdjustmentsPanel from "./PayrollAdjustmentsPanel";
 import { downloadFile } from "@/utils/download";
 import TentorRateModal from "./TentorRateModal";
 import ConfirmationModal from "@/components/ui/confirmation/ConfirmationModal";
@@ -137,6 +138,7 @@ export default function PayrollTab({ period, onNotify }) {
           )}
 
           <PayrollExceptionsPanel refreshKey={refreshKey} onNotify={onNotify} onChanged={load} />
+          <PayrollAdjustmentsPanel refreshKey={refreshKey} onNotify={onNotify} onChanged={load} />
 
           {payroll && payroll.status !== "DRAFT" && pendingCount > 0 && (
             <p className="text-xs text-gray-500">{pendingCount} sesi baru setelah payroll disetujui akan masuk payroll bulan berikutnya.</p>

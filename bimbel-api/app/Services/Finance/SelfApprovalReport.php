@@ -19,6 +19,7 @@ class SelfApprovalReport
         'payroll'           => 'Persetujuan payroll',
         'payroll_transfer'  => 'Transfer honor',
         'payroll_exception' => 'Pengecualian payroll',
+        'attendance_correction' => 'Koreksi absensi',
     ];
 
     public function build(int $year, int $month): array {

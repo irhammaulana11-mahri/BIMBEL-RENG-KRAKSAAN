@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, FileText, CheckCircle2 } from "lucide-react";
-import { getStudentAttendanceForm, saveStudentAttendance } from "@/services/academic/attendanceService";
+import { X, Check, FileText, CheckCircle2, Lock } from "lucide-react";
+import { getStudentAttendanceForm, saveStudentAttendance, requestAttendanceCorrection } from "@/services/academic/attendanceService";
+import { formatRupiah } from "@/utils/format";
 import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/ui/Toast";
 
@@ -10,6 +11,24 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
   const [sessionData, setSessionData] = useState(null);
   const [students, setStudents] = useState([]);
   const { toast, showSuccess, showError, hideToast } = useToast();
+  // Koreksi untuk siswa yang absensinya terkunci tagihan/payroll
+  const [correction, setCorrection] = useState(null); // { student, new_status, reason, parent_request_note }
+  const [correctionResult, setCorrectionResult] = useState(null);
+  const [requesting, setRequesting] = useState(false);
+
+  const submitCorrection = async () => {
+    setRequesting(true);
+    try {
+      const { student, ...data } = correction;
+      const res = await requestAttendanceCorrection(sessionId, { ...data, student_id: student.student_id });
+      setCorrectionResult({ name: student.student_name, effect: res.data.data.financial_effect });
+      setCorrection(null);
+    } catch (error) {
+      showError(error.response?.data?.message || "Koreksi gagal diajukan.");
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   useEffect(() => {
     if (open && sessionId) fetchForm();
@@ -39,7 +58,7 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
   };
 
   const markAllPresent = () => {
-    setStudents(prev => prev.map(s => ({ ...s, attendance_status: 'HADIR', note: '' })));
+    setStudents(prev => prev.map(s => s.locked_reason ? s : ({ ...s, attendance_status: 'HADIR', note: '' })));
   };
 
   const handleSubmit = async () => {
@@ -122,9 +141,16 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
                     <td className="py-3">
                       <p className="text-sm font-bold text-gray-900">{student.student_name}</p>
                       <p className="text-[11px] font-mono text-gray-700">{student.school_name} - {student.nis}</p>
+                      {student.locked_reason && (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-[11px] font-semibold text-amber-700 flex items-start gap-1"><Lock size={12} className="mt-0.5 shrink-0" /> Terkunci: {student.locked_reason}</p>
+                          <button onClick={() => { setCorrectionResult(null); setCorrection({ student, new_status: "", reason: "", parent_request_note: "" }); }} className="text-[11px] font-bold text-blue-700 underline">Ajukan koreksi</button>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 pr-4">
                       <select 
+                        disabled={!!student.locked_reason}
                         value={student.attendance_status}
                         onChange={(e) => handleStatusChange(student.student_id, e.target.value)}
                         className={`w-full border rounded-xl p-2 text-xs font-bold outline-none cursor-pointer ${
@@ -158,6 +184,29 @@ export default function StudentAttendanceModal({ open, sessionId, onClose, onSuc
             </table>
           )}
         </div>
+
+        {correction && (
+          <div className="mx-6 mb-3 p-4 rounded-2xl border border-blue-200 bg-blue-50/50 space-y-2 shrink-0">
+            <p className="text-sm font-bold text-gray-900">Koreksi absensi {correction.student.student_name} (saat ini {correction.student.attendance_status})</p>
+            <select value={correction.new_status} onChange={e => setCorrection({ ...correction, new_status: e.target.value })} className="w-full border rounded-xl p-2 text-xs font-bold">
+              <option value="">Pilih status yang benar</option>
+              {["HADIR", "IZIN", "SAKIT", "ALPA"].filter(v => v !== correction.student.attendance_status).map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+            <textarea rows={2} value={correction.reason} onChange={e => setCorrection({ ...correction, reason: e.target.value })} placeholder="Alasan koreksi (wajib, min. 10 karakter)" className="w-full border rounded-xl p-2 text-xs" />
+            <input value={correction.parent_request_note} onChange={e => setCorrection({ ...correction, parent_request_note: e.target.value })} placeholder="Catatan permintaan orang tua (opsional)" className="w-full border rounded-xl p-2 text-xs" />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setCorrection(null)} className="px-3 py-1.5 text-xs text-gray-500">Batal</button>
+              <button onClick={submitCorrection} disabled={requesting || !correction.new_status || correction.reason.trim().length < 10} className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold disabled:opacity-40">Ajukan Koreksi</button>
+            </div>
+          </div>
+        )}
+        {correctionResult && (
+          <div className="mx-6 mb-3 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-xs text-emerald-900 space-y-1 shrink-0">
+            <p className="font-bold">Koreksi {correctionResult.name} diajukan. Setujui di menu Absensi → Koreksi Absensi.</p>
+            {correctionResult.effect?.billing && <p>Dampak tagihan {correctionResult.effect.billing.invoice_no}: {formatRupiah(correctionResult.effect.billing.delta)}</p>}
+            {correctionResult.effect?.payroll && <p>Dampak honor ({correctionResult.effect.payroll.payroll_no}): {formatRupiah(correctionResult.effect.payroll.delta)}</p>}
+          </div>
+        )}
 
         {/* FOOTER */}
         <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-3 rounded-b-2xl shrink-0">

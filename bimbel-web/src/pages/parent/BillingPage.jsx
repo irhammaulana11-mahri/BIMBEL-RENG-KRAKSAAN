@@ -90,7 +90,7 @@ export default function ParentBillingPage() {
                       {inv.status === "PAID" ? <CheckCircle className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-400">{inv.invoice_no}</p>
+                      <p className="text-xs font-bold text-gray-400">{inv.invoice_no}{inv.invoice_type === "ADJUSTMENT" ? " • Penyesuaian" : ""}</p>
                       <p className="font-bold text-gray-900">
                         {inv.period_month ? `SPP ${formatPeriod(`${inv.period_year}-${String(inv.period_month).padStart(2, "0")}`)}` : "Tagihan Lainnya"} • {inv.student_name}
                       </p>

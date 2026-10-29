@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import StudentAttendanceTab from "../../../components/admin/academic/attendance/StudentAttendanceTab";
 import TentorAttendanceTab from "../../../components/admin/academic/attendance/TentorAttendanceTab";
+import AttendanceCorrectionTab from "../../../components/admin/academic/attendance/AttendanceCorrectionTab";
 
 export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState("siswa");
@@ -29,9 +30,17 @@ export default function AttendancePage() {
         >
           Absensi Tentor
         </button>
+        <button
+          onClick={() => setActiveTab("koreksi")}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "koreksi" ? "border-emerald-600 text-emerald-700" : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Koreksi Absensi
+        </button>
       </div>
 
-      {activeTab === "siswa" ? <StudentAttendanceTab /> : <TentorAttendanceTab />}
+      {activeTab === "siswa" ? <StudentAttendanceTab /> : activeTab === "tentor" ? <TentorAttendanceTab /> : <AttendanceCorrectionTab />}
     </div>
   );
 }

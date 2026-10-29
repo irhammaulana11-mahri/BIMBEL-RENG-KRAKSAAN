@@ -22,3 +22,10 @@ export const saveTentorAttendance = (sessionId, data) => {
 export const getStudentSessions = (params) => {
     return api.get(`/admin/attendances/students`, { params });
 };
+
+// Koreksi absensi yang terkunci tagihan/payroll
+export const requestAttendanceCorrection = (sessionId, data) => api.post(`/admin/attendances/sessions/${sessionId}/corrections`, data);
+export const getAttendanceCorrections = (params = {}) => api.get("/admin/attendances/corrections", { params });
+// data: FormData (bukti refund opsional)
+export const approveAttendanceCorrection = (id, data) => api.post(`/admin/attendances/corrections/${id}/approve`, data, { headers: { "Content-Type": "multipart/form-data" } });
+export const rejectAttendanceCorrection = (id, note) => api.patch(`/admin/attendances/corrections/${id}/reject`, { note });

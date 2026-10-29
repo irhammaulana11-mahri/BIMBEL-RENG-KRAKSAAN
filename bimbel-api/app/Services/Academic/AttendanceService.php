@@ -16,7 +16,7 @@ class AttendanceService {
     // Jam sesi (session_date + start_time) ditulis dalam waktu lokal bimbel
     public const TIMEZONE = LocalTime::TIMEZONE;
 
-    public function __construct(protected AttendanceLocationService $locationService) {}
+    public function __construct(protected AttendanceLocationService $locationService, protected AttendanceLock $lock) {}
 
     /**
      * Mengambil daftar siswa kelas beserta status absennya di sesi ini
@@ -36,7 +36,9 @@ class AttendanceService {
                 'status'       => $session->status,
                 'tentor_name'  => $session->tentor->user->name ?? '-',
             ],
-            'students' => $this->mapStudentsWithAttendance($session),
+            // Siswa yang absensinya terkunci tagihan/payroll hanya bisa diubah lewat koreksi
+            'students' => $this->mapStudentsWithAttendance($session)
+                ->map(fn($s) => $s + ['locked_reason' => $this->lock->reason($session, $s['student_id'])]),
         ];
     }
 
@@ -80,10 +82,21 @@ class AttendanceService {
             return ['success' => false, 'code' => 422, 'message' => 'Terdapat siswa yang bukan peserta kelas sesi ini.'];
         }
 
+        // Absensi yang sudah terkunci tagihan/payroll tidak boleh diubah langsung (D-01)
+        $existing = $session->studentAttendances()->get()->keyBy('student_id');
+        $locked = collect($data['attendances'])
+            ->filter(fn($item) => $item['attendance_status'] !== ($existing->get($item['student_id'])?->attendance_status ?? 'BELUM'))
+            ->map(fn($item) => ($reason = $this->lock->reason($session, $item['student_id'])) ? [$item['student_id'], $reason] : null)
+            ->filter();
+        if ($locked->isNotEmpty()) {
+            $names = $session->schedule->classroom->students()->whereIn('master.students.id', $locked->pluck(0))->pluck('full_name')->join(', ');
+            return ['success' => false, 'code' => 422, 'locked' => true,
+                'message' => "Absensi {$names} terkunci karena {$locked->first()[1]}. Ajukan koreksi absensi untuk mengubahnya."];
+        }
+
         try {
             DB::beginTransaction();
             $now = now();
-            $existing = $session->studentAttendances()->get()->keyBy('student_id');
 
             foreach ($data['attendances'] as $item) {
                 $status = $item['attendance_status'];

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, CalendarClock } from "lucide-react";
-import ApprovalFields, { approvalReady } from "./ApprovalFields";
+import ApprovalFields from "./ApprovalFields";
+import { approvalReady } from "./approval";
 import { getPayrollExceptions, approvePayrollException, rejectPayrollException } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 

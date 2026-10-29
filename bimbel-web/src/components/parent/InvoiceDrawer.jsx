@@ -48,8 +48,11 @@ export default function InvoiceDrawer({ invoiceId, onClose, onPay }) {
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${INVOICE_STATUS[inv.status]?.className}`}>{INVOICE_STATUS[inv.status]?.label}</span>
               {inv.is_overdue && <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white flex items-center gap-1"><AlertTriangle size={11} /> Lewat jatuh tempo</span>}
+              {inv.invoice_type === "ADJUSTMENT" && <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700">Penyesuaian{inv.adjusts_invoice_no ? ` atas ${inv.adjusts_invoice_no}` : ""}</span>}
             </div>
           )}
+          {inv?.credit_applied > 0 && <p className="text-xs text-emerald-800 mt-2">Kredit dari koreksi absensi dipakai: {formatRupiah(inv.credit_applied)}</p>}
+          {inv?.refunds?.length > 0 && <p className="text-xs text-emerald-800">Dana dikembalikan: {inv.refunds.map(r => `${formatRupiah(r.amount)} (${r.paid_at})`).join(", ")}</p>}
         </div>
 
         <div className="p-6 space-y-5 flex-1 overflow-y-auto">

@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\Academic\ClassStudentController;
 use App\Http\Controllers\Api\Academic\CurriculumController;
 use App\Http\Controllers\Api\Academic\MaterialController;
 use App\Http\Controllers\Api\Academic\AttendanceController;
+use App\Http\Controllers\Api\Academic\AttendanceCorrectionController;
 use App\Http\Controllers\Api\Academic\SessionActivityController;
 
 // Exam
@@ -343,6 +344,9 @@ Route::prefix('admin')
             Route::get('/payroll-exceptions', [PayrollController::class, 'exceptions']);
             Route::patch('/payroll-exceptions/{exception}/approve', [PayrollController::class, 'approveException']);
             Route::patch('/payroll-exceptions/{exception}/reject', [PayrollController::class, 'rejectException']);
+            Route::get('/payroll-adjustments', [PayrollController::class, 'adjustments']);
+            Route::patch('/payroll-adjustments/{adjustment}/settle', [PayrollController::class, 'settleAdjustment']);
+            Route::patch('/payroll-adjustments/{adjustment}/convert', [PayrollController::class, 'convertAdjustment']);
             Route::delete('/payrolls/{payroll}', [PayrollController::class, 'destroy']);
             Route::get('/tentor-rates', [PayrollController::class, 'rates']);
             Route::get('/fee-rules', [FeeRuleController::class, 'index']);
@@ -364,6 +368,11 @@ Route::prefix('admin')
             Route::put('/sessions/{session}/tentor', [AttendanceController::class, 'saveTentor']);
             Route::get('/tentors', [AttendanceController::class, 'getTentorLogs']);
             Route::get('/students', [AttendanceController::class, 'getStudentSessions']);
+            // Koreksi absensi yang terkunci tagihan/payroll (D-01)
+            Route::get('/corrections', [AttendanceCorrectionController::class, 'index']);
+            Route::post('/sessions/{session}/corrections', [AttendanceCorrectionController::class, 'store']);
+            Route::post('/corrections/{correction}/approve', [AttendanceCorrectionController::class, 'approve']);
+            Route::patch('/corrections/{correction}/reject', [AttendanceCorrectionController::class, 'reject']);
         });
 
     });

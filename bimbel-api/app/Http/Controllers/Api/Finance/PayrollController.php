@@ -7,6 +7,7 @@ use App\Http\Requests\Finance\PayrollTransferRequest;
 use App\Http\Resources\Finance\PayrollResource;
 use App\Models\Admin\Tentor;
 use App\Models\Finance\Payroll;
+use App\Models\Finance\PayrollAdjustment;
 use App\Models\Finance\PayrollException;
 use App\Models\Finance\PayrollTransfer;
 use App\Services\Finance\PayrollService;
@@ -169,6 +170,51 @@ class PayrollController extends Controller
             'self_approved' => $e->self_approved,
             'target_payroll'=> $e->targetPayroll?->payroll_no,
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PENYESUAIAN HONOR dari koreksi absensi
+    |--------------------------------------------------------------------------
+    */
+
+    public function adjustments(Request $request)
+    {
+        $rows = PayrollAdjustment::with(['tentor.user', 'sourcePayroll'])
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')))
+            ->orderByRaw("CASE WHEN status = 'OPEN' THEN 0 ELSE 1 END")->orderByDesc('created_at')
+            ->limit(200)->get();
+
+        return response()->json(['success' => true, 'data' => $rows->map(fn($a) => [
+            'id'               => $a->id,
+            'kind'             => $a->kind,
+            'status'           => $a->status,
+            'tentor_name'      => $a->tentor?->user?->name,
+            'amount'           => (float) $a->amount,
+            'remaining_amount' => (float) $a->remaining_amount,
+            'source_payroll'   => $a->sourcePayroll?->payroll_no,
+            'note'             => $a->note,
+            'settle_reference' => $a->settle_reference,
+            'settled_at'       => LocalTime::format($a->settled_at, 'Y-m-d H:i'),
+            'created_at'       => LocalTime::format($a->created_at, 'Y-m-d H:i'),
+        ])]);
+    }
+
+    public function settleAdjustment(Request $request, PayrollAdjustment $adjustment)
+    {
+        $data = $request->validate(['reference' => ['required', 'string', 'max:100'], 'note' => ['nullable', 'string', 'max:500']],
+            ['reference.required' => 'Isi nomor referensi / keterangan penerimaan pengembalian.']);
+        $this->payrollService->settleRecovery($adjustment, $data['reference'], $data['note'] ?? null);
+
+        return response()->json(['success' => true, 'message' => 'Pengembalian honor dicatat selesai.']);
+    }
+
+    public function convertAdjustment(Request $request, PayrollAdjustment $adjustment)
+    {
+        $data = $request->validate(['note' => ['required', 'string', 'min:5', 'max:500']]);
+        $this->payrollService->convertRecovery($adjustment, $data['note']);
+
+        return response()->json(['success' => true, 'message' => 'Diubah menjadi potongan honor payroll berikutnya.']);
     }
 
     public function destroy(Payroll $payroll)

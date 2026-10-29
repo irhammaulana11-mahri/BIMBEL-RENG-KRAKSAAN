@@ -204,7 +204,6 @@ class PaymentIntegrityTest extends TestCase
     }
 
     /** F-5: absensi siswa dikunci setelah tagihan bulan itu terbit (D-01). */
-    #[Group('temuan-terbuka'), Group('FIN-02')]
     public function test_at60_admin_tidak_bisa_mengubah_absensi_setelah_tagihan_terbit(): void {
         $this->api('POST', "/admin/attendances/sessions/{$this->f['ssB']}/students", $this->tokenFor($this->f['admin']), [
             'attendances' => [['student_id' => $this->f['sB'], 'attendance_status' => 'ALPA']],

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { X, Send, Paperclip } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
-import ApprovalFields, { approvalReady } from "./ApprovalFields";
+import ApprovalFields from "./ApprovalFields";
+import { approvalReady } from "./approval";
 import { transferPayroll } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, todayDate } from "@/utils/format";

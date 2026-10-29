@@ -22,7 +22,11 @@ class Invoice extends Model
         'issue_date', 'due_date', 'period_month', 'period_year',
         'subtotal', 'discount', 'total_amount', 'paid_amount', 'remaining_amount',
         'status', 'note', 'cancel_reason', 'created_by',
+        'invoice_type', 'adjusts_invoice_id', 'correction_id',
     ];
+
+    /** REGULAR: tagihan bulanan/manual; ADJUSTMENT: tagihan penyesuaian dari koreksi absensi (tanpa periode) */
+    public const TYPES = ['REGULAR', 'ADJUSTMENT'];
 
     protected $casts = [
         'issue_date'       => 'date',
@@ -41,6 +45,9 @@ class Invoice extends Model
     public function package() { return $this->belongsTo(Package::class, 'package_id'); }
     public function items() { return $this->hasMany(InvoiceItem::class, 'invoice_id')->orderBy('sort_order'); }
     public function paymentDetails() { return $this->hasMany(PaymentDetail::class, 'invoice_id'); }
+    public function creditApplications() { return $this->hasMany(CreditApplication::class, 'invoice_id'); }
+    public function refunds() { return $this->hasMany(Refund::class, 'invoice_id'); }
+    public function adjustedInvoice() { return $this->belongsTo(Invoice::class, 'adjusts_invoice_id'); }
 
     public function isOverdue(): bool
     {

@@ -62,7 +62,8 @@ class _ParentBillingTabState extends State<ParentBillingTab> {
               for (final i in invoices)
                 Card(
                   child: ListTile(
-                    title: Text('${text(i['student_name'])} • ${periode(i['period_month'], i['period_year'])}'),
+                    title: Text('${text(i['student_name'])} • '
+                        '${i['invoice_type'] == 'ADJUSTMENT' ? 'Penyesuaian (koreksi absensi)' : periode(i['period_month'], i['period_year'])}'),
                     subtitle: Text([
                       '${text(i['invoice_no'])} • ${text(i['class_name'])}',
                       'Jatuh tempo ${tanggal(i['due_date'], withDay: false)}${i['is_overdue'] == true ? ' (lewat)' : ''}',

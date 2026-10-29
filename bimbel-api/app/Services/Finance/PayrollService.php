@@ -5,6 +5,7 @@ use App\Models\Academic\TentorAttendance;
 use App\Models\Admin\Tentor;
 use App\Models\Finance\Payroll;
 use App\Models\Finance\PayrollDetail;
+use App\Models\Finance\PayrollAdjustment;
 use App\Models\Finance\PayrollException;
 use App\Models\Finance\PayrollTransfer;
 use App\Models\Admin\User;
@@ -110,6 +111,7 @@ class PayrollService {
             // Absensi yang sudah masuk payroll dikunci dari koreksi
             TentorAttendance::whereIn('id', $attendances->pluck('id'))->update(['is_payroll_processed' => true]);
             PayrollException::whereIn('id', $late->pluck('id'))->update(['target_payroll_id' => $payroll->id]);
+            $this->applyAdjustments($payroll);
 
             $payroll = $this->refreshTotals($payroll);
             $this->audit->record($payroll, $before ? 'REGENERATED' : 'GENERATED', $before, meta: ['late_sessions' => $late->count()]);
@@ -188,7 +190,8 @@ class PayrollService {
                 $this->audit->record($transfer, 'TRANSFERRED', reason: $data['approval_note'] ?? null,
                     meta: ['payroll_id' => $payroll->id] + $this->approval->meta($selfApproved));
 
-                $tentorCount = $payroll->details()->distinct()->count('tentor_id');
+                // Tentor dengan honor bersih 0 (mis. habis oleh potongan) tidak perlu ditransfer
+                $tentorCount = $payroll->details()->select('tentor_id')->groupBy('tentor_id')->havingRaw('SUM(subtotal) > 0')->get()->count();
                 if ($payroll->transfers()->count() >= $tentorCount) {
                     $before = $this->audit->snapshot($payroll);
                     $payroll->update(['status' => 'PAID', 'paid_at' => now()]);
@@ -303,7 +306,7 @@ class PayrollService {
                     'session_date'     => $r->session?->session_date,
                     'start_time'       => $r->session ? substr($r->session->start_time, 0, 5) : null,
                     'end_time'         => $r->session ? substr($r->session->end_time, 0, 5) : null,
-                    'subject_name'     => $r->session?->subject->name ?? 'Honor bulanan',
+                    'subject_name'     => $r->session?->subject->name ?? ($r->adjustment_id ? 'Penyesuaian honor' : 'Honor bulanan'),
                     'class_name'       => $r->session?->schedule->classroom->name ?? '-',
                     'teaching_minutes' => $r->teaching_minutes,
                     'calc_method'      => $r->calc_method,
@@ -439,7 +442,71 @@ class PayrollService {
         ];
     }
 
+    /**
+     * Penyesuaian honor dari koreksi absensi (ADDITION / DEDUCTION) masuk payroll yang disusun.
+     * Potongan dibatasi agar total honor tentor tidak negatif; sisanya dibawa ke payroll berikutnya.
+     */
+    private function applyAdjustments(Payroll $payroll): void {
+        $adjustments = PayrollAdjustment::whereIn('kind', ['ADDITION', 'DEDUCTION'])->where('status', 'OPEN')
+            ->orderByRaw("CASE WHEN kind = 'ADDITION' THEN 0 ELSE 1 END")->orderBy('created_at')->orderBy('id')
+            ->lockForUpdate()->get();
+
+        foreach ($adjustments as $adjustment) {
+            $balance = (float) $payroll->details()->where('tentor_id', $adjustment->tentor_id)->sum('subtotal');
+            $remaining = (float) $adjustment->remaining_amount;
+            $applied = $adjustment->kind === 'ADDITION' ? $remaining : round(min($remaining, max(0, $balance)), 2);
+            if ($applied <= 0) continue;
+
+            $signed = $adjustment->kind === 'ADDITION' ? $applied : -$applied;
+            PayrollDetail::create([
+                'payroll_id' => $payroll->id, 'tentor_id' => $adjustment->tentor_id, 'adjustment_id' => $adjustment->id,
+                'teaching_minutes' => 0, 'rate_per_session' => 0, 'rate_per_hour' => 0, 'subtotal' => $signed,
+                'calc_method' => 'ADJUSTMENT', 'quantity' => 1, 'unit_amount' => $signed,
+                'note' => ($adjustment->kind === 'ADDITION' ? 'Penambah honor: ' : 'Potongan kelebihan honor: ') . $adjustment->note
+                    . ($applied < $remaining ? ' (sebagian, sisa ' . Pdf::rupiah($remaining - $applied) . ' dibawa)' : ''),
+            ]);
+            $left = round($remaining - $applied, 2);
+            $adjustment->update(['remaining_amount' => $left, 'status' => $left > 0 ? 'OPEN' : 'APPLIED']);
+        }
+    }
+
+    /** RECOVERY: tentor sudah mengembalikan kelebihan honor. */
+    public function settleRecovery(PayrollAdjustment $adjustment, string $reference, ?string $note): PayrollAdjustment {
+        return DB::transaction(function () use ($adjustment, $reference, $note) {
+            $adjustment = $this->lockOpenRecovery($adjustment);
+            $before = $this->audit->snapshot($adjustment);
+            $adjustment->update(['status' => 'SETTLED', 'remaining_amount' => 0, 'settled_by' => Auth::id(), 'settled_at' => now(),
+                'settle_reference' => $reference, 'note' => trim($adjustment->note . ($note ? " • {$note}" : ''))]);
+            $this->audit->record($adjustment, 'SETTLED', $before, $note);
+            return $adjustment->refresh();
+        });
+    }
+
+    /** RECOVERY yang tidak dikembalikan diubah menjadi potongan honor payroll berikutnya. */
+    public function convertRecovery(PayrollAdjustment $adjustment, string $note): PayrollAdjustment {
+        return DB::transaction(function () use ($adjustment, $note) {
+            $adjustment = $this->lockOpenRecovery($adjustment);
+            $before = $this->audit->snapshot($adjustment);
+            $adjustment->update(['kind' => 'DEDUCTION']);
+            $this->audit->record($adjustment, 'CONVERTED_TO_DEDUCTION', $before, $note);
+            return $adjustment->refresh();
+        });
+    }
+
+    private function lockOpenRecovery(PayrollAdjustment $adjustment): PayrollAdjustment {
+        $locked = PayrollAdjustment::whereKey($adjustment->getKey())->lockForUpdate()->firstOrFail();
+        if ($locked->kind !== 'RECOVERY' || $locked->status !== 'OPEN') {
+            throw ValidationException::withMessages(['status' => ['Hanya permintaan pengembalian yang masih terbuka yang dapat diproses.']]);
+        }
+        return $locked;
+    }
+
     private function releaseDetails(Payroll $payroll): void {
+        // Penyesuaian yang sempat dipakai dikembalikan agar ikut lagi saat disusun ulang
+        foreach ($payroll->details()->whereNotNull('adjustment_id')->get() as $detail) {
+            $adjustment = PayrollAdjustment::lockForUpdate()->find($detail->adjustment_id);
+            $adjustment?->update(['remaining_amount' => round((float) $adjustment->remaining_amount + abs((float) $detail->subtotal), 2), 'status' => 'OPEN']);
+        }
         TentorAttendance::whereIn('id', $payroll->details()->select('tentor_attendance_id'))
             ->update(['is_payroll_processed' => false]);
         PayrollException::where('target_payroll_id', $payroll->id)->update(['target_payroll_id' => null]);
@@ -504,6 +571,9 @@ class PayrollService {
         return $lines->groupBy(fn($l) => $l['method'] . '|' . $l['unit_amount'])
             ->map(function ($group) use ($rupiah, $units) {
                 $first = $group->first();
+                if ($first['method'] === 'ADJUSTMENT') {
+                    return 'penyesuaian ' . $rupiah($group->sum(fn($l) => $l['quantity'] * $l['unit_amount']));
+                }
                 if ($first['method'] === 'MONTHLY') {
                     $fixed = $group->whereNull('session')->first();
                     return $fixed ? "bulanan {$rupiah($fixed['unit_amount'])}" : null;

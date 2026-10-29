@@ -62,6 +62,13 @@ class InvoiceResource extends JsonResource
                     'reversed'        => $detail->payment->relationLoaded('approvedReversal') && $detail->payment->approvedReversal !== null,
                     'reversal_reason' => $detail->payment->relationLoaded('approvedReversal') ? $detail->payment->approvedReversal?->reason : null,
                 ])),
+            // Tagihan penyesuaian (koreksi absensi) & kredit/refund atas kelebihan tagih
+            'invoice_type'     => $this->invoice_type,
+            'adjusts_invoice_no' => $this->whenLoaded('adjustedInvoice', fn() => $this->adjustedInvoice?->invoice_no),
+            'credit_applied'   => $this->whenLoaded('creditApplications', fn() => (float) $this->creditApplications->sum('amount')),
+            'refunds'          => $this->whenLoaded('refunds', fn() => $this->refunds->map(fn($r) => [
+                'amount' => (float) $r->amount, 'method' => $r->method, 'reference_no' => $r->reference_no, 'paid_at' => $r->paid_at?->format('Y-m-d'),
+            ])),
             'created_at'       => $this->created_at,
         ];
     }

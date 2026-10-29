@@ -27,6 +27,8 @@ class FinanceAudit
         Payroll::class         => 'payroll',
         PayrollTransfer::class => 'payroll_transfer',
         PayrollException::class => 'payroll_exception',
+        \App\Models\Finance\PayrollAdjustment::class => 'payroll_adjustment',
+        \App\Models\Academic\AttendanceCorrection::class => 'attendance_correction',
     ];
 
     /** Kolom yang tidak berguna untuk audit */

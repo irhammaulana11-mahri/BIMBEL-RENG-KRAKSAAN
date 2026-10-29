@@ -75,13 +75,13 @@ class InvoiceController extends Controller
 
     public function pdf(Invoice $invoice)
     {
-        $invoice->load(['student.parents', 'classroom', 'items', 'paymentDetails.payment.approvedReversal']);
+        $invoice->load(['student.parents', 'classroom', 'items', 'paymentDetails.payment.approvedReversal', 'adjustedInvoice', 'creditApplications', 'refunds']);
         return Pdf::download('pdf.invoice', compact('invoice'), "Invoice-{$invoice->invoice_no}.pdf");
     }
 
     public function show(Invoice $invoice)
     {
-        return new InvoiceResource($invoice->load(['student.parents', 'classroom', 'package', 'items', 'paymentDetails.payment.approvedReversal']));
+        return new InvoiceResource($invoice->load(['student.parents', 'classroom', 'package', 'items', 'paymentDetails.payment.approvedReversal', 'adjustedInvoice', 'creditApplications', 'refunds']));
     }
 
     public function store(InvoiceRequest $request)

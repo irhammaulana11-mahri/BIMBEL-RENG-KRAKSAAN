@@ -17,7 +17,7 @@ class PayrollDetail extends Model
     protected $fillable = [
         'payroll_id', 'tentor_id', 'tentor_attendance_id', 'session_id',
         'teaching_minutes', 'rate_per_session', 'rate_per_hour', 'subtotal', 'note',
-        'fee_rule_id', 'calc_method', 'quantity', 'unit_amount',
+        'fee_rule_id', 'calc_method', 'quantity', 'unit_amount', 'adjustment_id',
     ];
 
     protected $casts = [

@@ -161,7 +161,9 @@ class InvoiceService {
 
         $paid = (float) $invoice->paymentDetails()
             ->whereHas('payment', fn($q) => $q->valid())
-            ->sum('amount_paid');
+            ->sum('amount_paid')
+            // Saldo kredit (kelebihan tagih dari koreksi absensi) yang dipakai untuk tagihan ini
+            + (float) $invoice->creditApplications()->sum('amount');
 
         $total = (float) $invoice->total_amount;
         $remaining = max(0, round($total - $paid, 2));
@@ -173,6 +175,41 @@ class InvoiceService {
         ]);
 
         return $invoice->refresh();
+    }
+
+    /**
+     * Tagihan penyesuaian (kurang tagih dari koreksi absensi): tagihan baru tanpa periode bulan yang
+     * merujuk tagihan asli. Tagihan asli tidak diubah.
+     */
+    public function createAdjustment(Invoice $original, array $items, \App\Models\Academic\AttendanceCorrection $correction): Invoice {
+        return $this->createInvoice([
+            'student_id'         => $original->student_id,
+            'class_id'           => $original->class_id,
+            'package_id'         => $original->package_id,
+            'due_date'           => Carbon::parse(LocalTime::today())->addDays(7)->toDateString(),
+            'items'              => $items,
+            'note'               => "Penyesuaian tagihan {$original->invoice_no} karena koreksi absensi.",
+            'invoice_type'       => 'ADJUSTMENT',
+            'adjusts_invoice_id' => $original->id,
+            'correction_id'      => $correction->id,
+        ]);
+    }
+
+    /** Pakai saldo kredit siswa (tertua dulu) untuk tagihan reguler yang baru terbit; sisa kredit dibawa. */
+    private function applyCredits(Invoice $invoice): void {
+        $remaining = (float) $invoice->remaining_amount;
+        if ($remaining <= 0) return;
+
+        $credits = \App\Models\Finance\CreditNote::where('student_id', $invoice->student_id)->where('remaining_amount', '>', 0)
+            ->orderBy('created_at')->orderBy('id')->lockForUpdate()->get();
+        foreach ($credits as $credit) {
+            $use = round(min($remaining, (float) $credit->remaining_amount), 2);
+            if ($use <= 0) break;
+            \App\Models\Finance\CreditApplication::create(['credit_note_id' => $credit->id, 'invoice_id' => $invoice->id, 'amount' => $use, 'created_by' => Auth::id()]);
+            $credit->update(['remaining_amount' => round((float) $credit->remaining_amount - $use, 2)]);
+            $remaining = round($remaining - $use, 2);
+        }
+        if ($credits->isNotEmpty()) $this->recalculate($invoice);
     }
 
     public function periodLabel(int $year, int $month): string {
@@ -230,14 +267,19 @@ class InvoiceService {
             'status'           => $total > 0 ? 'UNPAID' : 'PAID',
             'note'             => $data['note'] ?? null,
             'created_by'       => Auth::id(),
+            'invoice_type'     => $data['invoice_type'] ?? 'REGULAR',
+            'adjusts_invoice_id' => $data['adjusts_invoice_id'] ?? null,
+            'correction_id'    => $data['correction_id'] ?? null,
         ]);
 
         foreach ($items as $item) {
             InvoiceItem::create(array_merge($item, ['invoice_id' => $invoice->id]));
         }
 
+        if ($invoice->invoice_type === 'REGULAR') $this->applyCredits($invoice);
+
         $this->audit->record($invoice, 'CREATED', meta: [
-            'source' => isset($data['period_month']) ? 'monthly' : 'manual',
+            'source' => $invoice->invoice_type === 'ADJUSTMENT' ? 'adjustment' : (isset($data['period_month']) ? 'monthly' : 'manual'),
             'items'  => $items->map(fn($i) => ['name' => $i['item_name'], 'quantity' => $i['quantity'], 'unit_price' => $i['unit_price'], 'subtotal' => $i['subtotal']])->all(),
         ]);
 
