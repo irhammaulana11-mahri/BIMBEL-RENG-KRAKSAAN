@@ -1,7 +1,7 @@
 # Laporan Akhir Remediasi Keamanan & Database — Bimbel Reng Kraksaan
 
 Tanggal: 29 Oktober 2026 · Basis awal: commit `7cce00b` · Hasil akhir: commit `3758793` (`main`)
-Dokumen terkait: [REMEDIATION-SPEC.md](REMEDIATION-SPEC.md) (keputusan bisnis & rancangan), [DEPLOY.md](../DEPLOY.md) (pemasangan server).
+Dokumen terkait: [REMEDIATION-SPEC.md](REMEDIATION-SPEC.md) (keputusan bisnis & rancangan), [DEPLOY.md](../DEPLOY.md) (konfigurasi), [SERVER-SETUP.md](SERVER-SETUP.md) (langkah penyiapan server & Cloudflare).
 
 ## 1. Ringkasan
 
@@ -11,7 +11,7 @@ database terisolasi (`bimbel_test`) naik/turun/naik sebelum dijalankan di databa
 migration didahului backup terverifikasi.
 
 - **Status akhir: CONDITIONALLY READY** (syarat di bagian 7).
-- **Semua temuan HIGH dan MEDIUM ditutup.** Yang tersisa hanya DB-01 (konfigurasi akun database di server).
+- **Semua temuan HIGH dan MEDIUM ditutup.** Yang tersisa hanya DB-01 (akun database tunggal), diterima sementara karena fitur restore membutuhkannya.
 - **Test otomatis:** dari 2 test contoh (SQLite, tidak relevan) menjadi **134 test feature di PostgreSQL**, semuanya lulus.
 - **6 migration baru**, semuanya diuji naik/turun/naik dan sudah berjalan di database pengembangan.
 - Laporan ini tidak menyatakan aplikasi sepenuhnya aman; berlaku untuk cakupan dan bukti di bawah.
@@ -40,7 +40,7 @@ migration didahului backup terverifikasi.
 | LOW-05 | LOW | Admin tidak bisa ganti password sendiri | `PUT /api/admin/password` + menu | T12 |
 | DB-02 | LOW | `fee_rule_id` tanpa FK; nominal tanpa CHECK > 0 | FK RESTRICT + CHECK; hapus aturan terpakai → 422 | T10 |
 | DB-03 | INFO | FK ganda di `academic.schedules` | 8 FK → 4 FK RESTRICT (perilaku efektif terbukti tidak berubah) | T10 |
-| **DB-01** | LOW | Akun DB aplikasi pemilik semua schema | **Belum** — dikerjakan saat pemasangan server | — |
+| **DB-01** | LOW | Akun DB aplikasi pemilik semua schema | **Diterima sementara:** restore backup butuh akun pemilik schema; pemisahan perlu perubahan kode (lihat SERVER-SETUP.md C1) | — |
 
 **Temuan baru selama remediasi (ditutup):**
 
@@ -124,12 +124,12 @@ fitur rekomendasi AI (test sengaja tidak memanggil layanan luar).
 
 1. Klik-uji manual fitur baru di browser & HP: reversal, payroll (persetujuan, transfer, pengecualian,
    konfirmasi tentor), koreksi absensi, ganti password admin, dashboard, branding.
-2. Pasang server sesuai [DEPLOY.md](../DEPLOY.md): HTTPS Cloudflare **Full (strict)**, pemulihan IP asli di
-   Nginx (agar batas login tetap per pengguna), `CORS_ALLOWED_ORIGINS`, `APP_DEBUG=false`, cron penjadwal,
-   PostgreSQL client ≥ 16.10.
+2. Pasang server lokal + Cloudflare Tunnel sesuai [SERVER-SETUP.md](SERVER-SETUP.md): pemulihan IP asli di
+   Nginx (agar batas login tetap per pengguna), `APP_URL` https, `CORS_ALLOWED_ORIGINS`, `APP_DEBUG=false`,
+   cron penjadwal, PostgreSQL client ≥ 16.10, UPS & cadangan di luar server.
 3. Buat keystore rilis Android dan simpan cadangannya; build APK dengan `API_URL` HTTPS. Pengguna APK lama perlu
    uninstall sekali.
-4. DB-01: pisahkan akun database aplikasi dari akun pemilik schema/migration (disarankan).
+4. DB-01: akun database tetap tunggal (pemilik schema) karena restore backup membutuhkannya; pemisahan akun = rencana perubahan kode tersendiri.
 5. Salin backup ke penyimpanan di luar laptop pengembangan (satu-satunya disk saat ini).
 
 ## 8. Catatan operasional

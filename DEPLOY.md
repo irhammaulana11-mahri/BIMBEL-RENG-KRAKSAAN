@@ -1,6 +1,7 @@
 # Deploy Bimbel Reng Kraksaan
 
 Panduan memasang aplikasi di server baru atau memperbarui server yang sudah berjalan.
+Untuk urutan lengkap memasang server lokal sampai subdomain Cloudflare aktif (lewat Cloudflare Tunnel, tanpa membuka port router), ikuti [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md).
 
 | Bagian | Folder | Teknologi |
 |---|---|---|
@@ -136,37 +137,22 @@ Contoh pembagian subdomain (sesuaikan nama domain Anda):
 | `bimbelreng.id` / `www` | Web (`bimbel-web/dist`) | `VITE_API_URL=https://api.bimbelreng.id` saat build web |
 | `api.bimbelreng.id` | API Laravel | `APP_URL=https://api.bimbelreng.id`, `CORS_ALLOWED_ORIGINS=https://bimbelreng.id,https://www.bimbelreng.id` |
 
-1. **DNS:** di Cloudflare buat record `A` untuk `@`, `www`, dan `api` ke IP server, status *Proxied* (awan oranye).
-2. **SSL/TLS:** mode **Full (strict)**. Pasang *Origin Certificate* Cloudflare (atau Let's Encrypt) di Nginx
-   server. Jangan pakai mode *Flexible*: koneksi Cloudflare → server menjadi HTTP tanpa enkripsi.
-3. **IP asli pengguna (penting untuk batas login):** di belakang Cloudflare semua permintaan tampak dari IP
-   Cloudflare, sehingga batas 5 gagal login per email + IP menjadi per email saja. Pulihkan IP asli di Nginx:
+**Server lokal tanpa membuka port router (dipakai lembaga ini): Cloudflare Tunnel.** Langkah lengkap di
+[docs/SERVER-SETUP.md](docs/SERVER-SETUP.md). Intinya:
 
-   ```nginx
-   # /etc/nginx/conf.d/cloudflare-realip.conf
-   # Daftar terbaru: https://www.cloudflare.com/ips/
-   set_real_ip_from 173.245.48.0/20;
-   set_real_ip_from 103.21.244.0/22;
-   set_real_ip_from 103.22.200.0/22;
-   set_real_ip_from 103.31.4.0/22;
-   set_real_ip_from 141.101.64.0/18;
-   set_real_ip_from 108.162.192.0/18;
-   set_real_ip_from 190.93.240.0/20;
-   set_real_ip_from 188.114.96.0/20;
-   set_real_ip_from 197.234.240.0/22;
-   set_real_ip_from 198.41.128.0/17;
-   set_real_ip_from 162.158.0.0/15;
-   set_real_ip_from 104.16.0.0/13;
-   set_real_ip_from 104.24.0.0/14;
-   set_real_ip_from 172.64.0.0/13;
-   set_real_ip_from 131.0.72.0/22;
-   real_ip_header CF-Connecting-IP;
-   ```
+1. Nginx hanya mendengar `127.0.0.1:80`; `cloudflared` meneruskan ketiga subdomain ke sana.
+2. IP asli pengguna (wajib untuk batas login per pengguna): `set_real_ip_from 127.0.0.1;` +
+   `real_ip_header CF-Connecting-IP;` di Nginx.
+3. `fastcgi_param HTTPS on;` di blok API, karena tunnel → Nginx memakai HTTP lokal.
+4. SSL/TLS mode **Full**, *Always Use HTTPS* aktif. Tidak perlu sertifikat di server.
+5. Firewall: tutup semua koneksi masuk kecuali SSH dari LAN.
 
-   Laravel lalu membaca IP asli tanpa perubahan kode. Batasi juga firewall server agar port 80/443 hanya
-   menerima koneksi dari IP Cloudflare, supaya header ini tidak bisa dipalsukan dengan mengakses server langsung.
-4. **Ukuran unggahan:** paket gratis Cloudflare membatasi body permintaan 100 MB. Unggah backup yang lebih
-   besar langsung di server (`php artisan backup:restore /path/berkas.zip`).
+**Alternatif bila kelak memakai VPS (IP publik):** record `A` *Proxied* untuk `@`, `www`, `api`; mode
+**Full (strict)** dengan Origin Certificate di Nginx; `set_real_ip_from` berisi daftar IP Cloudflare
+(https://www.cloudflare.com/ips/); firewall port 80/443 hanya dari IP Cloudflare.
+
+Paket gratis Cloudflare membatasi body permintaan 100 MB. Unggah backup yang lebih besar langsung di server
+(`php artisan backup:restore /path/berkas.zip`).
 
 ## 6. Aplikasi Android (`bimbel-android`)
 
