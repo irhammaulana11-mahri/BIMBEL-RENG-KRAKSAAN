@@ -26,7 +26,7 @@ class ParentBillingController extends Controller {
         $query = Invoice::query()
             ->whereIn('student_id', $this->childIds())
             ->where('status', '!=', 'CANCELLED')
-            ->with(['student', 'classroom', 'package', 'paymentDetails.payment'])
+            ->with(['student', 'classroom', 'package', 'paymentDetails.payment.approvedReversal'])
             ->withCount(['paymentDetails as pending_payments_count' => fn($q) => $q->whereHas('payment', fn($p) => $p->where('status', 'PENDING'))]);
 
         if ($request->filled('status')) {
@@ -60,7 +60,7 @@ class ParentBillingController extends Controller {
 
     public function showInvoice($id) {
         $invoice = Invoice::whereIn('student_id', $this->childIds())
-            ->with(['student', 'classroom', 'package', 'items', 'paymentDetails.payment'])
+            ->with(['student', 'classroom', 'package', 'items', 'paymentDetails.payment.approvedReversal'])
             ->withCount(['paymentDetails as pending_payments_count' => fn($q) => $q->whereHas('payment', fn($p) => $p->where('status', 'PENDING'))])
             ->findOrFail($id);
 
@@ -70,7 +70,7 @@ class ParentBillingController extends Controller {
     // GET: Invoice PDF tagihan anak
     public function invoicePdf($id) {
         $invoice = Invoice::whereIn('student_id', $this->childIds())
-            ->with(['student.parents', 'classroom', 'items', 'paymentDetails.payment'])
+            ->with(['student.parents', 'classroom', 'items', 'paymentDetails.payment.approvedReversal'])
             ->findOrFail($id);
 
         return Pdf::download('pdf.invoice', compact('invoice'), "Invoice-{$invoice->invoice_no}.pdf");
@@ -93,7 +93,7 @@ class ParentBillingController extends Controller {
     // GET: Riwayat pembayaran
     public function payments() {
         $payments = Payment::whereIn('student_id', $this->childIds())
-            ->with(['student', 'details.invoice'])
+            ->with(['student', 'details.invoice', 'reversals'])
             ->orderByDesc('created_at')
             ->get();
 

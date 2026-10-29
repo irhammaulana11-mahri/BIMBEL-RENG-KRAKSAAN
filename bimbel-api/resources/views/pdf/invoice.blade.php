@@ -38,7 +38,8 @@
     </tbody>
   </table>
 
-  @php($payments = $invoice->paymentDetails->filter(fn($d) => $d->payment && $d->payment->status === 'CONFIRMED'))
+  {{-- Pembayaran yang dibatalkan lewat reversal tidak dihitung sebagai diterima --}}
+  @php($payments = $invoice->paymentDetails->filter(fn($d) => $d->payment && $d->payment->status === 'CONFIRMED' && !$d->payment->approvedReversal))
   @if($payments->isNotEmpty())
     <p style="margin:16px 0 0"><b>Riwayat pembayaran diterima</b></p>
     <table class="grid">

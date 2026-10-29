@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { X, CheckCircle2, XCircle, FileWarning } from "lucide-react";
-import { approvePayment, rejectPayment, getPaymentProof, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { X, CheckCircle2, XCircle, FileWarning, Undo2 } from "lucide-react";
+import { approvePayment, rejectPayment, getPaymentProof, requestReversal, paymentBadge, REVERSAL_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
 
@@ -11,6 +11,7 @@ export default function VerificationModal({ open, payment, onClose, onDone }) {
   const [proof, setProof] = useState(null); // { url, type }
   const [proofError, setProofError] = useState("");
   const [rejectMode, setRejectMode] = useState(false);
+  const [reversalMode, setReversalMode] = useState(false);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -18,6 +19,7 @@ export default function VerificationModal({ open, payment, onClose, onDone }) {
   useEffect(() => {
     if (!open || !payment) return;
     setRejectMode(false);
+    setReversalMode(false);
     setReason("");
     setError("");
     setProof(null);
@@ -51,6 +53,10 @@ export default function VerificationModal({ open, payment, onClose, onDone }) {
 
   const isPending = payment.status === "PENDING";
   const invoice = payment.invoices?.[0];
+  const reversal = payment.reversal;
+  // Reversal bisa diajukan untuk pembayaran diterima yang belum punya reversal aktif
+  const canReverse = payment.status === "CONFIRMED" && (!reversal || reversal.status === "REJECTED");
+  const badge = paymentBadge(payment);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -96,10 +102,21 @@ export default function VerificationModal({ open, payment, onClose, onDone }) {
             </dl>
             {!isPending && (
               <div className="pt-2">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${PAYMENT_STATUS[payment.status]?.className}`}>{PAYMENT_STATUS[payment.status]?.label}</span>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${badge?.className}`}>{badge?.label}</span>
                 {payment.reject_reason && <p className="mt-2 text-rose-700">Alasan: {payment.reject_reason}</p>}
                 {payment.received_by && <p className="mt-1 text-xs text-gray-400">Diverifikasi oleh {payment.received_by}</p>}
               </div>
+            )}
+            {reversal && (
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                <p className="font-bold text-slate-700 flex items-center gap-1.5"><Undo2 className="w-3.5 h-3.5" /> Reversal: <span className={`px-1.5 py-0.5 rounded ${REVERSAL_STATUS[reversal.status]?.className}`}>{REVERSAL_STATUS[reversal.status]?.label}</span></p>
+                <p className="text-slate-600">{reversal.reason}</p>
+                {reversal.reject_note && <p className="text-slate-500">Ditolak: {reversal.reject_note}</p>}
+                {reversal.status === "PENDING" && <p className="text-slate-500">Putuskan di tab Reversal.</p>}
+              </div>
+            )}
+            {reversalMode && (
+              <textarea autoFocus rows={2} value={reason} onChange={e => setReason(e.target.value)} placeholder="Alasan reversal (wajib, min. 10 karakter), mis. salah input siswa" className="w-full rounded-xl border px-3 py-2 text-sm" />
             )}
 
             {rejectMode && (
@@ -108,6 +125,19 @@ export default function VerificationModal({ open, payment, onClose, onDone }) {
             {error && <p className="font-medium text-red-600">{error}</p>}
           </div>
         </div>
+
+        {canReverse && (
+          <div className="p-4 border-t border-gray-100 flex justify-end gap-2">
+            {reversalMode ? (
+              <>
+                <button onClick={() => setReversalMode(false)} className="px-4 py-2.5 text-sm text-gray-500">Batal</button>
+                <button onClick={() => run(() => requestReversal(payment.id, reason), "Reversal diajukan. Setujui di tab Reversal.")} disabled={reason.trim().length < 10 || saving} className="px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">Ajukan Reversal</button>
+              </>
+            ) : (
+              <button onClick={() => setReversalMode(true)} className="px-4 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl text-sm font-bold flex items-center gap-1.5"><Undo2 className="w-4 h-4" /> Batalkan dengan Reversal</button>
+            )}
+          </div>
+        )}
 
         {isPending && (
           <div className="p-4 border-t border-gray-100 flex justify-end gap-2">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Wallet, CheckCircle2, Paperclip, Hourglass } from "lucide-react";
-import { getParentInvoices, getParentPayments, getParentPaymentProof, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { getParentInvoices, getParentPayments, getParentPaymentProof, paymentBadge } from "@/services/finance/financeService";
 import { formatRupiah } from "@/utils/format";
 import PremiumStatCard from "../../components/ui/StatCard";
 import InvoiceDrawer from "../../components/parent/InvoiceDrawer";
@@ -76,7 +76,7 @@ export default function FinancePage() {
                   )}
                   <div className="text-right">
                     <p className="font-black text-gray-900">{formatRupiah(p.total_amount)}</p>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${PAYMENT_STATUS[p.status]?.className}`}>{PAYMENT_STATUS[p.status]?.label}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${paymentBadge(p)?.className}`}>{paymentBadge(p)?.label}</span>
                   </div>
                 </div>
               </div>

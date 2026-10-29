@@ -4,19 +4,21 @@ namespace App\Services\Finance;
 use App\Models\Finance\Invoice;
 use App\Models\Finance\OperationalExpense;
 use App\Models\Finance\Payment;
+use App\Models\Finance\PaymentReversal;
 use App\Models\Finance\PayrollTransfer;
 use App\Support\LocalTime;
 use Carbon\Carbon;
 
 /**
  * Laporan arus kas bulanan (basis kas):
- * pemasukan  = pembayaran siswa CONFIRMED (tanggal bayar)
+ * pemasukan  = pembayaran siswa CONFIRMED (tanggal bayar), dikurangi reversal yang disetujui pada bulan
+ *              disetujuinya (bulan pembayaran asli tidak diubah)
  * pengeluaran = honor tentor yang ditransfer + biaya operasional
  */
 class CashflowService {
 
     public function summary(int $year, int $month): array {
-        $income = $this->sumByMonth(Payment::where('status', 'CONFIRMED'), 'payment_date', 'total_amount', $year, $month);
+        $income = $this->income($year, $month);
         $payroll = $this->sumByMonth(PayrollTransfer::query(), 'transfer_date', 'amount', $year, $month);
         $expenses = $this->sumByMonth(OperationalExpense::query(), 'expense_date', 'amount', $year, $month);
 
@@ -61,7 +63,7 @@ class CashflowService {
             $y = $date->year;
             $m = $date->month;
 
-            $income = $this->sumByMonth(Payment::where('status', 'CONFIRMED'), 'payment_date', 'total_amount', $y, $m);
+            $income = $this->income($y, $m);
             $out = $this->sumByMonth(PayrollTransfer::query(), 'transfer_date', 'amount', $y, $m)
                  + $this->sumByMonth(OperationalExpense::query(), 'expense_date', 'amount', $y, $m);
 
@@ -72,6 +74,14 @@ class CashflowService {
                 'net'    => $income - $out,
             ];
         })->all();
+    }
+
+    private function income(int $year, int $month): float {
+        $received = $this->sumByMonth(Payment::where('status', 'CONFIRMED'), 'payment_date', 'total_amount', $year, $month);
+        $reversed = (float) PaymentReversal::where('status', 'APPROVED')
+            ->whereBetween('approved_at', LocalTime::monthRangeUtc($year, $month))
+            ->sum('amount');
+        return $received - $reversed;
     }
 
     private function sumByMonth($query, string $dateColumn, string $amountColumn, int $year, int $month): float {

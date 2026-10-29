@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Banknote, Ban, AlertTriangle, FileDown } from "lucide-react";
 import { downloadFile } from "@/utils/download";
-import { getInvoice, cancelInvoice, INVOICE_STATUS, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { getInvoice, cancelInvoice, INVOICE_STATUS, paymentBadge } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
 
@@ -106,7 +106,7 @@ export default function InvoiceDetailModal({ open, invoiceId, onClose, onRecordP
                       </div>
                       <div className="text-right">
                         <p className="font-bold">{formatRupiah(p.amount)}</p>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${PAYMENT_STATUS[p.status]?.className}`}>{PAYMENT_STATUS[p.status]?.label}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${paymentBadge(p)?.className}`}>{paymentBadge(p)?.label}</span>
                       </div>
                     </div>
                   ))}

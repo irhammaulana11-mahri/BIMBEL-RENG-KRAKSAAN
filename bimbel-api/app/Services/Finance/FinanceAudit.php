@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Models\Finance\FinanceAuditLog;
 use App\Models\Finance\Invoice;
 use App\Models\Finance\Payment;
+use App\Models\Finance\PaymentReversal;
 use App\Models\Finance\Payroll;
 use App\Models\Finance\PayrollTransfer;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ class FinanceAudit
     public const ENTITY_TYPES = [
         Invoice::class         => 'invoice',
         Payment::class         => 'payment',
+        PaymentReversal::class => 'payment_reversal',
         Payroll::class         => 'payroll',
         PayrollTransfer::class => 'payroll_transfer',
     ];

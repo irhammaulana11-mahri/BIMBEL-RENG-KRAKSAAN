@@ -23,6 +23,12 @@ class LocalTime {
         return Carbon::now(self::TIMEZONE)->toDateString();
     }
 
+    // Awal & akhir bulan kalender WIB dalam timezone aplikasi, untuk memfilter kolom timestamp
+    public static function monthRangeUtc(int $year, int $month): array {
+        $start = Carbon::create($year, $month, 1, 0, 0, 0, self::TIMEZONE);
+        return [$start->copy()->setTimezone(config('app.timezone')), $start->copy()->endOfMonth()->setTimezone(config('app.timezone'))];
+    }
+
     // Carbon -> string WIB (default untuk input datetime-local)
     public static function format(?CarbonInterface $value, string $format = 'Y-m-d\TH:i'): ?string {
         return $value ? $value->copy()->setTimezone(self::TIMEZONE)->format($format) : null;

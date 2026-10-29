@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, FileDown, Upload, Hourglass, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { getParentInvoice, INVOICE_STATUS, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { getParentInvoice, INVOICE_STATUS, paymentBadge } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
 import { downloadFile } from "@/utils/download";
@@ -103,10 +103,11 @@ export default function InvoiceDrawer({ invoiceId, onClose, onPay }) {
                       <div>
                         <p className="font-bold text-gray-800">{p.payment_no}</p>
                         <p className="text-xs text-gray-500">{fmtDate(p.payment_date)} • {p.payment_method === "CASH" ? "Tunai" : "Transfer"}{p.reject_reason ? ` • Ditolak: ${p.reject_reason}` : ""}</p>
+                        {p.reversed && <p className="text-xs text-slate-500">Dibatalkan admin: {p.reversal_reason}</p>}
                       </div>
                       <div className="text-right">
                         <p className="font-black">{formatRupiah(p.amount)}</p>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${PAYMENT_STATUS[p.status]?.className}`}>{PAYMENT_STATUS[p.status]?.label}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${paymentBadge(p)?.className}`}>{paymentBadge(p)?.label}</span>
                       </div>
                     </div>
                   ))}

@@ -58,6 +58,9 @@ class InvoiceResource extends JsonResource
                     'status'         => $detail->payment->status,
                     'reject_reason'  => $detail->payment->reject_reason,
                     'has_proof'      => (bool) $detail->payment->payment_proof,
+                    // Status asli tetap CONFIRMED; reversed = dibatalkan lewat reversal yang disetujui
+                    'reversed'        => $detail->payment->relationLoaded('approvedReversal') && $detail->payment->approvedReversal !== null,
+                    'reversal_reason' => $detail->payment->relationLoaded('approvedReversal') ? $detail->payment->approvedReversal?->reason : null,
                 ])),
             'created_at'       => $this->created_at,
         ];

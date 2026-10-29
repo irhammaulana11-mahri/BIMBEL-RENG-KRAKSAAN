@@ -17,6 +17,12 @@ export const approvePayment = (id) => api.patch(`/admin/finance/payments/${id}/a
 export const rejectPayment = (id, reason) => api.patch(`/admin/finance/payments/${id}/reject`, { reason });
 export const getPaymentProof = (id) => api.get(`/admin/finance/payments/${id}/proof`, { responseType: "blob" });
 
+// Reversal pembayaran CONFIRMED (pembayaran asli tidak dihapus)
+export const requestReversal = (paymentId, reason) => api.post(`/admin/finance/payments/${paymentId}/reversals`, { reason });
+export const getReversals = (params = {}) => api.get("/admin/finance/payment-reversals", { params });
+export const approveReversal = (id, data) => api.patch(`/admin/finance/payment-reversals/${id}/approve`, data);
+export const rejectReversal = (id, note) => api.patch(`/admin/finance/payment-reversals/${id}/reject`, { note });
+
 /* ===================== ADMIN: HONOR TENTOR ===================== */
 
 export const getPayrolls = (params = {}) => api.get("/admin/finance/payrolls", { params });
@@ -68,6 +74,17 @@ export const PAYMENT_STATUS = {
   PENDING: { label: "Menunggu Verifikasi", className: "bg-amber-50 text-amber-700" },
   CONFIRMED: { label: "Diterima", className: "bg-emerald-50 text-emerald-700" },
   REJECTED: { label: "Ditolak", className: "bg-rose-50 text-rose-700" },
+};
+
+// Pembayaran CONFIRMED yang dibatalkan lewat reversal (status asli tetap CONFIRMED)
+export const REVERSED_BADGE = { label: "Dibatalkan (reversal)", className: "bg-slate-100 text-slate-600 line-through decoration-slate-400" };
+
+export const paymentBadge = (payment) => (payment?.reversed ? REVERSED_BADGE : PAYMENT_STATUS[payment?.status]);
+
+export const REVERSAL_STATUS = {
+  PENDING: { label: "Menunggu Persetujuan", className: "bg-amber-50 text-amber-700" },
+  APPROVED: { label: "Disetujui", className: "bg-slate-100 text-slate-700" },
+  REJECTED: { label: "Ditolak", className: "bg-emerald-50 text-emerald-700" },
 };
 
 export const PAYROLL_STATUS = {

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class PaymentController extends Controller
 {
-    private const RELATIONS = ['student', 'details.invoice', 'submitter', 'receiver'];
+    private const RELATIONS = ['student', 'details.invoice', 'submitter', 'receiver', 'reversals'];
 
     public function __construct(protected PaymentService $paymentService) {}
 

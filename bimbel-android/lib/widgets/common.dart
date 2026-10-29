@@ -78,6 +78,8 @@ const _statusInfo = <String, (String, Color)>{
   'VERIFIED': ('Terverifikasi', Colors.green),
   'CONFIRMED': ('Diterima', Colors.green),
   'REJECTED': ('Ditolak', Colors.red),
+  // Tampilan saja: pembayaran CONFIRMED yang dibatalkan lewat reversal
+  'REVERSED': ('Dibatalkan', Colors.blueGrey),
 };
 
 class StatusChip extends StatelessWidget {

@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\Exam\ExamResultController;
 use App\Http\Controllers\Api\Finance\FinanceAuditLogController;
 use App\Http\Controllers\Api\Finance\InvoiceController;
 use App\Http\Controllers\Api\Finance\PaymentController;
+use App\Http\Controllers\Api\Finance\PaymentReversalController;
 use App\Http\Controllers\Api\Finance\PayrollController;
 use App\Http\Controllers\Api\Finance\OperationalExpenseController;
 use App\Http\Controllers\Api\ParentPortal\ParentBillingController;
@@ -326,6 +327,10 @@ Route::prefix('admin')
             Route::get('/payments/{payment}/proof', [PaymentController::class, 'proof']);
             Route::patch('/payments/{payment}/approve', [PaymentController::class, 'approve']);
             Route::patch('/payments/{payment}/reject', [PaymentController::class, 'reject']);
+            Route::post('/payments/{payment}/reversals', [PaymentReversalController::class, 'store']);
+            Route::get('/payment-reversals', [PaymentReversalController::class, 'index']);
+            Route::patch('/payment-reversals/{reversal}/approve', [PaymentReversalController::class, 'approve']);
+            Route::patch('/payment-reversals/{reversal}/reject', [PaymentReversalController::class, 'reject']);
 
             Route::get('/payrolls', [PayrollController::class, 'index']);
             Route::get('/payrolls/preview', [PayrollController::class, 'preview']);

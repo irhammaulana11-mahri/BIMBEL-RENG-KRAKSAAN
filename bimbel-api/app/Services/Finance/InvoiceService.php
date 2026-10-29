@@ -154,13 +154,13 @@ class InvoiceService {
     }
 
     /**
-     * Hitung ulang total terbayar dari pembayaran CONFIRMED dan perbarui status.
+     * Hitung ulang total terbayar dari pembayaran sah (CONFIRMED tanpa reversal disetujui) dan perbarui status.
      */
     public function recalculate(Invoice $invoice): Invoice {
         if ($invoice->status === 'CANCELLED') return $invoice;
 
         $paid = (float) $invoice->paymentDetails()
-            ->whereHas('payment', fn($q) => $q->where('status', 'CONFIRMED'))
+            ->whereHas('payment', fn($q) => $q->valid())
             ->sum('amount_paid');
 
         $total = (float) $invoice->total_amount;

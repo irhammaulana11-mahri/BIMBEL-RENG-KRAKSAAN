@@ -32,4 +32,11 @@ class Payment extends Model
     public function details() { return $this->hasMany(PaymentDetail::class, 'payment_id'); }
     public function receiver() { return $this->belongsTo(User::class, 'received_by'); }
     public function submitter() { return $this->belongsTo(User::class, 'submitted_by'); }
+    public function reversals() { return $this->hasMany(PaymentReversal::class, 'payment_id'); }
+    public function approvedReversal() { return $this->hasOne(PaymentReversal::class, 'payment_id')->where('status', 'APPROVED'); }
+
+    /** Pembayaran yang sah: CONFIRMED dan tidak dibatalkan oleh reversal yang disetujui */
+    public function scopeValid($query) {
+        return $query->where('status', 'CONFIRMED')->whereDoesntHave('approvedReversal');
+    }
 }

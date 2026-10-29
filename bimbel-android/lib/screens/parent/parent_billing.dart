@@ -158,8 +158,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                 Card(
                   child: ListTile(
                     title: Text(rupiah(p['amount'])),
-                    subtitle: Text('${text(p['payment_no'])} • ${tanggal(p['payment_date'], withDay: false)}'),
-                    trailing: StatusChip(p['status']),
+                    subtitle: Text('${text(p['payment_no'])} • ${tanggal(p['payment_date'], withDay: false)}'
+                        '${p['reversed'] == true ? '\nDibatalkan admin: ${text(p['reversal_reason'])}' : ''}'),
+                    trailing: StatusChip(p['reversed'] == true ? 'REVERSED' : p['status']),
                   ),
                 ),
             ],

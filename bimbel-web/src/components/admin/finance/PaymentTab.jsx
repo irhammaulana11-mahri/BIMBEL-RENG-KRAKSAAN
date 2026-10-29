@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Search, Paperclip } from "lucide-react";
 import VerificationModal from "./VerificationModal";
-import { getPayments, PAYMENT_STATUS } from "@/services/finance/financeService";
+import { getPayments, paymentBadge } from "@/services/finance/financeService";
+import ReversalPanel from "./ReversalPanel";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
 import TablePagination from "@/components/ui/table/TablePagination";
@@ -17,6 +18,7 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
   const [selected, setSelected] = useState(null);
 
   const fetchPayments = async () => {
+    if (status === "REVERSAL") return;
     try {
       // Antrian verifikasi tidak dibatasi periode
       const res = await getPayments({ status, keyword, period: status === "PENDING" ? "" : period, page, per_page: perPage });
@@ -39,7 +41,7 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex bg-gray-100 p-1 rounded-xl">
-          {[["PENDING", "Menunggu Verifikasi"], ["CONFIRMED", "Diterima"], ["REJECTED", "Ditolak"], ["", "Semua"]].map(([value, label]) => (
+          {[["PENDING", "Menunggu Verifikasi"], ["CONFIRMED", "Diterima"], ["REJECTED", "Ditolak"], ["", "Semua"], ["REVERSAL", "Reversal"]].map(([value, label]) => (
             <button key={label} onClick={() => { setStatus(value); setPage(1); }} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${status === value ? "bg-white text-blue-600 shadow-xs" : "text-gray-500"}`}>{label}</button>
           ))}
         </div>
@@ -47,8 +49,10 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={keyword} onChange={e => { setKeyword(e.target.value); setPage(1); }} placeholder="No. bayar / referensi / siswa..." className="w-full rounded-xl border pl-9 pr-3 py-2 text-sm" />
         </div>
-        {status !== "PENDING" && <span className="text-xs text-gray-400">Periode tanggal bayar: {period}</span>}
+        {status !== "PENDING" && status !== "REVERSAL" && <span className="text-xs text-gray-400">Periode tanggal bayar: {period}</span>}
       </div>
+
+      {status === "REVERSAL" ? <ReversalPanel onNotify={onNotify} onChanged={fetchPayments} /> : (<>
 
       <div className="overflow-x-auto border border-gray-200 rounded-2xl">
         <table className="ui-table w-full text-left text-sm min-w-[760px]">
@@ -72,7 +76,10 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
                   {p.has_proof && <Paperclip className="inline w-3.5 h-3.5 ml-1 text-gray-400" />}
                 </td>
                 <td className="p-4 text-right font-bold">{formatRupiah(p.total_amount)}</td>
-                <td className="p-4 text-center"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${PAYMENT_STATUS[p.status]?.className}`}>{PAYMENT_STATUS[p.status]?.label}</span></td>
+                <td className="p-4 text-center">
+                  <span className={`px-2 py-1 rounded-lg text-xs font-bold ${paymentBadge(p)?.className}`}>{paymentBadge(p)?.label}</span>
+                  {p.reversal?.status === "PENDING" && <p className="mt-1 text-[10px] font-bold text-amber-700">Reversal diajukan</p>}
+                </td>
                 <td className="p-4 text-right">
                   <button onClick={() => setSelected(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${p.status === "PENDING" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                     {p.status === "PENDING" ? "Verifikasi" : "Detail"}
@@ -89,6 +96,7 @@ export default function PaymentTab({ period, onNotify, onPendingChange }) {
         onPageChange={(target, newPerPage) => { if (newPerPage) setPerPage(newPerPage); setPage(target); }}
         label="data"
       />
+      </>)}
 
       <VerificationModal
         open={!!selected}

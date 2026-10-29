@@ -28,6 +28,18 @@ class PaymentResource extends JsonResource
             'received_by'     => $this->whenLoaded('receiver', fn() => $this->receiver?->name),
             'confirmed_at'    => LocalTime::format($this->confirmed_at, 'Y-m-d H:i'),
             'created_at'      => LocalTime::format($this->created_at, 'Y-m-d H:i'),
+            // Status asli tetap CONFIRMED; reversal terakhir (diajukan/disetujui/ditolak) ditampilkan terpisah
+            'reversed'        => $this->whenLoaded('reversals', fn() => $this->reversals->contains('status', 'APPROVED')),
+            'reversal'        => $this->whenLoaded('reversals', fn() => ($r = $this->reversals->sortByDesc('requested_at')->first()) ? [
+                'id'            => $r->id,
+                'status'        => $r->status,
+                'reason'        => $r->reason,
+                'amount'        => (float) $r->amount,
+                'requested_at'  => LocalTime::format($r->requested_at, 'Y-m-d H:i'),
+                'approved_at'   => LocalTime::format($r->approved_at, 'Y-m-d H:i'),
+                'self_approved' => $r->self_approved,
+                'reject_note'   => $r->reject_note,
+            ] : null),
             'invoices'        => $this->whenLoaded('details', fn() => $this->details->map(fn($detail) => [
                 'invoice_id'       => $detail->invoice_id,
                 'invoice_no'       => $detail->relationLoaded('invoice') ? $detail->invoice?->invoice_no : null,
