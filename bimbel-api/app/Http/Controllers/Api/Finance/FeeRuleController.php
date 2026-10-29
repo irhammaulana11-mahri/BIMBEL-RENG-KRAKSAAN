@@ -8,6 +8,7 @@ use App\Models\Admin\EducationLevel;
 use App\Models\Admin\Tentor;
 use App\Models\Finance\FeeRule;
 use App\Models\Website\Package;
+use App\Support\SafeDelete;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -59,7 +60,9 @@ class FeeRuleController extends Controller
     // Aturan yang pernah dipakai tetap tercatat di baris tagihan/honor (salinan), aman dihapus
     public function destroy(FeeRule $feeRule)
     {
-        $feeRule->delete();
+        // Aturan yang sudah tercatat di tagihan/payroll tidak bisa dihapus (FK RESTRICT): nonaktifkan saja
+        SafeDelete::run(fn() => $feeRule->delete(),
+            'Aturan tarif ini sudah dipakai pada tagihan atau payroll sehingga tidak dapat dihapus. Nonaktifkan aturan atau isi tanggal berakhirnya.');
 
         return response()->json(['message' => 'Aturan tarif dihapus.']);
     }
