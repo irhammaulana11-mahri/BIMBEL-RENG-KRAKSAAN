@@ -32,6 +32,7 @@ class PaymentService {
     public function recordByAdmin(array $data): Payment {
         return DB::transaction(function () use ($data) {
             $invoices = $this->lockInvoices($data['student_id'], collect($data['allocations'])->pluck('invoice_id')->all());
+            $this->ensureNoPendingPayment($invoices);
 
             foreach ($data['allocations'] as $allocation) {
                 $this->ensureAmountAllowed($invoices[$allocation['invoice_id']], (float) $allocation['amount']);
@@ -59,33 +60,30 @@ class PaymentService {
      * Orang tua mengirim bukti transfer untuk satu tagihan.
      */
     public function submitByParent(Invoice $invoice, array $data, UploadedFile $proof): Payment {
-        if (!in_array($invoice->status, ['UNPAID', 'PARTIAL'])) {
-            throw ValidationException::withMessages(['invoice' => ['Tagihan ini tidak dapat dibayar.']]);
-        }
-
-        $pending = Payment::where('status', 'PENDING')
-            ->whereHas('details', fn($q) => $q->where('invoice_id', $invoice->id))
-            ->exists();
-        if ($pending) {
-            throw ValidationException::withMessages(['invoice' => ['Masih ada bukti pembayaran yang sedang diverifikasi untuk tagihan ini.']]);
-        }
-
-        $this->ensureAmountAllowed($invoice, (float) $data['amount']);
-
         $path = $proof->store(self::PROOF_FOLDER, self::PROOF_DISK);
 
         try {
-            return DB::transaction(fn() => $this->createPayment([
-                'student_id'      => $invoice->student_id,
-                'payment_date'    => $data['payment_date'],
-                'payment_method'  => 'TRANSFER',
-                'payment_channel' => $data['payment_channel'] ?? null,
-                'reference_no'    => $data['reference_no'] ?? null,
-                'note'            => $data['note'] ?? null,
-                'payment_proof'   => $path,
-                'status'          => 'PENDING',
-                'submitted_by'    => Auth::id(),
-            ], [['invoice_id' => $invoice->id, 'amount' => $data['amount']]]));
+            return DB::transaction(function () use ($invoice, $data, $path) {
+                // Status & PENDING dicek setelah tagihan dikunci: dua pengajuan bersamaan diproses bergantian
+                $locked = $this->lockInvoices($invoice->student_id, [$invoice->id])[$invoice->id];
+                if (!in_array($locked->status, ['UNPAID', 'PARTIAL'])) {
+                    throw ValidationException::withMessages(['invoice' => ['Tagihan ini tidak dapat dibayar.']]);
+                }
+                $this->ensureNoPendingPayment(collect([$locked]));
+                $this->ensureAmountAllowed($locked, (float) $data['amount']);
+
+                return $this->createPayment([
+                    'student_id'      => $locked->student_id,
+                    'payment_date'    => $data['payment_date'],
+                    'payment_method'  => 'TRANSFER',
+                    'payment_channel' => $data['payment_channel'] ?? null,
+                    'reference_no'    => $data['reference_no'] ?? null,
+                    'note'            => $data['note'] ?? null,
+                    'payment_proof'   => $path,
+                    'status'          => 'PENDING',
+                    'submitted_by'    => Auth::id(),
+                ], [['invoice_id' => $locked->id, 'amount' => $data['amount']]]);
+            });
         } catch (\Throwable $e) {
             Storage::disk(self::PROOF_DISK)->delete($path);
             throw $e;
@@ -93,9 +91,8 @@ class PaymentService {
     }
 
     public function approve(Payment $payment): Payment {
-        $this->ensurePending($payment);
-
         return DB::transaction(function () use ($payment) {
+            $payment = $this->lockPendingPayment($payment);
             $details = $payment->details()->get();
             $invoices = $this->lockInvoices($payment->student_id, $details->pluck('invoice_id')->all());
 
@@ -117,15 +114,20 @@ class PaymentService {
     }
 
     public function reject(Payment $payment, string $reason): Payment {
-        $this->ensurePending($payment);
+        return DB::transaction(function () use ($payment, $reason) {
+            $payment = $this->lockPendingPayment($payment);
 
-        $payment->update([
-            'status'        => 'REJECTED',
-            'reject_reason' => $reason,
-            'received_by'   => Auth::id(),
-        ]);
+            $payment->update([
+                'status'        => 'REJECTED',
+                'reject_reason' => $reason,
+                'received_by'   => Auth::id(),
+            ]);
 
-        return $payment->refresh();
+            $invoices = $this->lockInvoices($payment->student_id, $payment->details()->pluck('invoice_id')->all());
+            foreach ($invoices as $invoice) $this->invoiceService->recalculate($invoice);
+
+            return $payment->refresh();
+        });
     }
 
     private function createPayment(array $attributes, array $allocations): Payment {
@@ -152,7 +154,8 @@ class PaymentService {
      * Kunci baris tagihan agar pembayaran bersamaan tidak melebihi sisa tagihan.
      */
     private function lockInvoices(string $studentId, array $invoiceIds) {
-        $invoices = Invoice::whereIn('id', $invoiceIds)->lockForUpdate()->get()->keyBy('id');
+        // Urut id agar dua transaksi yang mengunci beberapa tagihan tidak saling menunggu (deadlock)
+        $invoices = Invoice::whereIn('id', $invoiceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
         if ($invoices->count() !== count(array_unique($invoiceIds))) {
             throw ValidationException::withMessages(['allocations' => ['Tagihan tidak ditemukan.']]);
@@ -174,9 +177,26 @@ class PaymentService {
         }
     }
 
-    private function ensurePending(Payment $payment): void {
-        if ($payment->status !== 'PENDING') {
+    /**
+     * Kunci baris pembayaran lalu periksa statusnya dari data terbaru, sehingga dua Admin yang
+     * memproses pembayaran yang sama bersamaan tidak bisa menyetujui sekaligus menolaknya.
+     */
+    private function lockPendingPayment(Payment $payment): Payment {
+        $locked = Payment::whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
+        if ($locked->status !== 'PENDING') {
             throw ValidationException::withMessages(['status' => ['Pembayaran ini sudah diverifikasi.']]);
+        }
+        return $locked;
+    }
+
+    /** Satu tagihan maksimal punya satu pembayaran PENDING. Dipanggil setelah tagihannya dikunci. */
+    private function ensureNoPendingPayment($invoices): void {
+        $pending = PaymentDetail::whereIn('invoice_id', $invoices->pluck('id'))
+            ->whereHas('payment', fn($q) => $q->where('status', 'PENDING'))
+            ->pluck('invoice_id');
+        if ($pending->isNotEmpty()) {
+            $numbers = $invoices->whereIn('id', $pending)->pluck('invoice_no')->implode(', ');
+            throw ValidationException::withMessages(['invoice' => ["Masih ada pembayaran yang menunggu verifikasi untuk tagihan {$numbers}."]]);
         }
     }
 }

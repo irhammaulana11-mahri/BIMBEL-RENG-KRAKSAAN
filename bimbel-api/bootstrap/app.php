@@ -35,4 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Data ganda yang lolos ke constraint DB (mis. dua proses bersamaan): pesan jelas, bukan 500.
+        // Exception tetap dicatat di log.
+        $exceptions->render(function (\Illuminate\Database\UniqueConstraintViolationException $e, Request $request) {
+            if (!$request->is('api/*')) return null;
+            return response()->json([
+                'success' => false,
+                'message' => 'Data yang sama sudah tercatat atau sedang diproses. Muat ulang halaman lalu periksa kembali.',
+            ], 422);
+        });
     })->create();

@@ -42,7 +42,6 @@ class PaymentIntegrityTest extends TestCase
     }
 
     /** F-1: Admin kedua menolak dengan data yang dibuka saat pembayaran masih PENDING. */
-    #[Group('temuan-terbuka'), Group('FIN-01')]
     public function test_at30_reject_atas_pembayaran_yang_sudah_disetujui_ditolak(): void {
         $payment = $this->pendingPayment('invA');
         $stale = Payment::findOrFail($payment->id);
@@ -60,6 +59,102 @@ class PaymentIntegrityTest extends TestCase
         $this->assertFalse($rejected, 'Reject atas pembayaran yang sudah CONFIRMED seharusnya ditolak');
         $this->assertSame('CONFIRMED', $payment->refresh()->status);
         $this->assertSame('PAID', Invoice::findOrFail($this->f['invA'])->status);
+    }
+
+    public function test_at30_approve_atas_pembayaran_yang_sudah_ditolak_ditolak(): void {
+        $payment = $this->pendingPayment('invA');
+        $stale = Payment::findOrFail($payment->id);
+        $service = app(PaymentService::class);
+        $service->reject(Payment::findOrFail($payment->id), 'bukti tidak terbaca');
+
+        $this->expectException(ValidationException::class);
+        try {
+            $service->approve($stale);
+        } finally {
+            $this->assertSame('REJECTED', $payment->refresh()->status);
+            $this->assertSame('UNPAID', Invoice::findOrFail($this->f['invA'])->status);
+        }
+    }
+
+    public function test_at30_reject_lewat_api_atas_pembayaran_terkonfirmasi_422(): void {
+        $payment = $this->pendingPayment('invA');
+        app(PaymentService::class)->approve($payment);
+
+        $this->api('PATCH', "/admin/finance/payments/{$payment->id}/reject", $this->tokenFor($this->f['admin']), ['reason' => 'salah'])
+            ->assertStatus(422);
+        $this->assertSame('CONFIRMED', $payment->refresh()->status);
+    }
+
+    /** D-09 + Q-10: Admin tidak bisa mencatat pembayaran untuk tagihan yang masih punya PENDING. */
+    public function test_at33_admin_mencatat_pembayaran_saat_ada_pending_ditolak(): void {
+        $this->pendingPayment('invA', 100000);
+
+        $this->expectException(ValidationException::class);
+        app(PaymentService::class)->recordByAdmin([
+            'student_id' => $this->f['sA'], 'payment_date' => '2026-10-10', 'payment_method' => 'CASH',
+            'allocations' => [['invoice_id' => $this->f['invA'], 'amount' => 50000]],
+        ]);
+    }
+
+    /** D-09: pembayaran multi-tagihan ditolak bila salah satu tagihannya punya PENDING. */
+    public function test_at33_pembayaran_multi_tagihan_ditolak_bila_salah_satu_pending(): void {
+        $second = $this->insert('finance.invoices', [
+            'student_id' => $this->f['sA'], 'class_id' => $this->f['cA'], 'invoice_no' => 'INV-UJI-A2',
+            'issue_date' => '2026-11-01', 'due_date' => '2026-11-30', 'period_month' => 11, 'period_year' => 2026,
+            'subtotal' => 200000, 'discount' => 0, 'total_amount' => 200000, 'paid_amount' => 0, 'remaining_amount' => 200000, 'status' => 'UNPAID',
+        ]);
+        $this->pendingPayment('invA', 100000);
+
+        try {
+            app(PaymentService::class)->recordByAdmin([
+                'student_id' => $this->f['sA'], 'payment_date' => '2026-10-10', 'payment_method' => 'CASH',
+                'allocations' => [['invoice_id' => $second, 'amount' => 200000], ['invoice_id' => $this->f['invA'], 'amount' => 50000]],
+            ]);
+            $this->fail('Seharusnya ditolak karena INV-UJI-A masih punya pembayaran PENDING');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('INV-UJI-A', collect($e->errors())->flatten()->implode(' '));
+        }
+        $this->assertSame('UNPAID', Invoice::findOrFail($second)->status);
+    }
+
+    public function test_at31_setelah_pending_ditolak_orang_tua_bisa_mengajukan_lagi(): void {
+        Storage::fake(PaymentService::PROOF_DISK);
+        $payment = $this->pendingPayment('invA', 100000);
+        app(PaymentService::class)->reject($payment, 'bukti buram');
+
+        $this->api('POST', "/parent/invoices/{$this->f['invA']}/payments", $this->tokenFor($this->f['puA']), [
+            'amount' => 100000, 'payment_date' => '2026-10-10', 'payment_channel' => 'BCA',
+            'proof' => UploadedFile::fake()->create('bukti.pdf', 50, 'application/pdf'),
+        ])->assertSuccessful();
+    }
+
+    public function test_at31_bukti_bayar_yang_ditolak_tidak_tersimpan(): void {
+        Storage::fake(PaymentService::PROOF_DISK);
+        $this->pendingPayment('invA', 100000);
+
+        $this->api('POST', "/parent/invoices/{$this->f['invA']}/payments", $this->tokenFor($this->f['puA']), [
+            'amount' => 100000, 'payment_date' => '2026-10-10', 'payment_channel' => 'BCA',
+            'proof' => UploadedFile::fake()->create('bukti.pdf', 50, 'application/pdf'),
+        ])->assertStatus(422);
+
+        $this->assertEmpty(Storage::disk(PaymentService::PROOF_DISK)->allFiles());
+    }
+
+    /** FIN-05: pelanggaran unique constraint di API menjadi 422 berpesan, bukan 500. */
+    public function test_at35_pelanggaran_unique_constraint_menjadi_422(): void {
+        $this->mock(\App\Services\Finance\PayrollService::class, fn($m) => $m->shouldReceive('transfer')->andThrow(
+            new UniqueConstraintViolationException('pgsql', 'insert into finance.payroll_transfers', [], new \Exception('duplicate key'))
+        ));
+        $payroll = $this->insert('finance.payrolls', [
+            'payroll_no' => 'PR-UJI', 'period_month' => 10, 'period_year' => 2026, 'payroll_date' => '2026-10-31',
+            'total_tutors' => 1, 'total_sessions' => 1, 'total_teaching_minutes' => 90, 'total_amount' => 100000, 'status' => 'APPROVED',
+        ]);
+
+        $this->api('POST', "/admin/finance/payrolls/$payroll/transfers", $this->tokenFor($this->f['admin']), [
+            'tentor_id' => $this->f['tA'], 'transfer_date' => now()->toDateString(), 'reference_no' => 'TRF-1',
+        ])->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Data yang sama sudah tercatat atau sedang diproses. Muat ulang halaman lalu periksa kembali.');
     }
 
     /** F-2 */
