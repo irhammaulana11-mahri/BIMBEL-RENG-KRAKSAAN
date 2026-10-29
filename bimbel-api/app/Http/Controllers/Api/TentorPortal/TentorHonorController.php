@@ -5,7 +5,11 @@ use Illuminate\Support\Str;
 use App\Support\Pdf;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Tentor;
+use App\Http\Controllers\Api\Finance\PayrollController;
 use App\Models\Finance\Payroll;
+use App\Models\Finance\PayrollTransfer;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Services\Finance\PayrollService;
 use App\Support\LocalTime;
 use Carbon\Carbon;
@@ -78,6 +82,30 @@ class TentorHonorController extends Controller {
 
         return Pdf::download('pdf.honor-slip', compact('payroll', 'row', 'period'),
             'Slip-Honor-' . Str::slug($row['tentor_name']) . '-' . sprintf('%04d-%02d', $payroll->period_year, $payroll->period_month) . '.pdf');
+    }
+
+    // POST: Tentor mengonfirmasi honor sudah diterima, atau melaporkan masalah transfer
+    public function receipt(Request $request, string $payrollId) {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(PayrollTransfer::RECEIPT_STATUSES)],
+            'note'   => ['nullable', 'string', 'max:500'],
+        ]);
+        $transfer = $this->myTransfer($payrollId);
+        $this->payrollService->confirmReceipt($transfer, $data['status'], $data['note'] ?? null);
+
+        return response()->json(['success' => true, 'message' => $data['status'] === 'RECEIVED'
+            ? 'Terima kasih, penerimaan honor sudah dikonfirmasi.'
+            : 'Laporan dikirim ke admin. Admin akan menindaklanjuti.']);
+    }
+
+    // GET: Bukti transfer honor milik tentor ini
+    public function transferProof(string $payrollId) {
+        return PayrollController::streamTransferProof($this->myTransfer($payrollId));
+    }
+
+    private function myTransfer(string $payrollId): PayrollTransfer {
+        abort_unless(Str::isUuid($payrollId), 404, 'Transfer tidak ditemukan.');
+        return PayrollTransfer::where('payroll_id', $payrollId)->where('tentor_id', $this->tentor()->id)->firstOrFail();
     }
 
     private function tentor(): Tentor {

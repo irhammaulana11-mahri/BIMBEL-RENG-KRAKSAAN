@@ -152,6 +152,7 @@ class PaymentIntegrityTest extends TestCase
 
         $this->api('POST', "/admin/finance/payrolls/$payroll/transfers", $this->tokenFor($this->f['admin']), [
             'tentor_id' => $this->f['tA'], 'transfer_date' => now()->toDateString(), 'reference_no' => 'TRF-1',
+            'proof' => UploadedFile::fake()->create('bukti.pdf', 20, 'application/pdf'),
         ])->assertStatus(422)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Data yang sama sudah tercatat atau sedang diproses. Muat ulang halaman lalu periksa kembali.');

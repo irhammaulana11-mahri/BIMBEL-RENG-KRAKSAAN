@@ -414,7 +414,7 @@ class _HonorTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return AsyncView<Map>(
       load: () async => (await api.get('/tentor/honor'))['data'],
-      builder: (context, d, _) {
+      builder: (context, d, reload) {
         final est = d['estimate'] ?? {};
         final totals = d['totals'] ?? {};
         final history = d['history'] as List? ?? [];
@@ -449,7 +449,14 @@ class _HonorTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(rupiah(h['total_amount']), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(h['transfer'] != null ? 'Ditransfer' : text(h['payroll_status']), style: const TextStyle(fontSize: 12)),
+                      Text(
+                        h['transfer'] == null
+                            ? text(h['payroll_status'])
+                            : h['transfer']['receipt_status'] == null
+                                ? 'Ditransfer • perlu konfirmasi'
+                                : 'Ditransfer',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ],
                   ),
                   children: [
@@ -465,13 +472,7 @@ class _HonorTab extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (h['transfer'] != null)
-                      ListTile(
-                        dense: true,
-                        leading: const Icon(Icons.account_balance),
-                        title: Text('Transfer ${tanggal(h['transfer']['transfer_date'], withDay: false)}'),
-                        subtitle: Text('Ref. ${text(h['transfer']['reference_no'])}'),
-                      ),
+                    if (h['transfer'] != null) _TransferReceipt(honor: h, reload: reload),
                     for (final s in h['sessions'] as List? ?? [])
                       ListTile(
                         dense: true,
@@ -485,6 +486,109 @@ class _HonorTab extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Transfer honor + konfirmasi penerimaan oleh tentor (verifikasi atas transfer yang dicatat admin).
+class _TransferReceipt extends StatefulWidget {
+  final Map honor;
+  final Future<void> Function() reload;
+  const _TransferReceipt({required this.honor, required this.reload});
+
+  @override
+  State<_TransferReceipt> createState() => _TransferReceiptState();
+}
+
+class _TransferReceiptState extends State<_TransferReceipt> {
+  bool _sending = false;
+
+  Future<void> _send(String status, [String note = '']) async {
+    setState(() => _sending = true);
+    try {
+      final res = await api.post('/tentor/honor/${widget.honor['payroll_id']}/receipt', {'status': status, 'note': note});
+      if (mounted) showSnack(context, text(res['message'], 'Terkirim.'));
+      await widget.reload();
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message, error: true);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _dispute() async {
+    final controller = TextEditingController();
+    final note = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Laporkan masalah transfer'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Mis. belum masuk rekening atau nominal berbeda'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Kirim')),
+        ],
+      ),
+    );
+    if (note == null) return;
+    if (note.length < 5) {
+      if (mounted) showSnack(context, 'Jelaskan kendalanya minimal 5 karakter.', error: true);
+      return;
+    }
+    await _send('DISPUTED', note);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.honor['transfer'] as Map;
+    final status = t['receipt_status'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.account_balance),
+            title: Text('Transfer ${tanggal(t['transfer_date'], withDay: false)}'),
+            subtitle: Text('Ref. ${text(t['reference_no'])}'
+                '${status == 'RECEIVED' ? '\nSudah Anda konfirmasi diterima' : ''}'
+                '${status == 'DISPUTED' ? '\nDilaporkan bermasalah: ${text(t['receipt_note'])}' : ''}'),
+            trailing: t['has_proof'] == true
+                ? IconButton(
+                    tooltip: 'Bukti transfer',
+                    icon: const Icon(Icons.attach_file),
+                    onPressed: () =>
+                        openPrivateFile(context, '/tentor/honor/${widget.honor['payroll_id']}/transfer-proof', 'Bukti Transfer'),
+                  )
+                : null,
+          ),
+          if (status != 'RECEIVED') ...[
+            const Text('Mohon konfirmasi apakah honor ini sudah masuk ke rekening Anda.', style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: _sending ? null : () => _send('RECEIVED'),
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text('Sudah diterima'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _sending ? null : _dispute,
+                  icon: const Icon(Icons.report_problem_outlined, size: 18),
+                  label: const Text('Laporkan masalah'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

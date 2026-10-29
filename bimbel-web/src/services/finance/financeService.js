@@ -29,9 +29,16 @@ export const getPayrolls = (params = {}) => api.get("/admin/finance/payrolls", {
 export const previewPayroll = (period) => api.get("/admin/finance/payrolls/preview", { params: { period } });
 export const generatePayroll = (period) => api.post("/admin/finance/payrolls/generate", { period });
 export const getPayroll = (id) => api.get(`/admin/finance/payrolls/${id}`);
-export const approvePayroll = (id) => api.patch(`/admin/finance/payrolls/${id}/approve`);
+export const approvePayroll = (id, data = {}) => api.patch(`/admin/finance/payrolls/${id}/approve`, data);
 export const deletePayroll = (id) => api.delete(`/admin/finance/payrolls/${id}`);
-export const transferPayroll = (id, data) => api.post(`/admin/finance/payrolls/${id}/transfers`, data);
+// data: FormData (bukti transfer wajib)
+export const transferPayroll = (id, data) => api.post(`/admin/finance/payrolls/${id}/transfers`, data, { headers: { "Content-Type": "multipart/form-data" } });
+export const getTransferProof = (payrollId, transferId) => api.get(`/admin/finance/payrolls/${payrollId}/transfers/${transferId}/proof`, { responseType: "blob" });
+
+// Pengecualian: sesi periode lalu yang belum dibayar, ditinjau sebelum masuk payroll
+export const getPayrollExceptions = (params = {}) => api.get("/admin/finance/payroll-exceptions", { params });
+export const approvePayrollException = (id, data) => api.patch(`/admin/finance/payroll-exceptions/${id}/approve`, data);
+export const rejectPayrollException = (id, note) => api.patch(`/admin/finance/payroll-exceptions/${id}/reject`, { note });
 export const getTentorRates = () => api.get("/admin/finance/tentor-rates");
 
 /* ===================== ADMIN: ATURAN TARIF (RULE ENGINE) ===================== */
@@ -62,6 +69,14 @@ export const submitParentPayment = (invoiceId, formData) =>
 /* ===================== TENTOR ===================== */
 
 export const getTentorHonor = () => api.get("/tentor/honor");
+// status: RECEIVED | DISPUTED (wajib keterangan)
+export const confirmHonorReceipt = (payrollId, data) => api.post(`/tentor/honor/${payrollId}/receipt`, data);
+export const getHonorTransferProof = (payrollId) => api.get(`/tentor/honor/${payrollId}/transfer-proof`, { responseType: "blob" });
+
+export const RECEIPT_STATUS = {
+  RECEIVED: { label: "Diterima tentor", className: "bg-emerald-50 text-emerald-700" },
+  DISPUTED: { label: "Dilaporkan bermasalah", className: "bg-rose-50 text-rose-700" },
+};
 
 export const INVOICE_STATUS = {
   UNPAID: { label: "Belum Bayar", className: "bg-rose-50 text-rose-700" },

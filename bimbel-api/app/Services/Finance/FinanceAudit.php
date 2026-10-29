@@ -7,6 +7,7 @@ use App\Models\Finance\Invoice;
 use App\Models\Finance\Payment;
 use App\Models\Finance\PaymentReversal;
 use App\Models\Finance\Payroll;
+use App\Models\Finance\PayrollException;
 use App\Models\Finance\PayrollTransfer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -25,6 +26,7 @@ class FinanceAudit
         PaymentReversal::class => 'payment_reversal',
         Payroll::class         => 'payroll',
         PayrollTransfer::class => 'payroll_transfer',
+        PayrollException::class => 'payroll_exception',
     ];
 
     /** Kolom yang tidak berguna untuk audit */

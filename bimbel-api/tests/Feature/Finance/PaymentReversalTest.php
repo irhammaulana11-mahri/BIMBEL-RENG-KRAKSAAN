@@ -137,7 +137,9 @@ class PaymentReversalTest extends TestCase
         $this->assertSame(['REQUESTED', 'APPROVED'], $logs->pluck('action')->all());
         $this->assertSame('Salah input siswa, uang milik siswa B', $logs[0]->reason);
         $this->assertEquals(300000, $logs[0]->after['amount']);
-        $this->assertSame(['approval_mode' => 'single_operator', 'self_approved' => true], $logs[1]->meta);
+        $this->assertSame('single_operator', $logs[1]->meta['approval_mode']);
+        $this->assertTrue($logs[1]->meta['self_approved']);
+        $this->assertSame($this->payment->payment_no, $logs[1]->meta['payment_no']);
         $this->assertSame($this->f['admin'], $logs[1]->actor_id);
 
         $paymentLog = FinanceAuditLog::where('entity_id', $this->payment->id)->where('action', 'REVERSED')->sole();

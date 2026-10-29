@@ -320,6 +320,7 @@ Route::prefix('admin')
             Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel']);
 
             Route::get('/audit-logs', [FinanceAuditLogController::class, 'index']);
+            Route::get('/reports/self-approvals', [FinanceAuditLogController::class, 'selfApprovalReport']);
 
             Route::get('/payments', [PaymentController::class, 'index']);
             Route::post('/payments', [PaymentController::class, 'store']);
@@ -338,6 +339,10 @@ Route::prefix('admin')
             Route::get('/payrolls/{payroll}', [PayrollController::class, 'show']);
             Route::patch('/payrolls/{payroll}/approve', [PayrollController::class, 'approve']);
             Route::post('/payrolls/{payroll}/transfers', [PayrollController::class, 'transfer']);
+            Route::get('/payrolls/{payroll}/transfers/{transfer}/proof', [PayrollController::class, 'transferProof']);
+            Route::get('/payroll-exceptions', [PayrollController::class, 'exceptions']);
+            Route::patch('/payroll-exceptions/{exception}/approve', [PayrollController::class, 'approveException']);
+            Route::patch('/payroll-exceptions/{exception}/reject', [PayrollController::class, 'rejectException']);
             Route::delete('/payrolls/{payroll}', [PayrollController::class, 'destroy']);
             Route::get('/tentor-rates', [PayrollController::class, 'rates']);
             Route::get('/fee-rules', [FeeRuleController::class, 'index']);
@@ -452,6 +457,8 @@ Route::prefix('tentor')
         // Riwayat honor
         Route::get('/honor', [TentorHonorController::class, 'index']);
         Route::get('/honor/{payroll}/slip', [TentorHonorController::class, 'slip']);
+        Route::post('/honor/{payroll}/receipt', [TentorHonorController::class, 'receipt']);
+        Route::get('/honor/{payroll}/transfer-proof', [TentorHonorController::class, 'transferProof']);
 
         // Hasil ujian & penilaian essay
         Route::get('/exam-results', [TentorExamResultController::class, 'index']);

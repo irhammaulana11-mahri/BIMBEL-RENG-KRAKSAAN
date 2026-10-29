@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api\Finance;
 use App\Http\Controllers\Controller;
 use App\Models\Finance\FinanceAuditLog;
 use App\Services\Finance\FinanceAudit;
+use App\Services\Finance\SelfApprovalReport;
+use App\Support\Pdf;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -37,5 +41,21 @@ class FinanceAuditLogController extends Controller
             ->withQueryString();
 
         return response()->json(['success' => true] + $logs->toArray());
+    }
+
+    /** GET: PDF laporan bulanan persetujuan atas pekerjaan sendiri (D-11). Unduhan dicatat. */
+    public function selfApprovalReport(Request $request, SelfApprovalReport $report)
+    {
+        $data = $request->validate(['period' => ['required', 'date_format:Y-m']]);
+        [$year, $month] = [(int) substr($data['period'], 0, 4), (int) substr($data['period'], 5, 2)];
+
+        DB::table('logs.activity_logs')->insert([
+            'user_id'    => Auth::id(),
+            'activity'   => "Mengunduh laporan persetujuan sendiri periode {$data['period']}",
+            'ip_address' => $request->ip(),
+        ]);
+
+        return Pdf::download('pdf.self-approval-report', ['report' => $report->build($year, $month)],
+            "Laporan-Persetujuan-Sendiri-{$data['period']}.pdf", 'landscape');
     }
 }

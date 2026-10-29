@@ -9,7 +9,6 @@ use App\Notifications\PortalNotification;
 use App\Support\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -18,16 +17,11 @@ use Throwable;
  * Pembatalan pembayaran CONFIRMED lewat reversal (D-02). Pembayaran asli tidak dihapus dan statusnya
  * tetap CONFIRMED; reversal yang disetujui membuatnya tidak lagi dihitung pada tagihan.
  *
- * Persetujuan mengikuti mode keuangan (D-11, config finance.approval_mode):
- * - single_operator: password wajib dikonfirmasi ulang; menyetujui pengajuan sendiri butuh alasan tertulis
- *   dan ditandai self_approved.
- * - separated: penyetuju harus akun yang berbeda dari pengaju.
+ * Persetujuan mengikuti mode keuangan (FinanceApproval, D-11).
  */
 class PaymentReversalService
 {
-    public const MIN_NOTE_LENGTH = 10;
-
-    public function __construct(protected InvoiceService $invoiceService, protected FinanceAudit $audit) {}
+    public function __construct(protected InvoiceService $invoiceService, protected FinanceAudit $audit, protected FinanceApproval $approval) {}
 
     public function request(Payment $payment, string $reason): PaymentReversal {
         return DB::transaction(function () use ($payment, $reason) {
@@ -56,28 +50,15 @@ class PaymentReversalService
     public function approve(PaymentReversal $reversal, ?string $password, ?string $note): PaymentReversal {
         return DB::transaction(function () use ($reversal, $password, $note) {
             $reversal = $this->lockPending($reversal);
-            $user = Auth::user();
-            $mode = config('finance.approval_mode');
-            $selfApproved = $reversal->requested_by === $user->id;
-
-            if ($mode === 'separated' && $selfApproved) {
-                throw ValidationException::withMessages(['approval' => ['Reversal harus disetujui oleh akun yang berbeda dari pengaju.']]);
-            }
-            if ($mode !== 'separated') {
-                if (!$password || !Hash::check($password, $user->password)) {
-                    throw ValidationException::withMessages(['password' => ['Password tidak sesuai.']]);
-                }
-                if ($selfApproved && mb_strlen(trim((string) $note)) < self::MIN_NOTE_LENGTH) {
-                    throw ValidationException::withMessages(['note' => ['Tulis alasan persetujuan minimal ' . self::MIN_NOTE_LENGTH . ' karakter karena Anda juga pengaju reversal ini.']]);
-                }
-            }
+            $selfApproved = $this->approval->authorize([$reversal->requested_by], $password, $note,
+                'Reversal harus disetujui oleh akun yang berbeda dari pengaju.');
 
             $payment = Payment::whereKey($reversal->payment_id)->lockForUpdate()->firstOrFail();
             $before = $this->audit->snapshot($reversal);
 
             $reversal->update([
                 'status'        => 'APPROVED',
-                'approved_by'   => $user->id,
+                'approved_by'   => Auth::id(),
                 'approved_at'   => now(),
                 'approval_note' => $note,
                 'self_approved' => $selfApproved,
@@ -86,8 +67,8 @@ class PaymentReversalService
             $invoices = Invoice::whereIn('id', $payment->details()->pluck('invoice_id'))->orderBy('id')->lockForUpdate()->get();
             foreach ($invoices as $invoice) $this->invoiceService->recalculate($invoice);
 
-            $meta = ['approval_mode' => $mode, 'self_approved' => $selfApproved];
-            $this->audit->record($reversal, 'APPROVED', $before, $note, $meta);
+            $meta = $this->approval->meta($selfApproved);
+            $this->audit->record($reversal, 'APPROVED', $before, $note, $meta + ['payment_no' => $payment->payment_no]);
             $this->audit->record($payment, 'REVERSED', reason: $reversal->reason, meta: $meta + ['reversal_id' => $reversal->id]);
 
             DB::afterCommit(fn() => $this->notifyParents($payment, $reversal));

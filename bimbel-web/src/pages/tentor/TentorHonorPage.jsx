@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Wallet, ChevronDown, ChevronUp, CheckCircle2, Hourglass, FileDown, PiggyBank, CalendarCheck, Banknote } from "lucide-react";
+import { Wallet, ChevronDown, ChevronUp, CheckCircle2, Hourglass, FileDown, PiggyBank, CalendarCheck, Banknote, AlertTriangle, Paperclip } from "lucide-react";
 import PremiumStatCard from "../../components/ui/StatCard";
 import { downloadFile } from "@/utils/download";
-import { getTentorHonor, PAYROLL_STATUS } from "@/services/finance/financeService";
+import { getTentorHonor, confirmHonorReceipt, getHonorTransferProof, PAYROLL_STATUS, RECEIPT_STATUS } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
 
@@ -11,6 +11,38 @@ export default function TentorHonorPage() {
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [downloading, setDownloading] = useState(null);
+  const [dispute, setDispute] = useState({ id: null, note: "" });
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const load = () => getTentorHonor()
+    .then(res => setData(res.data.data))
+    .catch(err => setError(getApiErrorMessage(err, "Gagal memuat data honor.")));
+
+  // Konfirmasi penerimaan honor: verifikasi dari tentor atas transfer yang dicatat admin
+  const sendReceipt = async (h, status, note = "") => {
+    setSending(true);
+    setError("");
+    try {
+      const res = await confirmHonorReceipt(h.payroll_id, { status, note });
+      setNotice(res.data.message);
+      setDispute({ id: null, note: "" });
+      await load();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Konfirmasi gagal dikirim."));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const openProof = async (h) => {
+    try {
+      const res = await getHonorTransferProof(h.payroll_id);
+      window.open(URL.createObjectURL(res.data), "_blank", "noopener");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Bukti transfer tidak dapat dibuka."));
+    }
+  };
 
   // Slip honor PDF dibuat server (sama dengan versi Android)
   const downloadSlip = async (h) => {
@@ -24,11 +56,7 @@ export default function TentorHonorPage() {
     }
   };
 
-  useEffect(() => {
-    getTentorHonor()
-      .then(res => setData(res.data.data))
-      .catch(err => setError(getApiErrorMessage(err, "Gagal memuat data honor.")));
-  }, []);
+  useEffect(() => { load(); }, []);
 
   if (!data) return <div className="p-12 text-center text-sm font-bold text-gray-400">{error || "Memuat honor..."}</div>;
 
@@ -39,6 +67,7 @@ export default function TentorHonorPage() {
         <p className="text-sm text-gray-500 mt-0.5">Honor dihitung dari sesi yang Anda hadiri dan selesaikan sesuai aturan honor bimbel. Unduh slip PDF tiap periode.</p>
       </div>
       {error && <p className="text-sm font-semibold text-rose-600">{error}</p>}
+      {notice && <p className="text-sm font-semibold text-emerald-700">{notice}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <PremiumStatCard title="Total Pendapatan" value={formatRupiah(data.totals.received)} desc={`Akumulasi dari ${data.totals.payroll_count} periode payroll`} icon={PiggyBank} colorClass="text-green-700" />
@@ -76,7 +105,7 @@ export default function TentorHonorPage() {
                     <FileDown size={13} /> {downloading === h.payroll_id ? "Mengunduh..." : "Slip PDF"}
                   </span>
                   {h.transfer ? (
-                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1"><CheckCircle2 size={13}/> Ditransfer {h.transfer.transfer_date}</span>
+                    <span className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${h.transfer.receipt_status === "DISPUTED" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}><CheckCircle2 size={13}/> Ditransfer {h.transfer.transfer_date}{h.transfer.receipt_status ? "" : " • perlu konfirmasi"}</span>
                   ) : (
                     <span className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${PAYROLL_STATUS[h.payroll_status]?.className}`}><Hourglass size={13}/> {h.payroll_status === "APPROVED" ? "Menunggu transfer" : PAYROLL_STATUS[h.payroll_status]?.label}</span>
                   )}
@@ -84,7 +113,31 @@ export default function TentorHonorPage() {
                 {expanded === h.payroll_id && (
                   <div className="px-4 pb-4 space-y-2">
                     {h.transfer && (
-                      <p className="text-xs text-gray-500">Rekening sumber: {h.transfer.source_account || "-"} • Ref: {h.transfer.reference_no || "-"}</p>
+                      <div className="p-3 rounded-xl border border-gray-200 bg-white space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                          <span>Rekening sumber: {h.transfer.source_account || "-"} • Ref: {h.transfer.reference_no || "-"}</span>
+                          {h.transfer.has_proof && <button onClick={() => openProof(h)} className="flex items-center gap-1 font-bold text-indigo-700"><Paperclip size={12} /> Bukti transfer</button>}
+                          {h.transfer.receipt_status && <span className={`px-2 py-0.5 rounded font-bold ${RECEIPT_STATUS[h.transfer.receipt_status]?.className}`}>{h.transfer.receipt_status === "RECEIVED" ? "Sudah Anda konfirmasi" : "Dilaporkan bermasalah"}</span>}
+                        </div>
+                        {h.transfer.receipt_note && <p className="text-xs text-gray-500">Keterangan Anda: {h.transfer.receipt_note}</p>}
+                        {h.transfer.receipt_status !== "RECEIVED" && (
+                          dispute.id === h.payroll_id ? (
+                            <div className="space-y-2">
+                              <textarea autoFocus rows={2} value={dispute.note} onChange={e => setDispute({ id: h.payroll_id, note: e.target.value })} placeholder="Jelaskan kendalanya, mis. belum masuk rekening atau nominal berbeda" className="w-full rounded-xl border px-3 py-2 text-sm" />
+                              <div className="flex gap-2 justify-end">
+                                <button onClick={() => setDispute({ id: null, note: "" })} className="px-3 py-1.5 text-xs text-gray-500">Batal</button>
+                                <button disabled={sending || dispute.note.trim().length < 5} onClick={() => sendReceipt(h, "DISPUTED", dispute.note)} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold disabled:opacity-40">Kirim Laporan</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              <p className="text-xs text-gray-600 w-full">Mohon konfirmasi apakah honor ini sudah masuk ke rekening Anda.</p>
+                              <button disabled={sending} onClick={() => sendReceipt(h, "RECEIVED")} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 disabled:opacity-40"><CheckCircle2 size={13} /> Sudah Diterima</button>
+                              <button disabled={sending} onClick={() => setDispute({ id: h.payroll_id, note: "" })} className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-1"><AlertTriangle size={13} /> Laporkan Masalah</button>
+                            </div>
+                          )
+                        )}
+                      </div>
                     )}
                     <table className="ui-table w-full text-xs bg-slate-50 rounded-xl overflow-hidden">
                       <thead><tr className="text-gray-400 uppercase"><th className="p-2 text-left">Tanggal</th><th className="p-2 text-left">Kelas & Mapel</th><th className="p-2 text-right">Menit</th><th className="p-2 text-right">Honor</th></tr></thead>

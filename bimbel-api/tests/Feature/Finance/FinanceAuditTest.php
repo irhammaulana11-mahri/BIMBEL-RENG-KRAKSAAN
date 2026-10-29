@@ -110,8 +110,11 @@ class FinanceAuditTest extends TestCase
 
         $payroll = $service->generate(2026, 10);
         $service->generate(2026, 10);
-        $service->approve($payroll->refresh());
-        $transfer = $service->transfer($payroll->refresh(), $this->f['tA'], ['transfer_date' => now()->toDateString(), 'reference_no' => 'TRF-UJI']);
+        Storage::fake(PayrollService::PROOF_DISK);
+        $service->approve($payroll->refresh(), self::PASSWORD, 'Sudah dicek terhadap absensi');
+        $transfer = $service->transfer($payroll->refresh(), $this->f['tA'],
+            ['transfer_date' => now()->toDateString(), 'reference_no' => 'TRF-UJI', 'password' => self::PASSWORD, 'approval_note' => 'Transfer via BCA'],
+            UploadedFile::fake()->create('bukti.pdf', 20, 'application/pdf'));
 
         $this->assertSame(['GENERATED', 'REGENERATED', 'APPROVED', 'PAID'], $this->logsFor($payroll->id)->pluck('action')->all());
         $transferLog = $this->logsFor($transfer->id)->sole();

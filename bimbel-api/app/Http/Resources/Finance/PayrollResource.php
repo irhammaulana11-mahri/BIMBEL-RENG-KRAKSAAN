@@ -26,6 +26,14 @@ class PayrollResource extends JsonResource
             'status'                 => $this->status,
             'note'                   => $this->note,
             'approved_at'            => LocalTime::format($this->approved_at, 'Y-m-d H:i'),
+            // Pemisahan tugas / operator tunggal: siapa menyusun & menyetujui
+            'generated_by_id'        => $this->generated_by ?? $this->created_by,
+            'generated_by'           => $this->generator?->name,
+            'generated_at'           => LocalTime::format($this->generated_at, 'Y-m-d H:i'),
+            'approved_by_id'         => $this->approved_by,
+            'approved_by'            => $this->approver?->name,
+            'approval_note'          => $this->approval_note,
+            'self_approved'          => (bool) $this->self_approved,
             'paid_at'                => LocalTime::format($this->paid_at, 'Y-m-d H:i'),
         ];
     }

@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Settings2, RefreshCw, CheckCircle2, Trash2, Send, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { Settings2, RefreshCw, CheckCircle2, Trash2, Send, ChevronDown, ChevronUp, AlertTriangle, FileDown, Paperclip } from "lucide-react";
 import TutorPaymentModal from "./TutorPaymentModal";
+import PayrollApproveModal from "./PayrollApproveModal";
+import PayrollExceptionsPanel from "./PayrollExceptionsPanel";
+import { downloadFile } from "@/utils/download";
 import TentorRateModal from "./TentorRateModal";
 import ConfirmationModal from "@/components/ui/confirmation/ConfirmationModal";
 import {
-  previewPayroll, generatePayroll, getPayroll, approvePayroll, deletePayroll, PAYROLL_STATUS,
+  previewPayroll, generatePayroll, getPayroll, deletePayroll, getTransferProof, PAYROLL_STATUS, RECEIPT_STATUS,
 } from "@/services/finance/financeService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
@@ -19,11 +22,16 @@ export default function PayrollTab({ period, onNotify }) {
   const [payTarget, setPayTarget] = useState(null);
   const [rateOpen, setRateOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false });
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [mode, setMode] = useState("single_operator");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const load = async () => {
     try {
       const res = await previewPayroll(period);
       setPreview(res.data.data);
+      setMode(res.data.approval_mode);
+      setRefreshKey(k => k + 1);
       const current = res.data.payroll?.data || res.data.payroll;
       setPayroll(current || null);
       if (current) {
@@ -59,6 +67,23 @@ export default function PayrollTab({ period, onNotify }) {
   };
 
   const status = payroll ? PAYROLL_STATUS[payroll.status] : null;
+
+  const downloadReport = async () => {
+    try {
+      await downloadFile("/admin/finance/reports/self-approvals", `Laporan-Persetujuan-Sendiri-${period}.pdf`, { period });
+    } catch (err) {
+      onNotify(getApiErrorMessage(err, "Gagal mengunduh laporan."), "error");
+    }
+  };
+
+  const openProof = async (transfer) => {
+    try {
+      const res = await getTransferProof(payroll.id, transfer.id);
+      window.open(URL.createObjectURL(res.data), "_blank", "noopener");
+    } catch (err) {
+      onNotify(getApiErrorMessage(err, "Bukti transfer tidak dapat dibuka."), "error");
+    }
+  };
   const pendingCount = preview?.total_sessions || 0;
 
   return (
@@ -66,9 +91,10 @@ export default function PayrollTab({ period, onNotify }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-black text-gray-900">Payroll {formatPeriod(period)}</h3>
-          <p className="text-xs text-gray-500">Mencakup sesi HADIR & selesai yang belum dibayar sampai akhir bulan ini.</p>
+          <p className="text-xs text-gray-500">Mencakup sesi HADIR & selesai bulan ini yang belum dibayar. Sesi dari bulan sebelumnya ditinjau dulu sebagai pengecualian.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button onClick={() => downloadReport()} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5" title="Arsip aksi keuangan yang disetujui oleh akun yang juga mengerjakan tahap sebelumnya"><FileDown className="w-4 h-4" /> Laporan Persetujuan Sendiri</button>
           <button onClick={() => setRateOpen(true)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Tarif Tentor</button>
           {(!payroll || payroll.status === "DRAFT") && (
             <button disabled={busy} onClick={() => run(() => generatePayroll(period), "Payroll disusun.")} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center gap-1.5 disabled:opacity-50">
@@ -78,7 +104,7 @@ export default function PayrollTab({ period, onNotify }) {
           {payroll?.status === "DRAFT" && (
             <>
               <button disabled={busy} onClick={() => setConfirm({ open: true, title: "Hapus Payroll Draft?", message: "Sesi akan dilepas dan bisa disusun ulang kapan saja.", variant: "danger", onConfirm: () => run(() => deletePayroll(payroll.id), "Payroll draft dihapus.") })} className="px-3 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl text-sm font-bold"><Trash2 className="w-4 h-4" /></button>
-              <button disabled={busy} onClick={() => setConfirm({ open: true, title: "Setujui Payroll?", message: "Setelah disetujui, payroll terkunci dan honor bisa ditransfer ke setiap tentor.", variant: "success", onConfirm: () => run(() => approvePayroll(payroll.id), "Payroll disetujui.") })} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold flex items-center gap-1.5 disabled:opacity-50"><CheckCircle2 className="w-4 h-4" /> Setujui</button>
+              <button disabled={busy} onClick={() => setApproveOpen(true)} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold flex items-center gap-1.5 disabled:opacity-50"><CheckCircle2 className="w-4 h-4" /> Setujui</button>
             </>
           )}
         </div>
@@ -90,7 +116,9 @@ export default function PayrollTab({ period, onNotify }) {
         <>
           {payroll ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Status</p><span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${status?.className}`}>{status?.label}</span><p className="text-[10px] text-gray-400 mt-1">{payroll.payroll_no}</p></div>
+              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Status</p><span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${status?.className}`}>{status?.label}</span><p className="text-[10px] text-gray-400 mt-1">{payroll.payroll_no}</p>
+                <p className="text-[10px] text-gray-400">Disusun {payroll.generated_by || "-"}{payroll.approved_by ? ` • disetujui ${payroll.approved_by}` : ""}</p>
+                {payroll.self_approved && <p className="text-[10px] font-bold text-amber-700">Disetujui penyusun sendiri</p>}</div>
               <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Total Honor</p><p className="text-xl font-black text-gray-900">{formatRupiah(payroll.total_amount)}</p></div>
               <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Sesi / Tentor</p><p className="text-xl font-black text-gray-900">{payroll.total_sessions} / {payroll.total_tutors}</p></div>
               <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Sudah Ditransfer</p><p className="text-xl font-black text-emerald-700">{payroll.paid_tutors ?? 0} / {payroll.total_tutors}</p></div>
@@ -107,6 +135,8 @@ export default function PayrollTab({ period, onNotify }) {
               <span>Ada sesi tanpa aturan honor dan tarif tentor Rp 0: <strong>{preview.missing_rate.join(", ")}</strong>. Buat aturan di tab Aturan Tarif atau atur <button onClick={() => setRateOpen(true)} className="underline font-bold">Tarif Tentor</button>, lalu susun ulang payroll.</span>
             </div>
           )}
+
+          <PayrollExceptionsPanel refreshKey={refreshKey} onNotify={onNotify} onChanged={load} />
 
           {payroll && payroll.status !== "DRAFT" && pendingCount > 0 && (
             <p className="text-xs text-gray-500">{pendingCount} sesi baru setelah payroll disetujui akan masuk payroll bulan berikutnya.</p>
@@ -130,7 +160,11 @@ export default function PayrollTab({ period, onNotify }) {
                     <button onClick={() => setPayTarget(t)} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"><Send className="w-3.5 h-3.5" /> Transfer</button>
                   )}
                   {t.transfer && (
-                    <span className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold" title={`${t.transfer.source_account || ""} ${t.transfer.reference_no || ""}`}>Ditransfer {t.transfer.transfer_date}</span>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <span className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold" title={`${t.transfer.source_account || ""} ${t.transfer.reference_no || ""}`}>Ditransfer {t.transfer.transfer_date}</span>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-bold ${RECEIPT_STATUS[t.transfer.receipt_status]?.className || "bg-gray-100 text-gray-500"}`} title={t.transfer.receipt_note || ""}>{RECEIPT_STATUS[t.transfer.receipt_status]?.label || "Menunggu konfirmasi tentor"}</span>
+                      {t.transfer.has_proof && <button onClick={() => openProof(t.transfer)} className="p-1 text-gray-400 hover:text-gray-700" title="Lihat bukti transfer"><Paperclip className="w-4 h-4" /></button>}
+                    </span>
                   )}
                 </div>
                 {expanded === t.tentor_id && t.sessions && (
@@ -151,9 +185,13 @@ export default function PayrollTab({ period, onNotify }) {
         </>
       )}
 
+      {approveOpen && payroll && (
+        <PayrollApproveModal payroll={payroll} mode={mode} onClose={() => setApproveOpen(false)} onDone={(message) => { setApproveOpen(false); onNotify(message); load(); }} />
+      )}
       <TutorPaymentModal
         open={!!payTarget}
-        payrollId={payroll?.id}
+        payroll={payroll}
+        mode={mode}
         tentor={payTarget}
         onClose={() => setPayTarget(null)}
         onDone={(message) => { setPayTarget(null); onNotify(message); load(); }}
