@@ -329,6 +329,23 @@ Cloudflare → `bolinggo.org` → **DNS → Records**: bila sudah ada record ber
 4. Tunggu status konektor di dashboard menjadi **Connected / Healthy** → Next.
 
 **Cek di server:** `systemctl status cloudflared` → `active (running)`, dan otomatis menyala saat boot.
+Pastikan tunnel dijalankan **oleh layanan sistem** ini, bukan perintah `cloudflared tunnel run --token ...`
+yang diketik manual di terminal (proses manual hilang saat server restart):
+`pgrep -a cloudflared` harus menampilkan **satu** proses saja.
+
+> **Jaringan kantor yang memblokir UDP** (log: `Failed to dial a quic connection ... timeout`, layanan gagal
+> menyala karena *timeout*): paksa protokol HTTP/2 lewat TCP 443, lalu muat ulang layanan.
+>
+> ```bash
+> sudo mkdir -p /etc/systemd/system/cloudflared.service.d
+> printf '[Service]\nEnvironment=TUNNEL_TRANSPORT_PROTOCOL=http2\n' | sudo tee /etc/systemd/system/cloudflared.service.d/protocol.conf
+> sudo systemctl daemon-reload && sudo systemctl restart cloudflared
+> sudo journalctl -u cloudflared -n 15 --no-pager | grep Registered   # 4 baris ... protocol=http2
+> ```
+>
+> **Layanan memakai `--token-file /etc/cloudflared/token`** (log: `requires the ID or name of the tunnel`):
+> berkas token kosong atau hilang. Isi ulang tanpa menampilkan token, lalu `sudo chmod 600 /etc/cloudflared/token`
+> dan restart layanan. Cek dengan `sudo wc -c /etc/cloudflared/token` (harus > 100 byte, diawali `eyJ`).
 
 ### D3. Hubungkan subdomain
 
@@ -336,8 +353,11 @@ Di halaman tunnel → **Public Hostname → Add a public hostname**, buat dua en
 
 | Subdomain | Domain | Path | Service type | URL |
 |---|---|---|---|---|
-| `bimbel` | `bolinggo.org` | | HTTP | `localhost:80` |
-| `api-bimbel` | `bolinggo.org` | | HTTP | `localhost:80` |
+| `bimbel` | `bolinggo.org` | | HTTP | `127.0.0.1:80` |
+| `api-bimbel` | `bolinggo.org` | | HTTP | `127.0.0.1:80` |
+
+> Tulis **`127.0.0.1:80`**, bukan `localhost:80`: `localhost` bisa diterjemahkan ke IPv6 (`::1`), sedangkan
+> Nginx hanya mendengar IPv4 `127.0.0.1`, sehingga pengunjung mendapat **error 502**.
 
 Cloudflare otomatis membuat record DNS `CNAME` (status *Proxied*) untuk keduanya. Nginx memilih web atau API
 berdasarkan nama domain yang diminta.
@@ -405,7 +425,9 @@ cek `storage/logs/laravel.log`, cek sisa ruang disk (`df -h`).
 | Gejala | Kemungkinan penyebab |
 |---|---|
 | Error 1033 / "Argo Tunnel error" | `cloudflared` mati atau internet server putus: `sudo systemctl restart cloudflared` |
-| Error 502 | Nginx/PHP-FPM mati: `sudo systemctl status nginx php8.3-fpm` |
+| Web bisa dibuka tetapi semua login gagal "password salah" | API tidak terjangkau: cek `curl -s -o /dev/null -w "%{http_code}" https://api-bimbel.bolinggo.org/up` (harus 200) dan rute `api-bimbel` di tunnel (D3) |
+| `Could not resolve host: api-bimbel...` | Rute `api-bimbel` belum ditambahkan di tunnel; setelah ditambah: `sudo resolvectl flush-caches` |
+| Error 502 | URL rute tunnel `localhost:80` (ganti `127.0.0.1:80`, lihat D3), atau Nginx/PHP-FPM mati: `sudo systemctl status nginx php8.5-fpm` |
 | Web tampil, tetapi data gagal dimuat | `VITE_API_URL` salah saat build (C4) atau `CORS_ALLOWED_ORIGINS` tidak memuat domain web |
 | Gambar/logo tidak muncul, atau peringatan "mixed content" | `APP_URL` belum `https://...` (C3); jalankan ulang `php artisan config:cache` |
 | Error 500 di API | `storage/logs/laravel.log`; izin folder `storage` (C3) |
