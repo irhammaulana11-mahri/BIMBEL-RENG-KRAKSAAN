@@ -42,7 +42,9 @@ class BackupRestore extends Command
             return self::FAILURE;
         }
 
-        $admin = User::whereHas('role', fn($q) => $q->whereIn('role_name', ['super_admin', 'admin']))->orderBy('created_at')->first();
+        // Dicatat atas nama super admin pertama; akun admin hanya cadangan untuk instalasi lama tanpa super admin
+        $admin = User::whereHas('role', fn($q) => $q->where('role_name', 'super_admin'))->orderBy('created_at')->first()
+            ?? User::whereHas('role', fn($q) => $q->where('role_name', 'admin'))->orderBy('created_at')->first();
         $restoreFiles = !$this->option('no-files');
 
         try {

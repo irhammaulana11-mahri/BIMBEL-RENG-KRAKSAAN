@@ -3,12 +3,14 @@ import { assetUrl } from "@/config/env";
 import { getCompanyProfile } from "@/services/public/websiteService";
 import { useSidebar } from "../../context/SidebarContext";
 import SidebarMenu from "./sidebarMenu";
+import useAuth from "../../hooks/useAuth";
 
 // PERBAIKAN IMPOR: Gunakan utility menu, bukan utility redirect login
 import { getMenuByRole } from "../../config/sidebar/menuByRole"; 
 
 export default function UniversalSidebar({ role }) {
   const { isExpanded, isMobileOpen } = useSidebar();
+  const { hasRole } = useAuth();
   const [company, setCompany] = useState(null);
 
   // PERBAIKAN FUNGSI: Ambil konfigurasi menu murni (Aman tanpa memerlukan fungsi navigate)
@@ -71,7 +73,7 @@ export default function UniversalSidebar({ role }) {
                 {group.category}
               </p>
             )}
-            {group.menus && group.menus.map((menu) => (
+            {group.menus && group.menus.filter((menu) => !menu.roles || hasRole(...menu.roles)).map((menu) => (
               <SidebarMenu key={menu.to} to={menu.to} label={menu.label} icon={menu.icon} />
             ))}
           </div>

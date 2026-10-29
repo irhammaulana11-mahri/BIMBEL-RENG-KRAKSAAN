@@ -23,6 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
+
+        // Peran dicek sebelum route model binding: peran salah selalu 403, tanpa membocorkan ada/tidaknya data
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\RoleMiddleware::class,
+        );
         
     })
     ->withExceptions(function (Exceptions $exceptions): void {

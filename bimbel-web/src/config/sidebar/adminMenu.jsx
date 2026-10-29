@@ -71,7 +71,8 @@ export const adminMenu = [
     category: "Pengaturan",
     menus: [
       { to: "/admin/users", label: "Akun Pengguna", icon: <Shield size={20} /> },
-      { to: "/admin/backups", label: "Backup & Pemulihan", icon: <DatabaseBackup size={20} /> }
+      // roles: menu hanya tampil untuk peran ini (server tetap memvalidasi)
+      { to: "/admin/backups", label: "Backup & Pemulihan", icon: <DatabaseBackup size={20} />, roles: ["super_admin"] }
     ]
   }
 ];

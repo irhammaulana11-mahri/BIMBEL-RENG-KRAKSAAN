@@ -28,6 +28,7 @@ import LocationRequestPage from "../pages/admin/academic/LocationRequestPage";
 import StudentRegistrationPage from "../pages/admin/academic/StudentRegistrationPage";
 import UserPage from "../pages/admin/settings/UserPage";
 import BackupPage from "../pages/admin/settings/BackupPage";
+import RequireRole from "./RequireRole";
 import LearningMaterialPage from "../pages/admin/academic/LearningMaterialPage";
 
 import FinancePage from "../pages/admin/finance/FinancePage";
@@ -59,7 +60,7 @@ export const adminRoutes = [
     {path:"location-requests", element:<LocationRequestPage/>},
     {path:"enrollments", element:<StudentRegistrationPage/>},
     {path:"users", element:<UserPage/>},
-    {path:"backups", element:<BackupPage/>},
+    {path:"backups", element:<RequireRole roles={["super_admin"]}><BackupPage/></RequireRole>},
     {path:"modul", element:<LearningMaterialPage/>},
     {path:"cashflow", element:<OperationalExpensePage/>},
     {path: "students",children: [{path: "new",element: <StudentCreatePage />}]},

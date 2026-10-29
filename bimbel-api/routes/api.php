@@ -159,8 +159,8 @@ Route::prefix('admin')
         Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword']);
         Route::apiResource('users', UserController::class);
 
-        // --- BACKUP & PEMULIHAN ---
-        Route::prefix('backups')->controller(BackupController::class)->group(function () {
+        // --- BACKUP & PEMULIHAN (khusus super admin) ---
+        Route::prefix('backups')->middleware('role:super_admin')->controller(BackupController::class)->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::get('status', 'status');

@@ -37,7 +37,7 @@ Isi `.env`:
 
 - `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` = alamat API
 - `DB_*` sesuai langkah 1
-- `SEED_ADMIN_EMAIL` dan `SEED_ADMIN_PASSWORD` untuk akun admin pertama
+- `SEED_ADMIN_EMAIL` dan `SEED_ADMIN_PASSWORD` untuk akun pertama (dibuat sebagai **Super Admin**)
 
 Lalu buat seluruh tabel dan data acuan:
 
@@ -50,7 +50,8 @@ php artisan config:cache && php artisan route:cache
 
 - **`migrate`** membuat semua tabel dari nol. Migration pertama
   (`2026_06_01_000000_create_base_schema_tables`) berisi tabel inti yang dulu dibuat manual.
-- **`db:seed`** mengisi peran login, jenjang kelas, paket bimbingan, profil lembaga, dan akun admin pertama.
+- **`db:seed`** mengisi peran login, jenjang kelas, paket bimbingan, profil lembaga, dan akun pertama.
+  Akun pertama dibuat sebagai Super Admin bila belum ada Super Admin; peran akun yang sudah ada tidak diubah.
   Seeder aman dijalankan ulang (tidak menggandakan data). Jika `SEED_ADMIN_PASSWORD` kosong,
   password acak ditampilkan sekali di terminal.
 - **`storage:link`** diperlukan agar gambar website (banner, logo, artikel) bisa diakses.
@@ -81,7 +82,7 @@ location / {
 
 ## 4. Penjadwal & Backup
 
-Backup otomatis (menu **Pengaturan → Backup & Pemulihan**) dijalankan oleh penjadwal Laravel.
+Backup otomatis (menu **Pengaturan → Backup & Pemulihan**, hanya untuk **Super Admin**) dijalankan oleh penjadwal Laravel.
 Pasang satu baris cron untuk user web server (mis. `www-data`):
 
 ```cron

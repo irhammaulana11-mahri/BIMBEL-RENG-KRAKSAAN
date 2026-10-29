@@ -610,7 +610,7 @@ class BackupService {
         try {
             DB::table('logs.activity_logs')->insert([
                 'user_id'    => $userId && User::whereKey($userId)->exists() ? $userId : null,
-                'activity'   => $activity,
+                'activity'   => $activity . (app()->runningInConsole() ? ' (via terminal)' : ''),
                 'ip_address' => request()?->ip(),
             ]);
         } catch (Throwable) {
@@ -620,7 +620,8 @@ class BackupService {
 
     private function notifyAdmins(string $kind, string $title, string $message): void {
         try {
-            $admins = User::whereHas('role', fn($q) => $q->whereIn('role_name', ['admin', 'super_admin']))->get();
+            // Hanya super admin yang bisa membuka menu Backup
+            $admins = User::whereHas('role', fn($q) => $q->where('role_name', 'super_admin'))->get();
             Notification::send($admins, new PortalNotification($kind, $title, $message, [], '/admin/backups'));
         } catch (Throwable $e) {
             Log::warning('Notifikasi backup gagal', ['error' => $e->getMessage()]);
