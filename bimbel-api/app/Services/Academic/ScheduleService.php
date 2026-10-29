@@ -420,6 +420,17 @@ class ScheduleService {
      * @return array Response JSON-ready
      */
     public function deleteSchedule(Schedule $schedule): array {
+        // Sesi & absensi ikut terhapus (CASCADE), padahal bisa menjadi dasar tagihan/honor:
+        // jadwal yang sudah berjalan hanya boleh dinonaktifkan.
+        $used = $schedule->sessions()
+            ->where(fn ($q) => $q->whereIn('status', ['IN_PROGRESS', 'COMPLETED'])
+                ->orWhereHas('studentAttendances')
+                ->orWhereHas('tentorAttendance'))
+            ->exists();
+        if ($used) {
+            return $this->buildErrorResponse('Jadwal ini sudah memiliki sesi yang berjalan atau absensi sehingga tidak dapat dihapus. Nonaktifkan jadwal sebagai gantinya.') + ['code' => 422];
+        }
+
         try {
             DB::transaction(fn () => $schedule->delete());
 

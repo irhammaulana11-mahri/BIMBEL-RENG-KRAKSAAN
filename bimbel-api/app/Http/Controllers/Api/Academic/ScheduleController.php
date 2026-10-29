@@ -169,6 +169,12 @@ class ScheduleController extends Controller {
         return response()->json($result, $result['success'] ? 200 : ($result['code'] ?? 500));
     }
 
+    // DELETE: hanya jadwal yang belum pernah berjalan (tanpa sesi berjalan/selesai & absensi)
+    public function destroy(Schedule $schedule) {
+        $result = $this->scheduleService->deleteSchedule($schedule);
+        return response()->json($result, $result['success'] ? 200 : ($result['code'] ?? 500));
+    }
+
     public function updateSessionDetails(ScheduleSessionRequest $request, ScheduleSession $session) {
         $result = $this->scheduleService->updateSessionDetails($session, $request->validated());
         return response()->json($result, $result['success'] ? 200 : 500);
