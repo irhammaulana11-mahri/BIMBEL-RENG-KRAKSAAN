@@ -6,6 +6,7 @@ Panduan memasang aplikasi di server baru atau memperbarui server yang sudah berj
 |---|---|---|
 | Backend API | `bimbel-api` | Laravel 11, PHP ≥ 8.3, PostgreSQL ≥ 14 |
 | Frontend | `bimbel-web` | React + Vite (hasil build berupa file statis) |
+| Aplikasi Android | `bimbel-android` | Flutter (APK rilis, wajib HTTPS) |
 
 ## 1. Database (PostgreSQL)
 
@@ -125,6 +126,82 @@ php artisan backup:restore <nama-berkas.zip>   # pulihkan (minta ketik PULIHKAN)
 
 **Pindah server:** pasang aplikasi seperti langkah 1–3 (`migrate` + `db:seed`), salin berkas
 `.zip` dari server lama lalu jalankan `php artisan backup:restore /path/berkas.zip`, atau unggah lewat menu Backup lalu pulihkan.
+
+## 5. Domain & Cloudflare
+
+Contoh pembagian subdomain (sesuaikan nama domain Anda):
+
+| Subdomain | Isi | `.env` |
+|---|---|---|
+| `bimbelreng.id` / `www` | Web (`bimbel-web/dist`) | `VITE_API_URL=https://api.bimbelreng.id` saat build web |
+| `api.bimbelreng.id` | API Laravel | `APP_URL=https://api.bimbelreng.id`, `CORS_ALLOWED_ORIGINS=https://bimbelreng.id,https://www.bimbelreng.id` |
+
+1. **DNS:** di Cloudflare buat record `A` untuk `@`, `www`, dan `api` ke IP server, status *Proxied* (awan oranye).
+2. **SSL/TLS:** mode **Full (strict)**. Pasang *Origin Certificate* Cloudflare (atau Let's Encrypt) di Nginx
+   server. Jangan pakai mode *Flexible*: koneksi Cloudflare → server menjadi HTTP tanpa enkripsi.
+3. **IP asli pengguna (penting untuk batas login):** di belakang Cloudflare semua permintaan tampak dari IP
+   Cloudflare, sehingga batas 5 gagal login per email + IP menjadi per email saja. Pulihkan IP asli di Nginx:
+
+   ```nginx
+   # /etc/nginx/conf.d/cloudflare-realip.conf
+   # Daftar terbaru: https://www.cloudflare.com/ips/
+   set_real_ip_from 173.245.48.0/20;
+   set_real_ip_from 103.21.244.0/22;
+   set_real_ip_from 103.22.200.0/22;
+   set_real_ip_from 103.31.4.0/22;
+   set_real_ip_from 141.101.64.0/18;
+   set_real_ip_from 108.162.192.0/18;
+   set_real_ip_from 190.93.240.0/20;
+   set_real_ip_from 188.114.96.0/20;
+   set_real_ip_from 197.234.240.0/22;
+   set_real_ip_from 198.41.128.0/17;
+   set_real_ip_from 162.158.0.0/15;
+   set_real_ip_from 104.16.0.0/13;
+   set_real_ip_from 104.24.0.0/14;
+   set_real_ip_from 172.64.0.0/13;
+   set_real_ip_from 131.0.72.0/22;
+   real_ip_header CF-Connecting-IP;
+   ```
+
+   Laravel lalu membaca IP asli tanpa perubahan kode. Batasi juga firewall server agar port 80/443 hanya
+   menerima koneksi dari IP Cloudflare, supaya header ini tidak bisa dipalsukan dengan mengakses server langsung.
+4. **Ukuran unggahan:** paket gratis Cloudflare membatasi body permintaan 100 MB. Unggah backup yang lebih
+   besar langsung di server (`php artisan backup:restore /path/berkas.zip`).
+
+## 6. Aplikasi Android (`bimbel-android`)
+
+Build rilis **wajib** memakai kunci rilis sendiri dan alamat API **HTTPS**; tanpa keduanya build dihentikan
+dengan pesan jelas. Build debug tetap boleh memakai HTTP ke server lokal.
+
+**Sekali saja — buat kunci rilis** (simpan di luar repository, mis. `~/keys/`):
+
+```bash
+keytool -genkeypair -v -keystore ~/keys/bimbel-reng-release.jks -alias bimbel-reng \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Lalu buat `bimbel-android/android/key.properties` (sudah di-ignore git):
+
+```properties
+storeFile=/home/USER/keys/bimbel-reng-release.jks
+storePassword=PASSWORD_KEYSTORE
+keyAlias=bimbel-reng
+keyPassword=PASSWORD_KUNCI
+```
+
+> **Simpan cadangan berkas `.jks` dan kedua password di tempat aman (mis. penyimpanan terenkripsi).**
+> Bila hilang, pembaruan aplikasi tidak bisa dipasang di atas versi lama; pengguna harus uninstall dulu.
+
+**Build APK rilis:**
+
+```bash
+cd bimbel-android
+flutter build apk --release --dart-define=API_URL=https://api.bimbelreng.id
+# hasil: build/app/outputs/flutter-apk/app-release.apk
+```
+
+APK yang dulu ditandatangani kunci debug tidak bisa diperbarui dengan APK rilis: pengguna perlu uninstall versi
+lama satu kali sebelum memasang versi rilis.
 
 ## Memperbarui server yang sudah berjalan
 

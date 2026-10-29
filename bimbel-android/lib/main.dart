@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'auth/auth_state.dart';
+import 'config.dart';
 import 'screens/admin/admin_home.dart';
 import 'screens/login_screen.dart';
 import 'screens/parent/parent_home.dart';
@@ -11,8 +12,35 @@ import 'screens/tentor/tentor_home.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID');
+  // Pengaman terakhir bila build rilis dibuat tanpa API_URL https (lihat config.dart)
+  if (!apiConfigValid) {
+    runApp(const _ConfigErrorApp());
+    return;
+  }
   auth.init();
   runApp(const BimbelApp());
+}
+
+class _ConfigErrorApp extends StatelessWidget {
+  const _ConfigErrorApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Aplikasi belum dikonfigurasi dengan alamat server yang aman (HTTPS). Hubungi admin lembaga.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // Warna utama mengikuti versi web (brand-500)
