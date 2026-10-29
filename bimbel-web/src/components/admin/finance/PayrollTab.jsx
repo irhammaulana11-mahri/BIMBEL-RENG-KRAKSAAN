@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Settings2, RefreshCw, CheckCircle2, Trash2, Send, ChevronDown, ChevronUp, AlertTriangle, FileDown, Paperclip } from "lucide-react";
+import { Settings2, RefreshCw, CheckCircle2, Trash2, Send, ChevronDown, ChevronUp, AlertTriangle, FileDown, Paperclip, ClipboardCheck, Wallet, Users } from "lucide-react";
+import PremiumStatCard from "@/components/ui/StatCard";
 import TutorPaymentModal from "./TutorPaymentModal";
 import PayrollApproveModal from "./PayrollApproveModal";
 import PayrollExceptionsPanel from "./PayrollExceptionsPanel";
@@ -116,13 +117,12 @@ export default function PayrollTab({ period, onNotify }) {
       ) : (
         <>
           {payroll ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Status</p><span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${status?.className}`}>{status?.label}</span><p className="text-[10px] text-gray-400 mt-1">{payroll.payroll_no}</p>
-                <p className="text-[10px] text-gray-400">Disusun {payroll.generated_by || "-"}{payroll.approved_by ? ` • disetujui ${payroll.approved_by}` : ""}</p>
-                {payroll.self_approved && <p className="text-[10px] font-bold text-amber-700">Disetujui penyusun sendiri</p>}</div>
-              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Total Honor</p><p className="text-xl font-black text-gray-900">{formatRupiah(payroll.total_amount)}</p></div>
-              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Sesi / Tentor</p><p className="text-xl font-black text-gray-900">{payroll.total_sessions} / {payroll.total_tutors}</p></div>
-              <div className="p-4 rounded-2xl border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase">Sudah Ditransfer</p><p className="text-xl font-black text-emerald-700">{payroll.paid_tutors ?? 0} / {payroll.total_tutors}</p></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <PremiumStatCard title="Status" value={status?.label} icon={ClipboardCheck} tone={payroll.status === "PAID" ? "emerald" : payroll.status === "APPROVED" ? "blue" : "amber"}
+                desc={`${payroll.payroll_no} • disusun ${payroll.generated_by || "-"}${payroll.approved_by ? ` • disetujui ${payroll.approved_by}` : ""}${payroll.self_approved ? " (sendiri)" : ""}`} />
+              <PremiumStatCard title="Total Honor" value={formatRupiah(payroll.total_amount)} desc={formatPeriod(period)} icon={Wallet} tone="indigo" />
+              <PremiumStatCard title="Sesi / Tentor" value={`${payroll.total_sessions} / ${payroll.total_tutors}`} desc="Sesi dibayar / jumlah tentor" icon={Users} tone="purple" />
+              <PremiumStatCard title="Sudah Ditransfer" value={`${payroll.paid_tutors ?? 0} / ${payroll.total_tutors}`} desc="Tentor yang sudah ditransfer" icon={Send} tone="green" />
             </div>
           ) : (
             <div className="p-5 rounded-2xl border border-dashed border-gray-300 bg-slate-50 text-sm text-gray-600">

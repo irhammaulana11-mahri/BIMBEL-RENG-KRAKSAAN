@@ -8,24 +8,11 @@ import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah } from "@/utils/format";
 import StatCard from "../../components/ui/StatCard";
 import DashboardHero from "../../components/ui/DashboardHero";
+import Panel from "../../components/ui/DashboardPanel";
 
 
-// Warna aksen panel & batang distribusi paket
-const PANEL_TONES = {
-  blue: "border-t-blue-500", amber: "border-t-amber-500", emerald: "border-t-emerald-500",
-  purple: "border-t-purple-500", indigo: "border-t-indigo-500",
-};
+// Warna batang distribusi paket
 const BAR_COLORS = ["bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-amber-500", "bg-rose-500", "bg-indigo-500"];
-
-const Panel = ({ title, link, tone = "blue", children }) => (
-  <div className={`bg-white rounded-2xl border border-gray-100 border-t-4 ${PANEL_TONES[tone]} p-5 shadow-xs`}>
-    <div className="flex items-center justify-between mb-3">
-      <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">{title}</h3>
-      {link && <Link to={link.to} className="text-xs font-bold text-blue-600 flex items-center gap-1">{link.label} <ArrowRight size={12} /></Link>}
-    </div>
-    {children}
-  </div>
-);
 
 const LEAD_STATUS = {
   NEW: "bg-blue-50 text-blue-700",

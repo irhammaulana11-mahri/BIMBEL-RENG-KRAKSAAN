@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { GraduationCap, CalendarDays, CreditCard, CheckCircle2, Clock, User, ArrowRight, ClipboardList, TrendingUp, Hourglass, AlertTriangle } from "lucide-react";
+import { GraduationCap, CalendarDays, CreditCard, CheckCircle2, Clock, User, ClipboardList, TrendingUp, Hourglass, AlertTriangle } from "lucide-react";
 import PremiumStatCard from "../../components/ui/StatCard";
 import { TrendBadge } from "@/components/report/ReportCardView";
 import { getParentDashboard, SESSION_STATUS, ATTENDANCE_LABEL, formatSessionDate, dateOffset } from "@/services/parent/parentService";
@@ -8,6 +7,7 @@ import { formatScore, formatPercent } from "@/services/academic/progressReportSe
 import { getApiErrorMessage } from "@/utils/apiError";
 import { formatRupiah, formatPeriod } from "@/utils/format";
 import DashboardHero from "../../components/ui/DashboardHero";
+import Panel from "../../components/ui/DashboardPanel";
 
 function SessionRow({ session, showDate }) {
   return (
@@ -38,21 +38,14 @@ function SessionRow({ session, showDate }) {
   );
 }
 
-function Section({ icon: Icon, color, title, desc, link, children }) {
+// Kotak isi bergaya panel dashboard admin; warna aksen mengikuti warna ikon lama ("bg-blue-50 text-blue-600" -> blue)
+function Section({ color, title, desc, link, children }) {
+  const tone = color?.match(/text-([a-z]+)-\d+/)?.[1];
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-4">
-      <div className="flex items-center justify-between border-b border-gray-100 pb-3 gap-2">
-        <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-xl ${color}`}><Icon size={20} /></div>
-          <div>
-            <h2 className="text-lg font-black text-gray-950 tracking-tight">{title}</h2>
-            {desc && <p className="text-xs text-gray-400 font-medium">{desc}</p>}
-          </div>
-        </div>
-        {link && <Link to={link.to} className="text-xs font-bold text-blue-600 flex items-center gap-1 shrink-0">{link.label} <ArrowRight size={12} /></Link>}
-      </div>
-      {children}
-    </div>
+    <Panel title={title} link={link} tone={tone}>
+      {desc && <p className="text-xs text-gray-400 font-medium -mt-2 mb-3">{desc}</p>}
+      <div className="space-y-4">{children}</div>
+    </Panel>
   );
 }
 
@@ -66,18 +59,16 @@ export default function ParentDashboardPage() {
       .catch((err) => setError(getApiErrorMessage(err, "Gagal memuat dashboard.")));
   }, []);
 
-  if (!data) return <div className="p-12 text-center text-sm font-bold text-gray-400">{error || "Memuat dashboard..."}</div>;
+  if (!data) return <div className="flex items-center justify-center min-h-[60vh] text-base text-gray-500 font-medium">{error || "Memuat dashboard..."}</div>;
 
   const { summary } = data;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-      <div className="p-6">
-        <div className="mb-6">
-          <DashboardHero title={`Selamat datang, ${data.parent.name}`} subtitle="Pantau jadwal, kehadiran, nilai, dan administrasi belajar anak Anda." tone="emerald" />
-        </div>
+      <div className="p-6 space-y-6">
+        <DashboardHero title={`Selamat datang, ${data.parent.name}`} subtitle="Pantau jadwal, kehadiran, nilai, dan administrasi belajar anak Anda." tone="emerald" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <PremiumStatCard title="Anak Didik" value={`${summary.children_count}`} desc={`${summary.active_classes_count} kelas aktif`} icon={GraduationCap} colorClass="bg-blue-50 text-blue-600" />
           <PremiumStatCard title="Kehadiran" value={formatPercent(summary.attendance_percentage)} desc={`Sesi berlangsung ${summary.attendance_period}`} icon={CheckCircle2} colorClass="bg-emerald-50 text-emerald-600" />
           <PremiumStatCard title="Tagihan Aktif" value={`${summary.open_invoices_count}`} desc={summary.overdue_count > 0 ? `${summary.overdue_count} lewat jatuh tempo` : "Belum lunas"} icon={CreditCard} colorClass="bg-amber-50 text-amber-600" />
@@ -85,7 +76,7 @@ export default function ParentDashboardPage() {
         </div>
 
         {summary.pending_requests > 0 && (
-          <p className="mb-6 text-sm bg-amber-50 text-amber-800 border border-amber-100 rounded-xl px-4 py-3 flex items-center gap-2"><Hourglass size={16} /> {summary.pending_requests} pengajuan Anda sedang menunggu keputusan Admin.</p>
+          <p className="text-sm bg-amber-50 text-amber-800 border border-amber-100 rounded-xl px-4 py-3 flex items-center gap-2"><Hourglass size={16} /> {summary.pending_requests} pengajuan Anda sedang menunggu keputusan Admin.</p>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

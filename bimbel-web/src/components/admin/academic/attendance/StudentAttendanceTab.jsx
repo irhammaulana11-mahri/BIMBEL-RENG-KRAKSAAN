@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Calendar, Users, CheckCircle2, AlertCircle, Clock, CalendarDays } from "lucide-react";
 import StudentAttendanceModal from "./StudentAttendanceModal";
+import PremiumStatCard from "@/components/ui/StatCard";
 import { getStudentSessions } from "@/services/academic/attendanceService";
 import TablePagination from "@/components/ui/table/TablePagination";
 import useClientPagination from "@/hooks/useClientPagination";
@@ -52,44 +53,11 @@ export default function StudentAttendanceTab() {
   return (
     <div className="space-y-6 animate-in fade-in">
       
-      {/* 🟢 KPI SUMMARY */}
+      {/* KPI SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 rounded-2xl border border-blue-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Tingkat Kehadiran</p>
-              <h3 className="text-3xl font-black text-blue-900 mt-1">{persentaseHadir}%</h3>
-            </div>
-            <div className="p-2 bg-blue-200/50 rounded-xl text-blue-600"><Users size={20}/></div>
-          </div>
-          <p className="text-[11px] font-semibold text-blue-600 mt-3">
-            Berdasarkan Sesi Terfilter
-          </p>
-        </div>
-
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 rounded-2xl border border-emerald-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Total Sesi KBM</p>
-              <h3 className="text-3xl font-black text-emerald-900 mt-1">{totalSesi}</h3>
-            </div>
-            <div className="p-2 bg-emerald-200/50 rounded-xl text-emerald-600"><CheckCircle2 size={20}/></div>
-          </div>
-          <p className="text-[11px] font-semibold text-emerald-600 mt-3">
-            {filters.filter_mode === "harian" ? filters.date : filters.month}
-          </p>
-        </div>
-
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Belum Diabsen</p>
-              <h3 className="text-3xl font-black text-amber-900 mt-1">{belumAbsen}</h3>
-            </div>
-            <div className="p-2 bg-amber-200/50 rounded-xl text-amber-600"><AlertCircle size={20}/></div>
-          </div>
-          <p className="text-[11px] font-semibold text-amber-600 mt-3">Perlu Tindakan</p>
-        </div>
+        <PremiumStatCard title="Tingkat Kehadiran" value={`${persentaseHadir}%`} desc="Berdasarkan sesi terfilter" icon={Users} tone="blue" />
+        <PremiumStatCard title="Total Sesi KBM" value={totalSesi} desc={filters.filter_mode === "harian" ? filters.date : filters.month} icon={CheckCircle2} tone="emerald" />
+        <PremiumStatCard title="Belum Diabsen" value={belumAbsen} desc="Perlu tindakan" icon={AlertCircle} tone="amber" />
       </div>
 
       {/* 🟢 TOOLBAR FILTERS DENGAN HARIAN/BULANAN */}

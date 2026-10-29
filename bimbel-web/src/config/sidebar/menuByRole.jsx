@@ -8,7 +8,7 @@ export const getMenuByRole = (role) => {
   
   switch (normalizedRole) {
     case "admin":
-    case "superadmin":
+    case "super_admin":
       return adminMenu;
 
     case "orang_tua":

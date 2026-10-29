@@ -4,6 +4,8 @@ import { Search, PenLine, CheckCircle2, Award, Clock, FileDown, Users } from "lu
 import PremiumStatCard from "../../components/ui/StatCard";
 import { downloadFile } from "@/utils/download";
 import ExamResultDetailModal from "@/components/exam/ExamResultDetailModal";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/ui/Toast";
 import {
   getTentorExamResults, getTentorExamResultDetail, gradeTentorExamResult, getApiErrorMessage,
 } from "@/services/exam/examService";
@@ -34,6 +36,7 @@ export default function TentorEvaluationPage() {
   const [status, setStatus] = useState(activityId ? "" : "SUBMITTED");
   const [keyword, setKeyword] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const { toast, showSuccess, hideToast } = useToast();
 
   const fetchResults = async () => {
     try {
@@ -58,6 +61,7 @@ export default function TentorEvaluationPage() {
 
   return (
     <div className="page-card space-y-6 animate-in fade-in">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div>
         <h1 className="text-3xl font-black text-gray-950 tracking-tight">Evaluasi Murid</h1>
         <p className="text-sm text-gray-500 mt-0.5">Hasil ujian online siswa pada sesi Anda. Nilai essay agar hasil tampil ke siswa.</p>
@@ -142,7 +146,7 @@ export default function TentorEvaluationPage() {
         onClose={() => setSelectedId(null)}
         fetchDetail={getTentorExamResultDetail}
         gradeResult={gradeTentorExamResult}
-        onSaved={fetchResults}
+        onSaved={() => { setSelectedId(null); showSuccess("Penilaian berhasil disimpan."); fetchResults(); }}
       />
     </div>
   );

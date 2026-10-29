@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Calendar, CheckCircle2, AlertCircle, LayoutGrid, Table as TableIcon } from "lucide-react";
+import { Search, Calendar, CheckCircle2, AlertCircle, LayoutGrid, Table as TableIcon, UserCheck, Clock } from "lucide-react";
 import TentorAttendanceDetailModal from "./TentorAttendanceDetailModal";
+import PremiumStatCard from "@/components/ui/StatCard";
 import AttendanceSessionGrid from "./AttendanceSessionGrid";
 import { getTentorAttendances } from "@/services/academic/attendanceService";
 import TablePagination from "@/components/ui/table/TablePagination";
@@ -76,25 +77,9 @@ export default function TentorAttendanceTab() {
       
       {/* KPI SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-5 rounded-2xl border border-indigo-100">
-          <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kehadiran Tentor</p>
-          <h3 className="text-3xl font-black text-indigo-900 mt-1">{persentaseHadir}%</h3>
-          <p className="text-[11px] font-semibold text-indigo-600 mt-3">
-            {filters.filter_mode === 'harian' ? filters.date : filters.month}
-          </p>
-        </div>
-
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-100">
-          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Belum Diabsen</p>
-          <h3 className="text-3xl font-black text-amber-900 mt-1">{belumAbsen} Sesi</h3>
-          <p className="text-[11px] font-semibold text-amber-600 mt-3">Perlu Perhatian</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 p-5 rounded-2xl border border-rose-100">
-          <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Tentor Terlambat</p>
-          <h3 className="text-3xl font-black text-rose-900 mt-1">{terlambat}</h3>
-          <p className="text-[11px] font-semibold text-rose-600 mt-3">Perlu Verifikasi</p>
-        </div>
+        <PremiumStatCard title="Kehadiran Tentor" value={`${persentaseHadir}%`} desc={filters.filter_mode === 'harian' ? filters.date : filters.month} icon={UserCheck} tone="indigo" />
+        <PremiumStatCard title="Belum Diabsen" value={`${belumAbsen} Sesi`} desc="Perlu perhatian" icon={AlertCircle} tone="amber" />
+        <PremiumStatCard title="Tentor Terlambat" value={terlambat} desc="Perlu verifikasi" icon={Clock} tone="rose" />
       </div>
 
       {/* TOOLBAR FILTERS & VIEW MODE */}

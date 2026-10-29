@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Search, CalendarPlus, FilePlus, AlertTriangle, Hourglass } from "lucide-react";
+import { Search, CalendarPlus, FilePlus, AlertTriangle, Hourglass, Receipt, Wallet } from "lucide-react";
+import PremiumStatCard from "@/components/ui/StatCard";
 import InvoiceGenerateModal from "./InvoiceGenerateModal";
 import InvoiceFormModal from "./InvoiceFormModal";
 import InvoiceDetailModal from "./InvoiceDetailModal";
@@ -58,20 +59,9 @@ export default function InvoiceTab({ period, onPeriodChange, onNotify }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl border border-gray-100 bg-slate-50">
-          <p className="text-xs font-bold text-gray-400 uppercase">Total Tagihan {filters.overdue ? "Jatuh Tempo" : formatPeriod(period)}</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{formatRupiah(summary.total_amount)}</p>
-          <p className="text-xs text-gray-500 mt-1">{summary.count || 0} tagihan • {summary.paid_count || 0} lunas</p>
-        </div>
-        <div className="p-5 rounded-2xl border border-emerald-100 bg-emerald-50">
-          <p className="text-xs font-bold text-emerald-700 uppercase">Sudah Terbayar</p>
-          <p className="text-2xl font-black text-emerald-900 mt-1">{formatRupiah(summary.paid_amount)}</p>
-          <div className="mt-2 h-1.5 bg-emerald-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${collectedPercent}%` }} /></div>
-        </div>
-        <div className="p-5 rounded-2xl border border-rose-100 bg-rose-50">
-          <p className="text-xs font-bold text-rose-700 uppercase">Sisa Piutang</p>
-          <p className="text-2xl font-black text-rose-900 mt-1">{formatRupiah(summary.remaining_amount)}</p>
-        </div>
+        <PremiumStatCard title={`Total Tagihan ${filters.overdue ? "Jatuh Tempo" : formatPeriod(period)}`} value={formatRupiah(summary.total_amount)} desc={`${summary.count || 0} tagihan • ${summary.paid_count || 0} lunas`} icon={Receipt} tone="indigo" />
+        <PremiumStatCard title="Sudah Terbayar" value={formatRupiah(summary.paid_amount)} desc={`${collectedPercent}% dari total tagihan`} icon={Wallet} tone="emerald" />
+        <PremiumStatCard title="Sisa Piutang" value={formatRupiah(summary.remaining_amount)} desc="Belum dibayar orang tua" icon={Hourglass} tone="rose" />
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">

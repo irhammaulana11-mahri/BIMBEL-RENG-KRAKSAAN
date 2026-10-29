@@ -1,7 +1,7 @@
 export const redirectByRole = (user, navigate) => {
   switch (user.role.role_name) {
     case "admin":
-    case "superadmin":
+    case "super_admin":
       navigate("/admin/dashboard");
       break;
       

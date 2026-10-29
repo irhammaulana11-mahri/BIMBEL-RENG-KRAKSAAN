@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Award, CheckCircle, Clock, Search } from "lucide-react";
 import ExamResultDetailModal from "@/components/exam/ExamResultDetailModal";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/ui/Toast";
 import { getExamResults, getExamResultDetail, gradeExamResult, getApiErrorMessage } from "@/services/exam/examService";
 import PremiumStatCard from "../../../ui/StatCard";
 import { Users, CheckCircle2, PenLine, TrendingUp } from "lucide-react";
@@ -15,6 +17,7 @@ export default function ExamResultList({ exam, onBack }) {
   const [status, setStatus] = useState("");
   const [keyword, setKeyword] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const { toast, showSuccess, hideToast } = useToast();
 
   const fetchResults = async () => {
     try {
@@ -39,6 +42,7 @@ export default function ExamResultList({ exam, onBack }) {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
       <div className="p-6">
         <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Kembali ke Manajemen Ujian
@@ -123,7 +127,7 @@ export default function ExamResultList({ exam, onBack }) {
         onClose={() => setSelectedId(null)}
         fetchDetail={getExamResultDetail}
         gradeResult={gradeExamResult}
-        onSaved={fetchResults}
+        onSaved={() => { setSelectedId(null); showSuccess("Penilaian berhasil disimpan."); fetchResults(); }}
       />
     </div>
   );
