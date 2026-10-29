@@ -23,7 +23,7 @@ class PaymentService {
     public const PROOF_DISK = 'local';
     public const PROOF_FOLDER = 'payment-proofs';
 
-    public function __construct(protected InvoiceService $invoiceService) {}
+    public function __construct(protected InvoiceService $invoiceService, protected FinanceAudit $audit) {}
 
     /**
      * Admin mencatat pembayaran (langsung terkonfirmasi).
@@ -51,6 +51,7 @@ class PaymentService {
             ], $data['allocations']);
 
             foreach ($invoices as $invoice) $this->invoiceService->recalculate($invoice);
+            $this->audit->record($payment, 'RECORDED', meta: ['allocations' => $data['allocations']]);
 
             return $payment;
         });
@@ -72,7 +73,7 @@ class PaymentService {
                 $this->ensureNoPendingPayment(collect([$locked]));
                 $this->ensureAmountAllowed($locked, (float) $data['amount']);
 
-                return $this->createPayment([
+                $payment = $this->createPayment([
                     'student_id'      => $locked->student_id,
                     'payment_date'    => $data['payment_date'],
                     'payment_method'  => 'TRANSFER',
@@ -83,6 +84,9 @@ class PaymentService {
                     'status'          => 'PENDING',
                     'submitted_by'    => Auth::id(),
                 ], [['invoice_id' => $locked->id, 'amount' => $data['amount']]]);
+                $this->audit->record($payment, 'SUBMITTED', meta: ['invoice_id' => $locked->id]);
+
+                return $payment;
             });
         } catch (\Throwable $e) {
             Storage::disk(self::PROOF_DISK)->delete($path);
@@ -93,6 +97,7 @@ class PaymentService {
     public function approve(Payment $payment): Payment {
         return DB::transaction(function () use ($payment) {
             $payment = $this->lockPendingPayment($payment);
+            $before = $this->audit->snapshot($payment);
             $details = $payment->details()->get();
             $invoices = $this->lockInvoices($payment->student_id, $details->pluck('invoice_id')->all());
 
@@ -108,6 +113,7 @@ class PaymentService {
             $payment->details()->update(['allocated_at' => now()]);
 
             foreach ($invoices as $invoice) $this->invoiceService->recalculate($invoice);
+            $this->audit->record($payment, 'APPROVED', $before);
 
             return $payment->refresh();
         });
@@ -116,6 +122,7 @@ class PaymentService {
     public function reject(Payment $payment, string $reason): Payment {
         return DB::transaction(function () use ($payment, $reason) {
             $payment = $this->lockPendingPayment($payment);
+            $before = $this->audit->snapshot($payment);
 
             $payment->update([
                 'status'        => 'REJECTED',
@@ -125,6 +132,7 @@ class PaymentService {
 
             $invoices = $this->lockInvoices($payment->student_id, $payment->details()->pluck('invoice_id')->all());
             foreach ($invoices as $invoice) $this->invoiceService->recalculate($invoice);
+            $this->audit->record($payment, 'REJECTED', $before, $reason);
 
             return $payment->refresh();
         });

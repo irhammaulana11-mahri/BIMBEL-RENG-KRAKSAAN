@@ -24,7 +24,7 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollService {
 
-    public function __construct(protected FeeRuleEngine $engine) {}
+    public function __construct(protected FeeRuleEngine $engine, protected FinanceAudit $audit) {}
 
     /**
      * Rekap per tentor tanpa menyimpan (pratinjau / estimasi).
@@ -49,6 +49,7 @@ class PayrollService {
                 throw ValidationException::withMessages(['period' => ['Payroll periode ini sudah disetujui dan tidak dapat disusun ulang.']]);
             }
 
+            $before = $payroll ? $this->audit->snapshot($payroll) : null;
             if ($payroll) {
                 $this->releaseDetails($payroll);
             } else {
@@ -87,7 +88,10 @@ class PayrollService {
             // Absensi yang sudah masuk payroll dikunci dari koreksi
             TentorAttendance::whereIn('id', $attendances->pluck('id'))->update(['is_payroll_processed' => true]);
 
-            return $this->refreshTotals($payroll);
+            $payroll = $this->refreshTotals($payroll);
+            $this->audit->record($payroll, $before ? 'REGENERATED' : 'GENERATED', $before);
+
+            return $payroll;
         });
     }
 
@@ -102,9 +106,13 @@ class PayrollService {
             throw ValidationException::withMessages(['status' => ['Masih ada sesi tanpa aturan honor dan tarif tentor Rp 0. Buat aturan honor atau atur tarif tentor, lalu susun ulang payroll.']]);
         }
 
-        $payroll->update(['status' => 'APPROVED', 'approved_at' => now(), 'approved_by' => Auth::id()]);
+        return DB::transaction(function () use ($payroll) {
+            $before = $this->audit->snapshot($payroll);
+            $payroll->update(['status' => 'APPROVED', 'approved_at' => now(), 'approved_by' => Auth::id()]);
+            $this->audit->record($payroll, 'APPROVED', $before);
 
-        return $payroll->refresh();
+            return $payroll->refresh();
+        });
     }
 
     /**
@@ -135,9 +143,13 @@ class PayrollService {
                 'paid_by'        => Auth::id(),
             ]);
 
+            $this->audit->record($transfer, 'TRANSFERRED', meta: ['payroll_id' => $payroll->id]);
+
             $tentorCount = $payroll->details()->distinct()->count('tentor_id');
             if ($payroll->transfers()->count() >= $tentorCount) {
+                $before = $this->audit->snapshot($payroll);
                 $payroll->update(['status' => 'PAID', 'paid_at' => now()]);
+                $this->audit->record($payroll, 'PAID', $before);
             }
 
             return $transfer;
@@ -150,8 +162,10 @@ class PayrollService {
         }
 
         DB::transaction(function () use ($payroll) {
+            $before = $this->audit->snapshot($payroll);
             $this->releaseDetails($payroll);
             $payroll->delete();
+            $this->audit->record($payroll, 'DELETED', $before);
         });
     }
 

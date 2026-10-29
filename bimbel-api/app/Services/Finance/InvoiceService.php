@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
  */
 class InvoiceService {
 
-    public function __construct(protected FeeRuleEngine $engine) {}
+    public function __construct(protected FeeRuleEngine $engine, protected FinanceAudit $audit) {}
 
     /**
      * Hitung tagihan bulanan tanpa menyimpan (pratinjau untuk diperiksa Admin).
@@ -144,9 +144,13 @@ class InvoiceService {
             throw ValidationException::withMessages(['status' => ['Masih ada pembayaran yang menunggu verifikasi untuk tagihan ini.']]);
         }
 
-        $invoice->update(['status' => 'CANCELLED', 'cancel_reason' => $reason]);
+        return DB::transaction(function () use ($invoice, $reason) {
+            $before = $this->audit->snapshot($invoice);
+            $invoice->update(['status' => 'CANCELLED', 'cancel_reason' => $reason]);
+            $this->audit->record($invoice, 'CANCELLED', $before, $reason);
 
-        return $invoice->refresh();
+            return $invoice->refresh();
+        });
     }
 
     /**
@@ -231,6 +235,11 @@ class InvoiceService {
         foreach ($items as $item) {
             InvoiceItem::create(array_merge($item, ['invoice_id' => $invoice->id]));
         }
+
+        $this->audit->record($invoice, 'CREATED', meta: [
+            'source' => isset($data['period_month']) ? 'monthly' : 'manual',
+            'items'  => $items->map(fn($i) => ['name' => $i['item_name'], 'quantity' => $i['quantity'], 'unit_price' => $i['unit_price'], 'subtotal' => $i['subtotal']])->all(),
+        ]);
 
         return $invoice;
     }

@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\Exam\QuestionController;
 use App\Http\Controllers\Api\Exam\ExamResultController;
 
 // Finance
+use App\Http\Controllers\Api\Finance\FinanceAuditLogController;
 use App\Http\Controllers\Api\Finance\InvoiceController;
 use App\Http\Controllers\Api\Finance\PaymentController;
 use App\Http\Controllers\Api\Finance\PayrollController;
@@ -316,6 +317,8 @@ Route::prefix('admin')
             Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
             Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
             Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel']);
+
+            Route::get('/audit-logs', [FinanceAuditLogController::class, 'index']);
 
             Route::get('/payments', [PaymentController::class, 'index']);
             Route::post('/payments', [PaymentController::class, 'store']);
