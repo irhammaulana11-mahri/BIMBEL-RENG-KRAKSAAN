@@ -39,3 +39,7 @@ bimbel-android/android/local.properties
 # OS
 .DS_Store
 Thumbs.db
+# Kunci rilis Android & sertifikat: jangan pernah masuk repository
+*.jks
+*.keystore
+key.properties

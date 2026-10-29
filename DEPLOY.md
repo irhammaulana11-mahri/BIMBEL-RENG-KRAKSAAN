@@ -183,9 +183,20 @@ keyPassword=PASSWORD_KUNCI
 
 ```bash
 cd bimbel-android
-flutter build apk --release --dart-define=API_URL=https://api-bimbel.bolinggo.org
-# hasil: build/app/outputs/flutter-apk/app-release.apk
+flutter build apk --release --split-per-abi --dart-define=API_URL=https://api-bimbel.bolinggo.org
 ```
+
+Hasilnya satu APK per jenis prosesor di `build/app/outputs/flutter-apk/` (±18–22 MB, bukan ±56 MB):
+
+| Berkas | Untuk |
+|---|---|
+| `app-arm64-v8a-release.apk` | Hampir semua HP Android masa kini — **bagikan yang ini** |
+| `app-armeabi-v7a-release.apk` | HP lama / sangat murah (32-bit), bila yang di atas gagal dipasang |
+| `app-x86_64-release.apk` | Emulator & perangkat x86 (jarang) |
+
+Sidik jari kunci rilis (SHA-256) untuk memastikan APK resmi:
+`0f5d19ca3bef2aa2338be858d06ddf8e37318d8abbe781421e629e8e5f759ca2`
+(cek: `apksigner verify --print-certs berkas.apk`).
 
 APK yang dulu ditandatangani kunci debug tidak bisa diperbarui dengan APK rilis: pengguna perlu uninstall versi
 lama satu kali sebelum memasang versi rilis.
