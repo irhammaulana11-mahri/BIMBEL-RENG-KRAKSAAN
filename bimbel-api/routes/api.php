@@ -157,6 +157,7 @@ Route::prefix('admin')
 
         // --- MASTER DATA USERS, PARENTS, STUDENTS ---
         Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::put('password', [AuthController::class, 'updatePassword']);
         Route::get('users/options', [UserController::class, 'options']);
         Route::patch('users/{user}/toggle', [UserController::class, 'toggleStatus']);
         Route::patch('users/{user}/reset-password', [UserController::class, 'resetPassword']);

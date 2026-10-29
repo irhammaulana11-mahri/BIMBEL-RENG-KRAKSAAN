@@ -10,6 +10,7 @@ use App\Support\LocalTime;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceService {
 
@@ -129,7 +130,9 @@ class AttendanceService {
             return ['success' => true, 'message' => 'Absensi siswa berhasil disimpan.'];
         } catch (\Throwable $e) {
             DB::rollBack();
-            return ['success' => false, 'code' => 500, 'message' => 'Gagal menyimpan absensi: ' . $e->getMessage()];
+            // Detail teknis (SQL dsb.) hanya di log, tidak dikirim ke klien (LOW-01)
+            Log::error('Gagal menyimpan absensi siswa', ['session_id' => $session->id, 'exception' => $e]);
+            return ['success' => false, 'code' => 500, 'message' => 'Gagal menyimpan absensi. Coba lagi atau hubungi admin.'];
         }
     }
 

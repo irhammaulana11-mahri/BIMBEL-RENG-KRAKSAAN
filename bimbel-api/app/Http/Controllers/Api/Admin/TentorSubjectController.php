@@ -45,7 +45,11 @@ class TentorSubjectController extends Controller {
 
     public function update(Request $request, $id) {
         $data = TentorSubject::findOrFail($id);
-        $data->update($request->all());
+        // Hanya kolom yang divalidasi yang boleh diubah (bukan seluruh input request)
+        $data->update($request->validate([
+            'tentor_id' => ['sometimes', 'uuid', 'exists:master.tentors,id'],
+            'subject_id' => ['sometimes', 'uuid', 'exists:master.subjects,id'],
+        ]));
         return response()->json(['success' => true,'data' => $data]);
     }
 

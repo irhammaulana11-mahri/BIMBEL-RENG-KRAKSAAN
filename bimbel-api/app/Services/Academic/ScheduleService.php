@@ -857,8 +857,9 @@ class ScheduleService {
             'exception' => $e,
         ]);
 
+        // Detail exception hanya di log; klien menerima pesan umum (LOW-01)
         return $this->buildErrorResponse(
-            message: $defaultMessage . ' (' . $e->getMessage() . ')'
+            message: $defaultMessage . ' Coba lagi atau hubungi admin.'
         );
     }
 

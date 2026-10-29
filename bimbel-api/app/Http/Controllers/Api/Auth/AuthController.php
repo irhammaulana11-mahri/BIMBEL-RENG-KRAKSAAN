@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Account\UpdatePasswordRequest;
 use App\Models\Admin\User;
+use App\Services\Account\PasswordService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -80,6 +82,14 @@ class AuthController extends Controller
         return response()->json(
             $request->user()->load('role')
         );
+    }
+
+    // Admin & super admin mengganti password sendiri (peran lain lewat portal masing-masing)
+    public function updatePassword(UpdatePasswordRequest $request, PasswordService $passwords)
+    {
+        $passwords->change($request->user(), $request->password);
+
+        return response()->json(['success' => true, 'message' => 'Password diperbarui. Sesi di perangkat lain telah dikeluarkan.']);
     }
 
     public function logout(Request $request)

@@ -94,7 +94,8 @@ class TentorScheduleController extends Controller {
             $result = $this->scheduleService->saveStudentAttendance($id, $request->validated());
             return response()->json($result, $result['success'] ? 200 : $result['code']);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Sesi tidak ditemukan atau akses ditolak.'], 404);
         }
     }
 

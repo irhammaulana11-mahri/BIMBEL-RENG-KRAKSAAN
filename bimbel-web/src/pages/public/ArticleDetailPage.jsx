@@ -94,11 +94,11 @@ export default function ArticleDetailPage() {
           max-w-none
           mt-10
           ">
-            <div
-              dangerouslySetInnerHTML={{
-                __html: article.content
-              }}
-            />
+            {/* Isi artikel ditulis sebagai teks biasa: ditampilkan sebagai teks (bukan HTML) agar
+                skrip yang disisipkan tidak pernah dijalankan di browser pengunjung (SEC-05) */}
+            {(article.content || "").split(/\n\s*\n/).map((paragraph, i) => (
+              <p key={i} className="whitespace-pre-line">{paragraph}</p>
+            ))}
           </div>
 
         </div>

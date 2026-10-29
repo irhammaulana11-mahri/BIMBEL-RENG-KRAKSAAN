@@ -95,7 +95,12 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public','master','academic','website',
+            // Semua model memakai nama tabel lengkap dengan schema (master., academic., finance., ...),
+            // jadi search_path cukup public. Sengaja tidak diperluas: db:wipe / migrate:fresh hanya
+            // menghapus schema di search_path, sehingga kesalahan perintah tidak menghapus data aplikasi.
+            // (Sebelumnya tertulis 'public','master',... sebagai elemen array terpisah; nilai efektifnya
+            // sudah 'public', jadi perilaku tidak berubah — DB-08.)
+            'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 

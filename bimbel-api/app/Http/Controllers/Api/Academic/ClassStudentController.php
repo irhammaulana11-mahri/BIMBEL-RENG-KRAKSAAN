@@ -39,7 +39,11 @@ class ClassStudentController extends Controller {
 
     public function update(Request $request, $id) {
         $data = ClassStudent::findOrFail($id);
-        $data->update($request->all());
+        // Hanya kolom yang divalidasi yang boleh diubah (bukan seluruh input request)
+        $data->update($request->validate([
+            'class_id' => ['sometimes', 'uuid', 'exists:academic.classes,id'],
+            'student_id' => ['sometimes', 'uuid', 'exists:master.students,id'],
+        ]));
         return response()->json(['success' => true,'data' => $data]);
     }
 

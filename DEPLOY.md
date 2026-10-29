@@ -94,6 +94,8 @@ membersihkan token login kedaluwarsa setiap hari.
 
 **Keamanan login:**
 
+- Isi `CORS_ALLOWED_ORIGINS` dengan alamat web (mis. `https://bimbelreng.id`) agar API hanya bisa
+  dipanggil dari web lembaga. Kosong = semua origin (hanya untuk pengembangan).
 - Token login berlaku 12 jam (`SANCTUM_EXPIRATION`, menit). Setelah itu pengguna diminta masuk lagi.
 - Setelah 5 kali gagal dalam 1 menit untuk email + alamat IP yang sama, login ditolak (HTTP 429) selama
   1 menit. Penghitung disimpan di cache aplikasi (`CACHE_STORE`).
@@ -103,6 +105,8 @@ membersihkan token login kedaluwarsa setiap hari.
 
 - **Program PostgreSQL client** (`pg_dump`, `pg_restore`, `psql`) harus terpasang dengan versi
   sama atau lebih baru dari server database: `sudo apt install postgresql-client-16`.
+  Pemulihan ditolak bila versinya belum memuat perbaikan keamanan `\restrict`
+  (minimal 17.6 / 16.10 / 15.14 / 14.19 / 13.22); perbarui dengan `sudo apt upgrade postgresql-client-16`.
   Lokasi lain dapat diatur lewat `BACKUP_PG_DUMP`, `BACKUP_PG_RESTORE`, `BACKUP_PSQL` di `.env`.
 - **Lokasi arsip:** `storage/app/backups` (tidak bisa diakses dari web). Ubah lewat `BACKUP_PATH`,
   sebaiknya ke disk lain dari database. Unduh salinan secara berkala ke luar server.

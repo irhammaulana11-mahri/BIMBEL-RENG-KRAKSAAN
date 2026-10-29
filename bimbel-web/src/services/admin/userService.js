@@ -17,3 +17,6 @@ export const ROLE_BADGE = {
   orang_tua: "bg-purple-50 text-purple-700",
   siswa: "bg-emerald-50 text-emerald-700",
 };
+
+// Ganti password akun admin/super admin yang sedang login
+export const updateAdminPassword = (data) => api.put("/admin/password", data);

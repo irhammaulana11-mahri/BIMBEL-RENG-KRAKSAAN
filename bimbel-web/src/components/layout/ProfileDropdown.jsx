@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, LogOut, UserCircle } from "lucide-react";
+import { Settings, LogOut, UserCircle, KeyRound } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
+import ChangePasswordModal from "@/components/account/ChangePasswordModal";
+import { updateAdminPassword } from "@/services/admin/userService";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/ui/Toast";
 
 // Admin: Pengaturan (manajemen akun). Peran lain: Profile portal masing-masing.
 const MENU_BY_ROLE = {
@@ -18,6 +22,10 @@ export default function ProfileDropdown() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const { toast, showSuccess, hideToast } = useToast();
+  // Admin tidak punya halaman profil: ganti password langsung dari menu akun
+  const isStaff = ["admin", "super_admin"].includes(user?.role?.role_name);
 
   const menu = MENU_BY_ROLE[user?.role?.role_name];
 
@@ -34,6 +42,8 @@ export default function ProfileDropdown() {
 
   return (
     <div className="relative">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={hideToast} />
+      <ChangePasswordModal open={passwordOpen} submit={updateAdminPassword} onClose={() => setPasswordOpen(false)} onDone={(m) => { setPasswordOpen(false); showSuccess(m); }} />
       <button onClick={() => setOpen(!open)} className="flex items-center gap-3 focus:outline-none group" aria-label="Menu akun">
         <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-black border-2 border-white shadow-sm group-hover:ring-2 group-hover:ring-blue-300 transition-all">
           {initials(user?.name)}
@@ -58,6 +68,16 @@ export default function ProfileDropdown() {
                 >
                   <menu.icon size={16} className="text-blue-500" />
                   {menu.label}
+                </button>
+              )}
+
+              {isStaff && (
+                <button
+                  onClick={() => { setOpen(false); setPasswordOpen(true); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-950 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                >
+                  <KeyRound size={16} className="text-blue-500" />
+                  Ganti Password
                 </button>
               )}
 

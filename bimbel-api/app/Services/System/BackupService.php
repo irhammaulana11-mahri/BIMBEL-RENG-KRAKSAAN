@@ -223,8 +223,37 @@ class BackupService {
             'ok'     => true,
             'detail' => $pending ? "Backup versi lama; {$pending} migration akan dijalankan setelah pemulihan" : 'Sama dengan versi aplikasi',
         ];
+        $checks[] = ['label' => 'Program pemulih aman', 'ok' => true, 'detail' => $this->assertPatchedClient()];
 
         return ['manifest' => $manifest, 'checks' => $checks, 'pending_migrations' => $pending];
+    }
+
+    /**
+     * Pemulihan menjalankan psql atas SQL dari arsip (bisa berasal dari unggahan). Versi client tanpa
+     * perlindungan \restrict (CVE-2025-8714) dapat menjalankan perintah shell yang disisipkan di dump,
+     * jadi pemulihan ditolak bila psql / pg_restore belum diperbarui (SEC-06).
+     */
+    private function assertPatchedClient(): string {
+        $versions = [];
+        foreach (['psql', 'pg_restore'] as $tool) {
+            $output = trim(Process::timeout(30)->run([config("backup.{$tool}"), '--version'])->output());
+            if (!self::isPatchedClient($output)) {
+                throw new RuntimeException("Versi {$tool} di server belum aman untuk pemulihan ({$output}). Perbarui PostgreSQL client minimal 17.6 / 16.10 / 15.14 / 14.19 / 13.22.");
+            }
+            $versions[] = $output;
+        }
+        return implode(' • ', $versions);
+    }
+
+    /** Rilis pertama tiap versi mayor yang memuat perlindungan \restrict (Agustus 2025). */
+    private const PATCHED_MINOR = [13 => 22, 14 => 19, 15 => 14, 16 => 10, 17 => 6];
+
+    public static function isPatchedClient(string $versionOutput): bool {
+        if (!preg_match('/\(PostgreSQL\)\s+(\d+)(?:\.(\d+))?/', $versionOutput, $m)) return false;
+        $major = (int) $m[1];
+        $minor = (int) ($m[2] ?? 0);
+        if ($major >= 18) return true;
+        return isset(self::PATCHED_MINOR[$major]) && $minor >= self::PATCHED_MINOR[$major];
     }
 
     // ---------------------------------------------------------------------

@@ -31,8 +31,9 @@ api.interceptors.response.use(
     (error) => {
         const status = error.response?.status;
 
-        // Hanya permintaan bertoken yang berarti sesi habis; 401 saat login = email/password salah
-        if ([401, 403, 419].includes(status) && error.config?.headers?.Authorization) {
+        // Hanya permintaan bertoken yang berarti sesi habis; 401 saat login = email/password salah.
+        // 403 = sesi masih sah tetapi tidak berhak atas data itu: tampilkan pesan, jangan keluarkan pengguna.
+        if ([401, 419].includes(status) && error.config?.headers?.Authorization) {
             triggerLogout("expired");
         }
         return Promise.reject(error);
