@@ -162,6 +162,8 @@ class TentorController extends Controller {
             $tentor->update(['is_active' => $newStatus]);
             if ($tentor->user) {
                 $tentor->user->update(['is_active' => $newStatus]);
+                // Tentor nonaktif langsung keluar dari semua perangkat
+                if (!$newStatus) $tentor->user->tokens()->delete();
             }
         });
 

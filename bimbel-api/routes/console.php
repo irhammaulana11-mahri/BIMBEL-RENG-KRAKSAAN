@@ -14,5 +14,8 @@ Schedule::call(fn() => Cache::put('backup:scheduler_heartbeat', now()->toIso8601
     ->everyMinute()
     ->name('scheduler-heartbeat');
 
+// Bersihkan token login yang sudah kedaluwarsa lebih dari sehari
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
 // Backup otomatis sesuai jadwal yang diatur Admin
 Schedule::command('backup:scheduled')->everyMinute()->withoutOverlapping(180)->runInBackground();

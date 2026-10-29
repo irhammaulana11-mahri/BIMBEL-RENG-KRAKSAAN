@@ -88,7 +88,17 @@ Pasang satu baris cron untuk user web server (mis. `www-data`):
 * * * * * cd /path/ke/bimbel-api && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Halaman Backup menampilkan peringatan bila cron ini belum berjalan.
+Halaman Backup menampilkan peringatan bila cron ini belum berjalan. Penjadwal yang sama juga
+membersihkan token login kedaluwarsa setiap hari.
+
+**Keamanan login:**
+
+- Token login berlaku 12 jam (`SANCTUM_EXPIRATION`, menit). Setelah itu pengguna diminta masuk lagi.
+- Setelah 5 kali gagal dalam 1 menit untuk email + alamat IP yang sama, login ditolak (HTTP 429) selama
+  1 menit. Penghitung disimpan di cache aplikasi (`CACHE_STORE`).
+- Bila API berada di belakang proxy/load balancer lain (bukan Nginx langsung ke PHP-FPM), atur
+  *trusted proxies* agar IP asli pengguna terbaca. Tanpa itu, semua pengguna terlihat ber-IP sama dan
+  batas login berlaku per email saja.
 
 - **Program PostgreSQL client** (`pg_dump`, `pg_restore`, `psql`) harus terpasang dengan versi
   sama atau lebih baru dari server database: `sudo apt install postgresql-client-16`.

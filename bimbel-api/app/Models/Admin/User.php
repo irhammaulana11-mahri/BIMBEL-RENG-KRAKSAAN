@@ -44,4 +44,20 @@ class User extends Authenticatable {
     public function tentor() {
         return $this->hasOne(Tentor::class,'user_id');
     }
+
+    /**
+     * Boleh memakai aplikasi: akun aktif, dan untuk siswa/tentor profilnya juga aktif.
+     * Akun tanpa profil (mis. admin) hanya bergantung pada is_active akun.
+     */
+    public function canAccessApp(): bool {
+        if (!$this->is_active) return false;
+
+        $profile = match ($this->role?->role_name) {
+            'siswa'  => $this->student,
+            'tentor' => $this->tentor,
+            default  => null,
+        };
+
+        return $profile === null || (bool) $profile->is_active;
+    }
 }

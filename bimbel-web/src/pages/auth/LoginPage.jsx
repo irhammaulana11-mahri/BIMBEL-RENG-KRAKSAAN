@@ -51,7 +51,7 @@ export default function LoginPage() {
               break;
 
           case "expired":
-              showError("Sesi login telah berakhir.");
+              showError("Sesi login telah berakhir. Silakan masuk kembali.");
               break;
 
           case "unauthorized":

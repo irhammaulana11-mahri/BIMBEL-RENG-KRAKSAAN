@@ -139,6 +139,8 @@ class StudentController extends Controller
         $student->update([
             'is_active' => !$student->is_active
         ]);
+        // Siswa nonaktif langsung keluar dari portal siswa di semua perangkat
+        if (!$student->is_active) $student->user?->tokens()->delete();
 
         return response()->json([
             'success'   => true,
