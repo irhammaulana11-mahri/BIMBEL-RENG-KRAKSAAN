@@ -7,7 +7,7 @@
 |
 | API memakai token Bearer (bukan cookie), jadi supports_credentials tetap false.
 | Di produksi, isi CORS_ALLOWED_ORIGINS dengan alamat web (pisahkan koma), mis.
-| https://bimbelreng.id,https://www.bimbelreng.id. Kosong = semua origin (pengembangan).
+| https://bimbel.bolinggo.org. Kosong = semua origin (pengembangan).
 | Aplikasi Android tidak terpengaruh CORS.
 |
 */

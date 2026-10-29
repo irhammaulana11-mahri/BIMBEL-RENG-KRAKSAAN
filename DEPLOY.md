@@ -96,7 +96,7 @@ membersihkan token login kedaluwarsa setiap hari.
 
 **Keamanan login:**
 
-- Isi `CORS_ALLOWED_ORIGINS` dengan alamat web (mis. `https://bimbelreng.id`) agar API hanya bisa
+- Isi `CORS_ALLOWED_ORIGINS` dengan alamat web (mis. `https://bimbel.bolinggo.org`) agar API hanya bisa
   dipanggil dari web lembaga. Kosong = semua origin (hanya untuk pengembangan).
 - Token login berlaku 12 jam (`SANCTUM_EXPIRATION`, menit). Setelah itu pengguna diminta masuk lagi.
 - Setelah 5 kali gagal dalam 1 menit untuk email + alamat IP yang sama, login ditolak (HTTP 429) selama
@@ -130,24 +130,25 @@ php artisan backup:restore <nama-berkas.zip>   # pulihkan (minta ketik PULIHKAN)
 
 ## 5. Domain & Cloudflare
 
-Contoh pembagian subdomain (sesuaikan nama domain Anda):
+Subdomain yang dipakai lembaga ini:
 
 | Subdomain | Isi | `.env` |
 |---|---|---|
-| `bimbelreng.id` / `www` | Web (`bimbel-web/dist`) | `VITE_API_URL=https://api.bimbelreng.id` saat build web |
-| `api.bimbelreng.id` | API Laravel | `APP_URL=https://api.bimbelreng.id`, `CORS_ALLOWED_ORIGINS=https://bimbelreng.id,https://www.bimbelreng.id` |
+| `bimbel.bolinggo.org` | Web (`bimbel-web/dist`) | `VITE_API_URL=https://api-bimbel.bolinggo.org` saat build web |
+| `api-bimbel.bolinggo.org` | API Laravel | `APP_URL=https://api-bimbel.bolinggo.org`, `CORS_ALLOWED_ORIGINS=https://bimbel.bolinggo.org` |
 
 **Server lokal tanpa membuka port router (dipakai lembaga ini): Cloudflare Tunnel.** Langkah lengkap di
 [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md). Intinya:
 
-1. Nginx hanya mendengar `127.0.0.1:80`; `cloudflared` meneruskan ketiga subdomain ke sana.
+1. Nginx hanya mendengar `127.0.0.1:80`; `cloudflared` meneruskan kedua subdomain ke sana. Record DNS lain
+   milik `bolinggo.org` tidak diubah.
 2. IP asli pengguna (wajib untuk batas login per pengguna): `set_real_ip_from 127.0.0.1;` +
    `real_ip_header CF-Connecting-IP;` di Nginx.
 3. `fastcgi_param HTTPS on;` di blok API, karena tunnel → Nginx memakai HTTP lokal.
 4. SSL/TLS mode **Full**, *Always Use HTTPS* aktif. Tidak perlu sertifikat di server.
 5. Firewall: tutup semua koneksi masuk kecuali SSH dari LAN.
 
-**Alternatif bila kelak memakai VPS (IP publik):** record `A` *Proxied* untuk `@`, `www`, `api`; mode
+**Alternatif bila kelak memakai VPS (IP publik):** record `A` *Proxied* untuk kedua subdomain; mode
 **Full (strict)** dengan Origin Certificate di Nginx; `set_real_ip_from` berisi daftar IP Cloudflare
 (https://www.cloudflare.com/ips/); firewall port 80/443 hanya dari IP Cloudflare.
 
@@ -182,7 +183,7 @@ keyPassword=PASSWORD_KUNCI
 
 ```bash
 cd bimbel-android
-flutter build apk --release --dart-define=API_URL=https://api.bimbelreng.id
+flutter build apk --release --dart-define=API_URL=https://api-bimbel.bolinggo.org
 # hasil: build/app/outputs/flutter-apk/app-release.apk
 ```
 

@@ -17,12 +17,20 @@ Pengunjung ──HTTPS──▶ Cloudflare ◀══ terowongan keluar (cloudfla
 - HTTPS dan sertifikat diurus Cloudflare (tidak perlu Origin Certificate / Let's Encrypt).
 
 **Asumsi:** server **Ubuntu Server 24.04** (PC/mini PC khusus, minimal 4 GB RAM, SSD), tersambung ke router
-lewat kabel LAN, domain sudah di Cloudflare. **Ganti contoh di bawah dengan milik Anda:**
+lewat kabel LAN, domain `bolinggo.org` sudah di Cloudflare.
+
+| Alamat | Isi |
+|---|---|
+| `https://bimbel.bolinggo.org` | Web (portal & landing page) |
+| `https://api-bimbel.bolinggo.org` | API Laravel (dipakai web & aplikasi Android) |
+
+Keduanya subdomain **satu tingkat** di bawah `bolinggo.org`, sehingga tercakup sertifikat HTTPS gratis Cloudflare.
+Record lain milik `bolinggo.org` (situs/email lain) **tidak diubah** oleh panduan ini.
+
+**Ganti contoh di bawah dengan milik Anda:**
 
 | Contoh di panduan | Ganti dengan |
 |---|---|
-| `bimbelreng.id` | Domain Anda |
-| `api.bimbelreng.id` | Subdomain API |
 | `192.168.1.50` | IP LAN server (lihat B1) |
 | `192.168.1.0/24` | Jaringan LAN Anda |
 | `PASSWORD_DB_KUAT` | Password database (acak, ≥ 20 karakter) |
@@ -160,14 +168,14 @@ Isi `.env` (selain yang sudah ada):
 APP_ENV=production
 APP_DEBUG=false
 # Wajib https: alamat berkas upload (logo, banner) dibentuk dari nilai ini
-APP_URL=https://api.bimbelreng.id
+APP_URL=https://api-bimbel.bolinggo.org
 
 DB_HOST=127.0.0.1
 DB_DATABASE=bimbel_kraksaan_db
 DB_USERNAME=bimbel_user
 DB_PASSWORD=PASSWORD_DB_KUAT
 
-CORS_ALLOWED_ORIGINS=https://bimbelreng.id,https://www.bimbelreng.id
+CORS_ALLOWED_ORIGINS=https://bimbel.bolinggo.org
 SANCTUM_EXPIRATION=720
 FINANCE_APPROVAL_MODE=single_operator
 
@@ -198,7 +206,7 @@ sudo chmod -R ug+rwX storage bootstrap/cache
 
 ```bash
 cd /var/www/bimbel/bimbel-web
-echo "VITE_API_URL=https://api.bimbelreng.id" > .env
+echo "VITE_API_URL=https://api-bimbel.bolinggo.org" > .env
 npm ci && npm run build
 ```
 
@@ -230,7 +238,7 @@ printf "set_real_ip_from 127.0.0.1;\nset_real_ip_from ::1;\nreal_ip_header CF-Co
 # Web (React)
 server {
     listen 127.0.0.1:80;
-    server_name bimbelreng.id www.bimbelreng.id;
+    server_name bimbel.bolinggo.org;
 
     root /var/www/bimbel/bimbel-web/dist;
     index index.html;
@@ -247,7 +255,7 @@ server {
 # API (Laravel)
 server {
     listen 127.0.0.1:80;
-    server_name api.bimbelreng.id;
+    server_name api-bimbel.bolinggo.org;
 
     root /var/www/bimbel/bimbel-api/public;
     index index.php;
@@ -275,7 +283,7 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**Cek:** `curl -s -H "Host: api.bimbelreng.id" http://127.0.0.1/up | head -3` menampilkan HTML (aplikasi hidup),
+**Cek:** `curl -s -H "Host: api-bimbel.bolinggo.org" http://127.0.0.1/up | head -3` menampilkan HTML (aplikasi hidup),
 dan `sudo ss -tlnp | grep ':80'` hanya menampilkan `127.0.0.1:80`.
 
 ### C7. Penjadwal (backup otomatis & pembersihan token)
@@ -296,10 +304,13 @@ Tambahkan baris:
 
 ## Bagian D — Cloudflare Tunnel & subdomain
 
-### D1. Hapus record lama (bila ada)
+### D1. Periksa record lama
 
-Cloudflare → domain → **DNS → Records**: hapus record `A`/`AAAA`/`CNAME` untuk `@`, `www`, dan `api` bila
-sudah ada. Tunnel akan membuatnya sendiri (langkah D3).
+Cloudflare → `bolinggo.org` → **DNS → Records**: bila sudah ada record bernama **`bimbel`** atau
+**`api-bimbel`**, hapus hanya kedua record itu; tunnel akan membuatnya sendiri (langkah D3).
+
+> **Jangan** menghapus atau mengubah record lain (`@`, `www`, `MX`, dan sebagainya): itu milik situs/email lain
+> di `bolinggo.org`.
 
 ### D2. Buat tunnel
 
@@ -321,24 +332,25 @@ sudah ada. Tunnel akan membuatnya sendiri (langkah D3).
 
 ### D3. Hubungkan subdomain
 
-Di halaman tunnel → **Public Hostname → Add a public hostname**, buat tiga entri:
+Di halaman tunnel → **Public Hostname → Add a public hostname**, buat dua entri:
 
 | Subdomain | Domain | Path | Service type | URL |
 |---|---|---|---|---|
-| *(kosong)* | `bimbelreng.id` | | HTTP | `localhost:80` |
-| `www` | `bimbelreng.id` | | HTTP | `localhost:80` |
-| `api` | `bimbelreng.id` | | HTTP | `localhost:80` |
+| `bimbel` | `bolinggo.org` | | HTTP | `localhost:80` |
+| `api-bimbel` | `bolinggo.org` | | HTTP | `localhost:80` |
 
-Cloudflare otomatis membuat record DNS `CNAME` (status *Proxied*) untuk ketiganya. Nginx memilih web atau API
+Cloudflare otomatis membuat record DNS `CNAME` (status *Proxied*) untuk keduanya. Nginx memilih web atau API
 berdasarkan nama domain yang diminta.
 
 ### D4. Pengaturan SSL domain
 
 Cloudflare → domain → **SSL/TLS**:
 - **Overview → Full** (tunnel sudah terenkripsi; tidak perlu sertifikat di server).
+  Pengaturan SSL berlaku untuk seluruh `bolinggo.org`: bila situs lain di domain ini memakai server dengan
+  sertifikat sendiri, mode **Full** tetap aman; jangan menurunkannya ke *Flexible*.
 - **Edge Certificates → Always Use HTTPS: On**, **Minimum TLS Version: 1.2**, **Automatic HTTPS Rewrites: On**.
 
-**Cek:** dari HP dengan data seluler (bukan Wi-Fi kantor), buka `https://api.bimbelreng.id/up` →
+**Cek:** dari HP dengan data seluler (bukan Wi-Fi kantor), buka `https://api-bimbel.bolinggo.org/up` →
 halaman "Application up".
 
 ---
@@ -347,8 +359,8 @@ halaman "Application up".
 
 | # | Cek | Hasil yang diharapkan |
 |---|---|---|
-| 1 | Buka `https://api.bimbelreng.id/up` | Halaman "Application up" |
-| 2 | Buka `https://bimbelreng.id` | Landing page dengan logo; gembok HTTPS |
+| 1 | Buka `https://api-bimbel.bolinggo.org/up` | Halaman "Application up" |
+| 2 | Buka `https://bimbel.bolinggo.org` | Landing page dengan logo; gembok HTTPS |
 | 3 | Login dengan akun dari C3 | Masuk ke dashboard admin |
 | 4 | Menu **Pengaturan → Backup & Pemulihan** | Tidak ada peringatan "penjadwal belum berjalan" (tunggu 1–2 menit) |
 | 5 | **Buat backup sekarang** lalu **Verifikasi** | 6 pemeriksaan lulus, termasuk "Program pemulih aman" |
@@ -358,7 +370,7 @@ halaman "Application up".
 | 9 | Matikan lalu nyalakan server | Web kembali bisa dibuka tanpa tindakan apa pun (nginx, php-fpm, postgresql, cloudflared menyala otomatis) |
 
 Setelah semua lulus, lanjutkan ke **APK rilis Android** (DEPLOY.md bagian 6) dengan
-`--dart-define=API_URL=https://api.bimbelreng.id`.
+`--dart-define=API_URL=https://api-bimbel.bolinggo.org`.
 
 ---
 
