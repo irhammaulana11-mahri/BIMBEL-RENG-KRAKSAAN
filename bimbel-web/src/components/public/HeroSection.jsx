@@ -47,37 +47,14 @@ export default function HeroBannerSection() {const [banners, setBanners] = useSt
               <div>✓ Try Out Berkala</div>
             </div>
             <div className="flex gap-4 mb-4">
-              <a href="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition"
-              >
+              <a href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition">
                 Daftar Sekarang
               </a>
 
-              <a href="#packages"
-                className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition"
-              >
+              <a href="#packages" className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition">
                 Lihat Paket
               </a>
             </div>
-
-            {/* STATS */}
-
-            {/* <div className="grid grid-cols-3 border-t pt-8">
-              <div>
-                <h3 className="text-3xl font-bold text-blue-600">500+</h3>
-                <p className="text-gray-600 mt-2">Siswa</p>
-              </div>
-
-              <div>
-                <h3 className="text-3xl font-bold text-blue-600">30+</h3>
-                <p className="text-gray-600 mt-2">Tutor</p>
-              </div>
-
-              <div>
-                <h3 className="text-3xl font-bold text-blue-600">95%</h3>
-                <p className="text-gray-600 mt-2">Kelulusan</p>
-              </div>
-            </div> */}
           </div>
 
           {/* RIGHT IMAGE SWIPER */}

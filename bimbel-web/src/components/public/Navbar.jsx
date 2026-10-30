@@ -23,19 +23,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
         <div className="h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-shrink-0">
-            {company?.logo_url && (
-              <img
-                src={assetUrl(company.logo_url)}
-                alt="Logo"
-                className="h-12 w-auto"
-              />
-            )}
-
+            {company?.logo_url && (<img src={assetUrl(company.logo_url)} alt="Logo" className="h-12 w-auto"/>)}
             <div>
-              <h1 className="hidden md:block font-bold text-xl whitespace-nowrap">
-                {company?.company_name}
-              </h1>
-
+              <h1 className="hidden md:block font-bold text-xl whitespace-nowrap">{company?.company_name}</h1>
               <h1 className="md:hidden font-bold text-lg">Bimbel</h1>
             </div>
           </div>
@@ -45,7 +35,7 @@ export default function Navbar() {
             <a href="#activities">Kegiatan</a>
             <a href="#articles">Artikel</a>
             <a href="#testimonials">Testimoni</a>
-            <a href="/about">Tentang Kami</a>
+            <a href="#about">Tentang Kami</a>
           </div>
 
           {/* <button className="bg-blue-600 text-white px-6 py-2 rounded-lg">

@@ -12,7 +12,7 @@ export const publicRoutes = [
     {path: "articles/:slug",element: <ArticleDetailPage />,},
     {path: "activities",element: <ActivityListPage />,},
     {path: "activities/:id",element: <ActivityDetailPage />,},
-    {path: "about",element: <AboutPage />,},
+    // {path: "about",element: <AboutPage />,},
     {path: "register",element: <LeadRegisterPage />,},
 ];
 

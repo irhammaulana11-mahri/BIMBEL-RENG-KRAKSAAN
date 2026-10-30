@@ -331,36 +331,6 @@ export default function LeadPage() {
           formatDate={formatDate}
       />
 
-      {/* 5. Footer Pagination Dinamis
-      <div className="border-t border-gray-100 pt-4 bg-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm">
-          <p className="text-gray-600 font-medium">
-            Menampilkan <span className="text-gray-900 font-bold">{pagination.from}</span> - <span className="text-gray-900 font-bold">{pagination.to}</span> dari <span className="text-gray-900 font-bold">{pagination.total}</span> data lead
-          </p>
-          <div className="flex items-center gap-1.5">
-            <button 
-              disabled={pagination.page <= 1 || loading}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-700 bg-white font-bold hover:bg-gray-50 disabled:opacity-40 transition-all text-sm"
-            >
-              Prev
-            </button>
-            
-            <span className="px-4 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-xs">
-              {pagination.page}
-            </span>
-
-            <button 
-              disabled={pagination.page >= pagination.lastPage || loading}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-700 bg-white font-bold hover:bg-gray-50 disabled:opacity-40 transition-all text-sm"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div> */}
-
       {/* Modal Detail Lead */}
       <LeadDetailModal 
         open={openModal} 

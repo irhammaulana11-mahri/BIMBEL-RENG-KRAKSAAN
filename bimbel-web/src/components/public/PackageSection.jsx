@@ -134,32 +134,10 @@ export default function PackageSection() {
                   </div>
                 </div>
 
-                {/* <button
-                  className={`
-                    w-full
-                    py-4
-                    rounded-xl
-                    text-white
-                    font-semibold
-                    transition
-                    ${style.button}
-                  `}
-                >
-                  Lihat Detail
-                </button> */}
-
               </div>
             );
           })}
         </div>
-
-        {/* <div className="text-center mt-12">
-
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition">
-            Lihat Semua Paket
-          </button>
-
-        </div> */}
 
       </div>
     </section>

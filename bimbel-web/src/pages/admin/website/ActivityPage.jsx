@@ -98,20 +98,6 @@ export default function BannersPage() {
           onDelete={handleDelete} 
         />
 
-        {/* Footer Pagination Terpadu */}
-        <div className="border-t border-gray-100 p-5 bg-gray-50/20 text-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <p className="text-gray-600 font-medium">
-              Menampilkan <span className="text-gray-900 font-bold">1</span> - <span className="text-gray-900 font-bold">{activities.length}</span> dari <span className="text-gray-900 font-bold">{activities.length}</span> catatan galeri kegiatan
-            </p>
-            <div className="flex items-center gap-1.5">
-              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Prev</button>
-              <button className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white">1</button>
-              <button disabled className="px-4 py-2 border rounded-lg text-gray-700 bg-white font-bold opacity-40 text-sm">Next</button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <ActivityModal open={openModal} onClose={() => setOpenModal(false)} data={selected} onSuccess={loadData}/>
