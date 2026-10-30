@@ -1,6 +1,6 @@
 # Spesifikasi Keputusan Remediasi — Bimbel Reng Kraksaan
 
-Versi: 1.0 (draf untuk ditinjau) · Tanggal: 2026-10-29 · Basis kode: commit `7cce00b` (`main`)
+Versi: 1.0 (draf untuk ditinjau) · Tanggal: 2026-10-29 · Basis kode: commit `965cd9d` (`main`)
 Sumber: Laporan Audit Keamanan & Database (status NOT READY), Baseline Pra-Perbaikan, keputusan pemilik produk 2026-10-29.
 
 Dokumen ini adalah kontrak kerja untuk AI coding agent. Bagian 1 berisi aturan kerja, bagian 2 keputusan

@@ -1,6 +1,6 @@
 # Laporan Akhir Remediasi Keamanan & Database — Bimbel Reng Kraksaan
 
-Tanggal: 29 Oktober 2026 · Basis awal: commit `7cce00b` · Hasil akhir: commit `3758793` (`main`)
+Tanggal: 29 Oktober 2026 · Basis awal: commit `965cd9d` · Hasil akhir: commit `6f582ba` (`main`)
 Dokumen terkait: [REMEDIATION-SPEC.md](REMEDIATION-SPEC.md) (keputusan bisnis & rancangan), [DEPLOY.md](../DEPLOY.md) (konfigurasi), [SERVER-SETUP.md](SERVER-SETUP.md) (langkah penyiapan server & Cloudflare).
 
 ## 1. Ringkasan
@@ -76,20 +76,20 @@ peninjau di luar sistem, sehingga laporan bulanan berfungsi sebagai arsip.
 
 | Commit | Tahap | Isi |
 |---|---|---|
-| `5cd0f7b` | T1 | Test PostgreSQL terisolasi + reproduksi temuan |
-| `da2e7e2` | T2 | Batas login, token 12 jam, akun nonaktif |
-| `a3c57ea` | T3 | Upgrade dependensi |
-| `eb62f4f` | T4 | Backup khusus super admin |
-| `0b1a090` | T5 | Integritas pembayaran |
-| `4b59c47` | T6 | Jejak audit keuangan |
-| `8da617f` | T7 | Reversal pembayaran |
-| `da6676b` | T8 | Payroll: operator tunggal, bukti transfer, pengecualian |
-| `a7bee5a` | T9 | Kunci & koreksi absensi |
-| `6a3eb80`, `8e77db0` | T10 | Constraint keuangan; FK jadwal; hapus jadwal |
-| `3b13ec5` | — | Perbaikan UI (penilaian, kartu, redirect super admin, dashboard) |
-| `9179860` | T12 | Pengerasan keamanan |
-| `1e866e7` | — | Branding ikon & layar pembuka |
-| `3758793` | T11 | Rilis Android |
+| `5175d1a` | T1 | Test PostgreSQL terisolasi + reproduksi temuan |
+| `ef293dd` | T2 | Batas login, token 12 jam, akun nonaktif |
+| `4b7418d` | T3 | Upgrade dependensi |
+| `e4fbecd` | T4 | Backup khusus super admin |
+| `c2a7397` | T5 | Integritas pembayaran |
+| `75a8d31` | T6 | Jejak audit keuangan |
+| `0d622bf` | T7 | Reversal pembayaran |
+| `ea9f83b` | T8 | Payroll: operator tunggal, bukti transfer, pengecualian |
+| `63c2de6` | T9 | Kunci & koreksi absensi |
+| `f0c9b08`, `1347825` | T10 | Constraint keuangan; FK jadwal; hapus jadwal |
+| `8660f47` | — | Perbaikan UI (penilaian, kartu, redirect super admin, dashboard) |
+| `40f3138` | T12 | Pengerasan keamanan |
+| `562c594` | — | Branding ikon & layar pembuka |
+| `6f582ba` | T11 | Rilis Android |
 
 ## 5. Migration database
 
