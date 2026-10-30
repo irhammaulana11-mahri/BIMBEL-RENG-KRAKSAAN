@@ -19,6 +19,7 @@ import { getCurrentPosition } from "@/utils/geo";
 import ActivityManagerModal from "./ActivityManagerModal"; // Komponen form terpisah
 import TentorCheckInPanel from "./TentorCheckInPanel";
 import LocationChangeModal from "../shared/LocationChangeModal";
+import AttendanceCorrectionSection from "./AttendanceCorrectionSection";
 
 export default function TentorSessionWorkspacePage() {
   const { id } = useParams();
@@ -37,6 +38,8 @@ export default function TentorSessionWorkspacePage() {
   const [attendanceData, setAttendanceData] = useState({});
   const [attendanceNotes, setAttendanceNotes] = useState({});
   const [savingAttendance, setSavingAttendance] = useState(false);
+  const [correctionStudent, setCorrectionStudent] = useState(null);
+  const [correctionRefresh, setCorrectionRefresh] = useState(0);
   const { toast: toastState, showSuccess, showError, hideToast } = useToast();
   const toast = { success: showSuccess, error: showError };
 
@@ -465,7 +468,7 @@ export default function TentorSessionWorkspacePage() {
                 {canFillAttendance
                   ? `${totalUnfilled} siswa belum diabsen.`
                   : isSessionCompleted
-                    ? 'Sesi telah selesai, absensi terkunci.'
+                    ? (session.status === 'COMPLETED' ? 'Sesi telah selesai. Untuk mengubah absensi, ajukan koreksi ke admin.' : 'Sesi dibatalkan, absensi terkunci.')
                     : 'Absen masuk terlebih dahulu untuk mengisi absensi siswa.'}
               </p>
             </div>
@@ -505,6 +508,12 @@ export default function TentorSessionWorkspacePage() {
                         </button>
                       ))}
                     </div>
+                    {session.status === 'COMPLETED' && (
+                      <button onClick={() => setCorrectionStudent({ ...student, attendance_status: status })}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-black border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+                        Ajukan koreksi
+                      </button>
+                    )}
                     {status !== 'HADIR' && status !== 'BELUM' && (
                       <input
                         type="text"
@@ -519,6 +528,18 @@ export default function TentorSessionWorkspacePage() {
                 );
               })}
             </div>
+          )}
+
+          {session.status === 'COMPLETED' && (
+            <AttendanceCorrectionSection
+              sessionId={id}
+              student={correctionStudent}
+              refreshKey={correctionRefresh}
+              onClose={() => setCorrectionStudent(null)}
+              onSubmitted={() => { setCorrectionStudent(null); setCorrectionRefresh((n) => n + 1); }}
+              showSuccess={showSuccess}
+              showError={showError}
+            />
           )}
 
           {canFillAttendance && totalStudents > 0 && (

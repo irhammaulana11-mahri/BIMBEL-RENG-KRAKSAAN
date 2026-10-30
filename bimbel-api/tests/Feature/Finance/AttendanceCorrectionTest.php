@@ -316,4 +316,62 @@ class AttendanceCorrectionTest extends TestCase
         $this->api('PATCH', "/admin/attendances/corrections/$id/reject", $token, ['note' => 'terlambat'])->assertStatus(422);
         $this->api('GET', '/admin/attendances/corrections', $this->tokenFor($this->f['tuA']))->assertStatus(403);
     }
+
+    // Pengajuan oleh tentor, persetujuan oleh admin
+
+    public function test_tentor_mengajukan_admin_menyetujui_tanpa_self_approval(): void {
+        Notification::fake();
+        $tentor = $this->tokenFor($this->f['tuA']);
+        $id = $this->api('POST', "/tentor/sessions/{$this->f['ssA']}/attendance-corrections", $tentor,
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'Siswa ternyata tidak hadir hari itu'])
+            ->assertCreated()->assertJsonPath('data.status', 'PENDING')->assertJsonMissingPath('data.financial_effect')->json('data.id');
+
+        Notification::assertSentTo(User::findOrFail($this->f['admin']), PortalNotification::class, fn($n) => $n->toArray($n)['kind'] === 'attendance_correction_requested');
+        $this->api('GET', '/tentor/attendance-corrections', $tentor)->assertOk()->assertJsonPath('data.0.id', $id);
+
+        $this->api('POST', "/admin/attendances/corrections/$id/approve", $this->tokenFor($this->f['admin']), ['password' => self::PASSWORD])
+            ->assertOk()->assertJsonPath('data.status', 'APPROVED')->assertJsonPath('data.self_approved', false);
+        Notification::assertSentTo(User::findOrFail($this->f['tuA']), PortalNotification::class, fn($n) => $n->toArray($n)['kind'] === 'attendance_correction_approved');
+        $this->assertSame('ALPA', DB::table('academic.student_attendances')->where('session_id', $this->f['ssA'])->where('student_id', $this->f['sA'])->value('attendance_status'));
+    }
+
+    public function test_tentor_tidak_bisa_menyetujui_atau_melihat_antrean_admin(): void {
+        $tentor = $this->tokenFor($this->f['tuA']);
+        $id = $this->request($this->f['ssA'], 'ALPA')->id;
+        $this->api('POST', "/admin/attendances/corrections/$id/approve", $tentor, [])->assertStatus(403);
+        $this->api('PATCH', "/admin/attendances/corrections/$id/reject", $tentor, ['note' => 'tolak sendiri'])->assertStatus(403);
+        $this->api('GET', '/tentor/attendance-corrections', $tentor)->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_tentor_hanya_untuk_sesi_miliknya_dan_sudah_selesai(): void {
+        $tentorA = $this->tokenFor($this->f['tuA']);
+        $this->api('POST', "/tentor/sessions/{$this->f['ssB']}/attendance-corrections", $tentorA,
+            ['student_id' => $this->f['sB'], 'new_status' => 'ALPA', 'reason' => 'Bukan sesi milik tentor A'])->assertStatus(403);
+
+        DB::table('academic.schedule_sessions')->where('id', $this->f['ssA'])->update(['status' => 'IN_PROGRESS']);
+        $this->api('POST', "/tentor/sessions/{$this->f['ssA']}/attendance-corrections", $tentorA,
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'Sesi masih berjalan'])->assertStatus(422);
+
+        $this->api('POST', "/tentor/sessions/tidak-valid/attendance-corrections", $tentorA,
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'ID sesi tidak valid'])->assertStatus(404);
+    }
+
+    public function test_tentor_bisa_mengajukan_untuk_absensi_belum_terkunci_dan_alasan_wajib(): void {
+        DB::table('finance.invoices')->delete();
+        $tentor = $this->tokenFor($this->f['tuA']);
+        $this->api('POST', "/tentor/sessions/{$this->f['ssA']}/attendance-corrections", $tentor,
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'pendek'])->assertStatus(422);
+        $this->api('POST', "/tentor/sessions/{$this->f['ssA']}/attendance-corrections", $tentor,
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'Salah tekan tombol saat mengisi absensi'])->assertCreated();
+    }
+
+    public function test_tentor_ditolak_admin_dan_absensi_tidak_berubah(): void {
+        Notification::fake();
+        $id = $this->api('POST', "/tentor/sessions/{$this->f['ssA']}/attendance-corrections", $this->tokenFor($this->f['tuA']),
+            ['student_id' => $this->f['sA'], 'new_status' => 'ALPA', 'reason' => 'Siswa ternyata tidak hadir hari itu'])->json('data.id');
+        $this->api('PATCH', "/admin/attendances/corrections/$id/reject", $this->tokenFor($this->f['admin']), ['note' => 'Jurnal menunjukkan hadir'])->assertOk();
+
+        $this->assertSame('HADIR', DB::table('academic.student_attendances')->where('session_id', $this->f['ssA'])->where('student_id', $this->f['sA'])->value('attendance_status'));
+        Notification::assertSentTo(User::findOrFail($this->f['tuA']), PortalNotification::class, fn($n) => $n->toArray($n)['kind'] === 'attendance_correction_rejected');
+    }
 }

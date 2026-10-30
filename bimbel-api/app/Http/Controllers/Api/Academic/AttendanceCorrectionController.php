@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Koreksi absensi siswa yang terkunci tagihan/payroll (Admin): ajukan, tinjau dampak, setujui/tolak.
+ * Koreksi absensi siswa yang terkunci tagihan/payroll (Admin; pengajuan juga bisa dari tentor): ajukan, tinjau dampak, setujui/tolak.
  */
 class AttendanceCorrectionController extends Controller
 {
@@ -64,6 +64,7 @@ class AttendanceCorrectionController extends Controller
             'payroll_resolution'  => ['nullable', Rule::in(['DEDUCT', 'REFUND_REQUEST'])],
         ]);
         $correction = $this->service->approve($correction, $data, $request->file('refund_proof'));
+        $this->service->notifyTentorOfDecision($correction);
 
         return response()->json(['success' => true, 'message' => 'Koreksi disetujui dan dampak keuangannya dicatat.',
             'data' => $this->present($correction->load(self::RELATIONS))]);
@@ -73,6 +74,7 @@ class AttendanceCorrectionController extends Controller
     {
         $data = $request->validate(['note' => ['required', 'string', 'min:5', 'max:1000']], ['note.required' => 'Alasan penolakan wajib diisi.']);
         $correction = $this->service->reject($correction, $data['note']);
+        $this->service->notifyTentorOfDecision($correction);
 
         return response()->json(['success' => true, 'message' => 'Koreksi ditolak; absensi tidak berubah.', 'data' => $this->present($correction->load(self::RELATIONS))]);
     }

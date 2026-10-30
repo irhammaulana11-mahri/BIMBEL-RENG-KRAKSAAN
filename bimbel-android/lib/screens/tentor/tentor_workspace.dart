@@ -5,6 +5,7 @@ import '../../widgets/common.dart';
 import '../../widgets/location.dart';
 import 'tentor_activity_form.dart';
 import '../../widgets/requests.dart';
+import 'tentor_correction.dart';
 
 const _attendanceOptions = ['HADIR', 'IZIN', 'SAKIT', 'ALPA'];
 const _activityLabels = {'MATERIAL': 'Materi', 'DISCUSSION': 'Diskusi', 'EXAM': 'Ujian', 'REVIEW': 'Review'};
@@ -22,6 +23,7 @@ class _TentorWorkspaceScreenState extends State<TentorWorkspaceScreen> {
   final _key = GlobalKey<AsyncViewState>();
   final _attendance = <String, String>{};
   bool _busy = false;
+  int _correctionTick = 0;
 
   String get _base => '/tentor/sessions/${widget.sessionId}';
 
@@ -182,7 +184,7 @@ class _TentorWorkspaceScreenState extends State<TentorWorkspaceScreen> {
                 ),
               ),
             SectionTitle('Absensi siswa (${students.length})',
-                trailing: students.isEmpty
+                trailing: students.isEmpty || locked
                     ? null
                     : TextButton(
                         onPressed: () => setState(() {
@@ -201,18 +203,33 @@ class _TentorWorkspaceScreenState extends State<TentorWorkspaceScreen> {
                     Text(text(st['full_name']), style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text('NIS ${text(st['nis'])} • ${text(st['school_name'])}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                     const SizedBox(height: 6),
-                    Wrap(spacing: 6, children: [
-                      for (final opt in _attendanceOptions)
-                        ChoiceChip(
-                          label: Text(opt[0] + opt.substring(1).toLowerCase()),
-                          selected: (_attendance['${st['student_id']}'] ?? st['attendance_status']) == opt,
-                          onSelected: (_) => setState(() => _attendance['${st['student_id']}'] = opt),
-                        ),
-                    ]),
+                    if (locked)
+                      Row(children: [
+                        StatusChip(st['attendance_status']),
+                        const Spacer(),
+                        if (status == 'COMPLETED')
+                          TextButton.icon(
+                            onPressed: () async {
+                              if (await showCorrectionDialog(context, _base, st) && mounted) setState(() => _correctionTick++);
+                            },
+                            icon: const Icon(Icons.edit_note),
+                            label: const Text('Ajukan koreksi'),
+                          ),
+                      ])
+                    else
+                      Wrap(spacing: 6, children: [
+                        for (final opt in _attendanceOptions)
+                          ChoiceChip(
+                            label: Text(opt[0] + opt.substring(1).toLowerCase()),
+                            selected: (_attendance['${st['student_id']}'] ?? st['attendance_status']) == opt,
+                            onSelected: (_) => setState(() => _attendance['${st['student_id']}'] = opt),
+                          ),
+                      ]),
                   ]),
                 ),
               ),
-            if (students.isNotEmpty)
+            if (status == 'COMPLETED') CorrectionHistory(widget.sessionId, key: ValueKey(_correctionTick)),
+            if (students.isNotEmpty && !locked)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: FilledButton.icon(

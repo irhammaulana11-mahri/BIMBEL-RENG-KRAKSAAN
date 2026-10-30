@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../widgets/common.dart';
 import '../../widgets/location.dart';
+import 'admin_corrections.dart';
 import 'admin_finance.dart' show askReason, runAction;
 
 /// Pengajuan pindah jadwal, lokasi les sementara & pendaftaran anak dari orang tua/tentor.
@@ -21,6 +22,7 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
   String get _path => switch (_type) {
         'reschedule' => '/admin/reschedule-requests',
         'location' => '/admin/location-requests',
+        'correction' => '/admin/attendances/corrections',
         _ => '/admin/student-registrations',
       };
 
@@ -34,6 +36,7 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
             ButtonSegment(value: 'reschedule', label: Text('Jadwal'), icon: Icon(Icons.event_repeat)),
             ButtonSegment(value: 'location', label: Text('Lokasi'), icon: Icon(Icons.edit_location_alt_outlined)),
             ButtonSegment(value: 'registration', label: Text('Daftar'), icon: Icon(Icons.person_add_alt)),
+            ButtonSegment(value: 'correction', label: Text('Absensi'), icon: Icon(Icons.fact_check_outlined)),
           ],
           selected: {_type},
           onSelectionChanged: (v) => setState(() => _type = v.first),
@@ -58,6 +61,7 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
                 switch (_type) {
                   'reschedule' => _RescheduleCard(r, onChanged: reload),
                   'location' => _LocationCard(r, onChanged: reload),
+                  'correction' => AdminCorrectionCard(r, onChanged: reload),
                   _ => _RegistrationCard(r, onChanged: reload),
                 },
             ]);

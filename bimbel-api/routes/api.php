@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\Website\ArticleController;
 // TentorPortal
 use App\Http\Controllers\Api\TentorPortal\TentorDashboardController;
 use App\Http\Controllers\Api\TentorPortal\TentorScheduleController;
+use App\Http\Controllers\Api\TentorPortal\TentorAttendanceCorrectionController;
 use App\Http\Controllers\Api\TentorPortal\TentorExamResultController;
 
 // StudentPortal
@@ -449,6 +450,8 @@ Route::prefix('tentor')
         Route::post('/sessions/{id}/start', [TentorScheduleController::class, 'startSession']);
         Route::post('/sessions/{id}/end', [TentorScheduleController::class, 'endSession']);
         Route::post('/sessions/{id}/attendance', [TentorScheduleController::class, 'saveAttendance']);
+        Route::get('/attendance-corrections', [TentorAttendanceCorrectionController::class, 'index']);
+        Route::post('/sessions/{id}/attendance-corrections', [TentorAttendanceCorrectionController::class, 'store']);
         Route::post('/sessions/{id}/reschedule-request', [TentorScheduleController::class, 'requestReschedule']);
         Route::get('/reschedule-requests', [TentorScheduleController::class, 'rescheduleRequests']);
         Route::patch('/reschedule-requests/{id}/cancel', [TentorScheduleController::class, 'cancelReschedule']);

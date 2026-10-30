@@ -53,13 +53,13 @@ class AttendanceCorrectionService
         protected FinanceApproval $approval,
     ) {}
 
-    public function request(ScheduleSession $session, string $studentId, string $newStatus, string $reason, ?string $parentNote = null): AttendanceCorrection {
-        return DB::transaction(function () use ($session, $studentId, $newStatus, $reason, $parentNote) {
+    public function request(ScheduleSession $session, string $studentId, string $newStatus, string $reason, ?string $parentNote = null, bool $allowUnlocked = false): AttendanceCorrection {
+        return DB::transaction(function () use ($session, $studentId, $newStatus, $reason, $parentNote, $allowUnlocked) {
             $session->loadMissing('schedule.classroom');
             if (!$session->schedule?->classroom?->students()->where('master.students.id', $studentId)->exists()) {
                 throw ValidationException::withMessages(['student_id' => ['Siswa bukan peserta kelas sesi ini.']]);
             }
-            if (!$this->lock->reason($session, $studentId)) {
+            if (!$allowUnlocked && !$this->lock->reason($session, $studentId)) {
                 throw ValidationException::withMessages(['session_id' => ['Absensi ini belum terkunci; ubah langsung lewat form absensi.']]);
             }
 
@@ -89,6 +89,38 @@ class AttendanceCorrectionService
 
             return $correction;
         });
+    }
+
+    public function notifyAdminsOfTentorRequest(AttendanceCorrection $correction): void {
+        try {
+            $admins = \App\Models\Admin\User::whereHas('role', fn($q) => $q->whereIn('role_name', ['admin', 'super_admin']))->get();
+            $tentor = Auth::user()?->name ?? 'Tentor';
+            $label = $this->sessionLabel($correction);
+            foreach ($admins as $admin) {
+                $admin->notify(new PortalNotification('attendance_correction_requested', 'Tentor mengajukan koreksi absensi',
+                    "{$tentor} mengajukan koreksi absensi {$label}.", ['Alasan' => $correction->reason], '/admin/attandances'));
+            }
+        } catch (Throwable $e) {
+            Log::warning('Notifikasi pengajuan koreksi tentor gagal', ['correction' => $correction->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function notifyTentorOfDecision(AttendanceCorrection $correction): void {
+        try {
+            $requester = $correction->requester()->with('role')->first();
+            if ($requester?->role?->role_name !== 'tentor' || $requester->id === $correction->reviewed_by) return;
+
+            $approved = $correction->status === 'APPROVED';
+            $requester->notify(new PortalNotification(
+                $approved ? 'attendance_correction_approved' : 'attendance_correction_rejected',
+                $approved ? 'Koreksi absensi disetujui' : 'Koreksi absensi ditolak',
+                'Pengajuan koreksi absensi ' . $this->sessionLabel($correction) . ($approved ? ' disetujui.' : ' ditolak.'),
+                array_filter(['Catatan admin' => $correction->review_note]),
+                '/tentor/attendances',
+            ));
+        } catch (Throwable $e) {
+            Log::warning('Notifikasi keputusan koreksi ke tentor gagal', ['correction' => $correction->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

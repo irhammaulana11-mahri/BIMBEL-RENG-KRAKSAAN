@@ -61,3 +61,7 @@ export const reorderSessionActivities = (sessionId, activityIds) => {
 
 export const getTentorRescheduleRequests = () => api.get("/tentor/reschedule-requests");
 export const cancelTentorRescheduleRequest = (id) => api.patch(`/tentor/reschedule-requests/${id}/cancel`);
+
+// Pengajuan koreksi absensi siswa pada sesi yang sudah selesai (disetujui Admin)
+export const requestAttendanceCorrection = (sessionId, data) => api.post(`/tentor/sessions/${sessionId}/attendance-corrections`, data);
+export const getMyAttendanceCorrections = (sessionId) => api.get("/tentor/attendance-corrections", { params: { session_id: sessionId } });
